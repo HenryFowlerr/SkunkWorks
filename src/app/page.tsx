@@ -19,8 +19,8 @@ export default function HomePage() {
           then carry the same bend identity onto the factory floor and back.
         </p>
         <div className="welcome-actions">
-          <Link className="button button-primary" href="/login">Sign in <span aria-hidden="true">↗</span></Link>
-          <Link className="button button-secondary" href="/studio">Open designer desk <span aria-hidden="true">→</span></Link>
+          <Link className="button button--primary" href="/login">Sign in <span aria-hidden="true">↗</span></Link>
+          <Link className="button button--secondary" href="/studio">Open designer desk <span aria-hidden="true">→</span></Link>
         </div>
         <p className="welcome-note">Early prototype · A reviewed guide is a reference, not a machine-control instruction.</p>
       </section>
