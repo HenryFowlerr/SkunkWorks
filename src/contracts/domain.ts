@@ -124,7 +124,35 @@ export type Asset = z.infer<typeof AssetSchema>;
 
 const NonNegativeSourcedNumberSchema = SourcedValueSchema(finiteNumber.refine((value) => value >= 0));
 
-export const MachineSchema = z.object({
+export const WorkshopNoteSourceSchema = z.object({
+  label: nonEmptyString,
+  assetId: IdSchema.nullable(),
+  page: z.number().int().positive().nullable(),
+}).strict().superRefine((source, ctx) => {
+  if (source.assetId === null && source.page !== null) {
+    ctx.addIssue({ code: "custom", path: ["page"], message: "A source page requires a referenced asset." });
+  }
+});
+export type WorkshopNoteSource = z.infer<typeof WorkshopNoteSourceSchema>;
+
+export const MachineNoteSchema = z.object({
+  id: IdSchema,
+  text: nonEmptyString,
+  authorId: IdSchema.nullable().default(null),
+  createdAt: utcTimestamp.nullable().default(null),
+  source: WorkshopNoteSourceSchema.nullable().default(null),
+  confirmedBy: IdSchema.nullable(),
+}).strict();
+export type MachineNote = z.infer<typeof MachineNoteSchema>;
+
+export const MachineNoteInputSchema = z.object({
+  id: IdSchema,
+  text: nonEmptyString,
+  source: WorkshopNoteSourceSchema.nullable().default(null),
+}).strict();
+export type MachineNoteInput = z.infer<typeof MachineNoteInputSchema>;
+
+const machineFields = {
   id: IdSchema,
   name: nonEmptyString,
   process: nonEmptyString,
@@ -136,19 +164,26 @@ export const MachineSchema = z.object({
     specification: z.string().nullable(),
     evidence: z.array(EvidenceRefSchema),
   }).strict()),
-  notes: z.array(z.object({
-    id: IdSchema,
-    text: nonEmptyString,
-    confirmedBy: IdSchema.nullable(),
-  }).strict()),
   approvedOrderConstraints: z.array(z.object({
     beforeBendId: nonEmptyString,
     afterBendId: nonEmptyString,
     appliesToPartFamily: nonEmptyString,
     noteId: IdSchema,
   }).strict()),
+};
+
+export const MachineSchema = z.object({
+  ...machineFields,
+  notes: z.array(MachineNoteSchema),
 }).strict();
 export type Machine = z.infer<typeof MachineSchema>;
+
+/** Writable machine profile input; note author, time and confirmation stay server-owned. */
+export const MachineInputSchema = z.object({
+  ...machineFields,
+  notes: z.array(MachineNoteInputSchema),
+}).strict();
+export type MachineInput = z.infer<typeof MachineInputSchema>;
 
 export const WorkshopSnapshotSchema = z.object({
   id: IdSchema,

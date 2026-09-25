@@ -8,7 +8,7 @@ import {
   GenerationSchema,
   IdSchema,
   JobSchema,
-  MachineSchema,
+  MachineInputSchema,
   ReleaseSchema,
   RoleSchema,
   WorkshopSnapshotSchema,
@@ -137,15 +137,19 @@ export const CreateWorkshopInputSchema = z.object({
   idempotencyKey: IdempotencyKeySchema,
 }).strict();
 export type CreateWorkshopInput = z.infer<typeof CreateWorkshopInputSchema>;
+export const CreateWorkshopBodySchema = CreateWorkshopInputSchema.omit({ idempotencyKey: true });
+export type CreateWorkshopBody = z.infer<typeof CreateWorkshopBodySchema>;
 
 export const SaveWorkshopVersionInputSchema = z.object({
   workshopId: IdSchema,
   expectedVersion: z.number().int().positive(),
-  machines: z.array(MachineSchema),
+  machines: z.array(MachineInputSchema),
   name: nonEmptyString,
   idempotencyKey: IdempotencyKeySchema,
 }).strict();
 export type SaveWorkshopVersionInput = z.infer<typeof SaveWorkshopVersionInputSchema>;
+export const SaveWorkshopVersionBodySchema = SaveWorkshopVersionInputSchema.omit({ workshopId: true, idempotencyKey: true });
+export type SaveWorkshopVersionBody = z.infer<typeof SaveWorkshopVersionBodySchema>;
 
 export const ConfirmWorkshopInputSchema = z.object({
   workshopId: IdSchema,
@@ -177,6 +181,13 @@ export type UpdateJobInputs = z.infer<typeof UpdateJobInputsSchema>;
 export const UploadAssetKindSchema = z.enum(["drawing_pdf", "model_glb", "bend_manifest"]);
 export type UploadAssetKind = z.infer<typeof UploadAssetKindSchema>;
 
+/** Provisional source-file limits shared by the browser and API boundary. */
+export const SOURCE_UPLOAD_LIMIT_BYTES = {
+  drawing_pdf: 25 * 1024 * 1024,
+  model_glb: 50 * 1024 * 1024,
+  bend_manifest: 2 * 1024 * 1024,
+} as const satisfies Record<UploadAssetKind, number>;
+
 export const UploadPreparationSchema = z.object({
   assetId: IdSchema,
   upload: z.object({
@@ -193,7 +204,27 @@ export const UploadAssetPreparationBodySchema = z.object({
   filename: nonEmptyString,
   mimeType: nonEmptyString,
   byteSize: z.number().int().nonnegative(),
-}).strict();
+}).strict().superRefine((input, ctx) => {
+  const limit = SOURCE_UPLOAD_LIMIT_BYTES[input.kind];
+  if (input.byteSize === 0) {
+    ctx.addIssue({ code: "custom", path: ["byteSize"], message: "Uploaded files must not be empty." });
+  } else if (input.byteSize > limit) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["byteSize"],
+      message: `${input.kind} files must be ${limit} bytes or smaller.`,
+    });
+  }
+  const mimeType = input.mimeType.trim().toLowerCase();
+  const validMimeType = input.kind === "drawing_pdf"
+    ? mimeType === "application/pdf"
+    : input.kind === "model_glb"
+      ? mimeType === "model/gltf-binary" || mimeType === "application/octet-stream"
+      : mimeType === "application/json";
+  if (!validMimeType) {
+    ctx.addIssue({ code: "custom", path: ["mimeType"], message: "Choose a file with the supported content type for this asset." });
+  }
+});
 
 export const UploadReleasePhotoPreparationBodySchema = z.object({
   filename: nonEmptyString,

@@ -12,6 +12,8 @@ import {
   FlagSchema,
   GenerationSchema,
   JobSchema as zJobSchema,
+  MachineInputSchema,
+  MachineSchema,
   PanelModelSchema,
   ReleaseViewSchema,
   WorkshopSnapshotSchema,
@@ -42,6 +44,39 @@ describe("contract DTO schemas", () => {
     expect(DraftSchema.parse(draft)).toEqual(draft);
     expect(ReleaseViewSchema.parse(releaseView)).toEqual(releaseView);
     expect(FlagSchema.parse(openFlag)).toEqual(openFlag);
+  });
+
+  it("reads legacy workshop notes as unknown provenance and keeps note authority out of save inputs", () => {
+    const legacyMachine = {
+      ...workshopSnapshot.machines[0],
+      notes: [{ id: ids.machineNote, text: "Legacy note", confirmedBy: null }],
+    };
+    const parsed = MachineSchema.parse(legacyMachine);
+    expect(parsed.notes[0]).toMatchObject({ authorId: null, createdAt: null, source: null, confirmedBy: null });
+
+    const input = {
+      ...legacyMachine,
+      notes: [{ id: ids.machineNote, text: "New note", source: null }],
+    };
+    expect(MachineInputSchema.parse(input).notes[0]).toEqual(input.notes[0]);
+    expect(MachineInputSchema.safeParse({
+      ...input,
+      notes: [{ ...input.notes[0], authorId: ids.member, createdAt: "2026-09-25T10:00:00.000Z" }],
+    }).success).toBe(false);
+  });
+
+  it("requires an asset for workshop note source page references", () => {
+    expect(MachineSchema.safeParse({
+      ...workshopSnapshot.machines[0],
+      notes: [{
+        id: ids.machineNote,
+        text: "Manual setup restriction",
+        authorId: ids.member,
+        createdAt: "2026-09-25T10:00:00.000Z",
+        source: { label: "Machine manual", assetId: null, page: 7 },
+        confirmedBy: null,
+      }],
+    }).success).toBe(false);
   });
 
   it("preserves the difference between a known zero and a missing value", () => {

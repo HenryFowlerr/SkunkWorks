@@ -1,11 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   api,
+  createFetchApiTransport,
   createApiClient,
+  unavailableApiTransport,
   type ApiTransport,
   type ApiTransportRequest,
 } from "@/lib/api/client";
 import { ids, openFlag, releaseView, sourceAsset } from "./fixtures";
+import { SOURCE_UPLOAD_LIMIT_BYTES, UploadAssetPreparationBodySchema } from "@/contracts";
 
 const meta = { requestId: "contract-test", contractVersion: "1.0" as const };
 const success = (data: unknown) => ({ data, meta });
@@ -35,12 +38,119 @@ function recordingTransport(responses: unknown[]): {
 }
 
 describe("typed browser API client", () => {
-  it("keeps the default transport explicitly unavailable", async () => {
-    await expect(api.releases.get({ releaseId: ids.release })).rejects.toMatchObject({
+  it("enforces provisional source upload limits at the shared request schema", () => {
+    const cases = [
+      { kind: "drawing_pdf" as const, filename: "part.pdf", mimeType: "application/pdf" },
+      { kind: "model_glb" as const, filename: "part.glb", mimeType: "model/gltf-binary" },
+      { kind: "bend_manifest" as const, filename: "part.json", mimeType: "application/json" },
+    ];
+
+    for (const item of cases) {
+      const limit = SOURCE_UPLOAD_LIMIT_BYTES[item.kind];
+      expect(UploadAssetPreparationBodySchema.safeParse({ ...item, byteSize: limit }).success).toBe(true);
+      expect(UploadAssetPreparationBodySchema.safeParse({ ...item, byteSize: limit + 1 }).success).toBe(false);
+    }
+    expect(UploadAssetPreparationBodySchema.safeParse({
+      kind: "drawing_pdf",
+      filename: "empty.pdf",
+      mimeType: "application/pdf",
+      byteSize: 0,
+    }).success).toBe(false);
+    expect(SOURCE_UPLOAD_LIMIT_BYTES).toEqual({
+      drawing_pdf: 25 * 1024 * 1024,
+      model_glb: 50 * 1024 * 1024,
+      bend_manifest: 2 * 1024 * 1024,
+    });
+  });
+
+  it("keeps an explicitly selected unavailable transport honest", async () => {
+    await expect(createApiClient(unavailableApiTransport).releases.get({ releaseId: ids.release })).rejects.toMatchObject({
       name: "ApiClientError",
       code: "ENDPOINT_UNAVAILABLE",
       retryable: false,
     });
+  });
+
+  it("uses the real same-origin transport by default", async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify(success(releaseView)), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", fetchImpl);
+    try {
+      await expect(api.releases.get({ releaseId: ids.release })).resolves.toEqual(releaseView);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(fetchImpl).toHaveBeenCalledWith(`/api/releases/${ids.release}`, expect.any(Object));
+  });
+
+  it("uses JSON v1 routes on the same origin with no-store and typed input", async () => {
+    const fetchImpl = vi.fn(async () =>
+      new Response(JSON.stringify(success(releaseView)), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }));
+    const client = createApiClient(createFetchApiTransport({ fetchImpl }));
+
+    await expect(client.releases.get({ releaseId: ids.release })).resolves.toEqual(releaseView);
+    expect(fetchImpl).toHaveBeenCalledWith(`/api/releases/${ids.release}`, expect.objectContaining({
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+      redirect: "error",
+      headers: { Accept: "application/json" },
+    }));
+  });
+
+  it("reports an unimplemented Next route instead of treating its HTML 404 as data", async () => {
+    const fetchImpl = vi.fn(async () => new Response("<!doctype html>", {
+      status: 404,
+      headers: { "content-type": "text/html" },
+    }));
+    const client = createApiClient(createFetchApiTransport({ fetchImpl }));
+
+    await expect(client.releases.get({ releaseId: ids.release })).rejects.toMatchObject({
+      code: "ENDPOINT_UNAVAILABLE",
+      status: 404,
+      retryable: false,
+    });
+  });
+
+  it("uploads only to HTTPS or loopback URLs without forwarding application cookies", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response(null, { status: 200 }));
+    const transport = createFetchApiTransport({ fetchImpl });
+    const file = new File(["private bytes"], "part.pdf", { type: "application/pdf" });
+    const onProgress = vi.fn();
+
+    await transport.upload({
+      url: "https://storage.example/signed-upload",
+      method: "PUT",
+      headers: { "Content-Type": "application/pdf", "x-upsert": "false" },
+      file,
+      onProgress,
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith("https://storage.example/signed-upload", expect.objectContaining({
+      method: "PUT",
+      body: expect.any(FormData),
+      headers: { "x-upsert": "false" },
+      credentials: "omit",
+      cache: "no-store",
+      referrerPolicy: "no-referrer",
+    }));
+    const sentBody = fetchImpl.mock.calls[0]?.[1]?.body;
+    expect(sentBody).toBeInstanceOf(FormData);
+    expect((sentBody as FormData).get("cacheControl")).toBe("3600");
+    expect((sentBody as FormData).get("")).toMatchObject({ name: "part.pdf", type: "application/pdf" });
+    expect(onProgress).toHaveBeenCalledOnce();
+    expect(onProgress).toHaveBeenCalledWith(1);
+    await expect(transport.upload({
+      url: "http://storage.example/signed-upload",
+      method: "PUT",
+      headers: {},
+      file,
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
   });
 
   it("validates v1.0 response envelopes and surfaces typed wire errors", async () => {
