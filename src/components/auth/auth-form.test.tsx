@@ -62,6 +62,18 @@ describe("AuthForm", () => {
     expect(navigation.replace).not.toHaveBeenCalled();
   });
 
+  it("preserves a same-origin invite token route after sign-in", async () => {
+    authApi.signIn.mockResolvedValue({ actor: { id: "actor" }, memberships: [] });
+    window.history.replaceState({}, "", "/login?returnTo=%2Finvite%2Ftoken_7-a");
+    render(<AuthForm mode="signIn" />);
+
+    setInput("Email address", "designer@example.com");
+    setInput("Password", "password");
+    fireEvent.submit(screen.getByRole("button", { name: /sign in/i }).closest("form")!);
+
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith("/invite/token_7-a"));
+  });
+
   it("shows the API's verification state after sign-up without claiming a verified session", async () => {
     authApi.signUp.mockResolvedValue({ verificationRequired: true });
     render(<AuthForm mode="signUp" />);

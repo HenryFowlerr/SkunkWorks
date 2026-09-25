@@ -1,0 +1,397 @@
+.manager {
+  display: grid;
+  gap: 1.5rem;
+  color: var(--ink, #17221f);
+}
+
+.heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.heading h1 {
+  margin: 0.2rem 0 0;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  letter-spacing: -0.04em;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--muted, #65716b);
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.lede {
+  max-width: 47rem;
+  margin: 0.65rem 0 0;
+  color: var(--muted, #65716b);
+  line-height: 1.55;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.layout:has(> .main:first-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sidebar {
+  position: sticky;
+  top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line, #d9dfda);
+  border-radius: 0.8rem;
+  background: var(--surface, #fff);
+}
+
+.sidebar h2 {
+  margin: 0 0 0.8rem;
+  font-size: 0.92rem;
+}
+
+.profileList {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.profileButton {
+  display: grid;
+  width: 100%;
+  gap: 0.3rem;
+  padding: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profileButton:hover,
+.profileButton:focus-visible {
+  border-color: var(--line, #d9dfda);
+  background: #f6f8f6;
+}
+
+.profileButtonActive {
+  border-color: #87a89a;
+  background: #edf4f0;
+}
+
+.profileButton span {
+  font-weight: 650;
+}
+
+.profileButton small {
+  color: var(--muted, #65716b);
+  font-size: 0.76rem;
+}
+
+.main {
+  min-width: 0;
+}
+
+.loading,
+.emptyState {
+  padding: 1.5rem;
+  border: 1px dashed var(--line, #d9dfda);
+  border-radius: 0.75rem;
+  color: var(--muted, #65716b);
+}
+
+.sectionHint,
+.machineIntro,
+.subsectionHeader p,
+.emptyInline,
+.countLine,
+.sourceSummary {
+  color: var(--muted, #65716b);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.sectionHint {
+  margin: 0 0 1rem;
+}
+
+.machineList {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.machine {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--line, #d9dfda);
+  border-radius: 0.7rem;
+}
+
+.machine legend {
+  padding: 0 0.45rem;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.machineHeader,
+.subsectionHeader,
+.formActions,
+.formActionsEnd,
+.snapshotStatus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.machineIntro {
+  margin: 0 0 0.8rem;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+}
+
+.sourcedField {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+}
+
+.evidenceState {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.evidenceState label {
+  font-size: 0.83rem;
+  font-weight: 650;
+}
+
+.evidenceState select {
+  width: 100%;
+  min-height: 2.65rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--line, #cbd3cd);
+  border-radius: 0.45rem;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+.sourceSummary {
+  margin: 0;
+}
+
+.unknownValue {
+  margin: 0;
+}
+
+.sourceDetails {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.9rem;
+  margin-top: 0.9rem;
+  border-left: 3px solid #c99b4f;
+  background: #fbf8f0;
+}
+
+.sourceDetails .sectionHint {
+  margin: 0;
+}
+
+.textarea {
+  display: block;
+  width: 100%;
+  min-height: 5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line, #cbd3cd);
+  border-radius: 0.45rem;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.subsection {
+  display: grid;
+  gap: 0.8rem;
+  padding-top: 1.1rem;
+  margin-top: 1.1rem;
+  border-top: 1px solid var(--line, #e0e5e1);
+}
+
+.subsectionHeader {
+  align-items: start;
+}
+
+.subsectionHeader h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.subsectionHeader p {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+}
+
+.emptyInline {
+  margin: 0;
+}
+
+.rowList {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.rowCard,
+.constraintCard,
+.noteRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.8rem;
+  padding: 0.85rem;
+  border: 1px solid #e0e5e1;
+  border-radius: 0.6rem;
+  background: #fafbfa;
+}
+
+.noteRow {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.constraintCard {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.noteRow > :first-child {
+  min-width: 0;
+}
+
+.formActions {
+  flex-wrap: wrap;
+  padding-top: 0.5rem;
+}
+
+.formActionsEnd {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.countLine {
+  margin: 0.75rem 0 0;
+}
+
+.snapshotStatus {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.error,
+.notice,
+.partialCreate {
+  padding: 0.8rem 1rem;
+  margin: 0;
+  border-radius: 0.55rem;
+  line-height: 1.45;
+}
+
+.error {
+  border: 1px solid #dcaaa4;
+  background: #fff1ef;
+  color: #802b22;
+}
+
+.notice {
+  border: 1px solid #9fc3ac;
+  background: #eef8f1;
+  color: #1d6339;
+}
+
+.partialCreate {
+  padding: 0.7rem;
+  margin-bottom: 1rem;
+  border: 1px solid #e4c67e;
+  background: #fff9e8;
+  color: #694e14;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(10rem, 13rem) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .layout,
+  .layout:has(> .main:first-child) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: static;
+  }
+
+  .profileList {
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  }
+
+  .fields,
+  .rowCard,
+  .constraintCard,
+  .noteRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .machine {
+    padding: 0.8rem;
+  }
+
+  .machineHeader,
+  .subsectionHeader {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .snapshotStatus {
+    justify-content: flex-start;
+  }
+
+  .formActions,
+  .formActionsEnd {
+    width: 100%;
+  }
+
+  .formActionsEnd {
+    justify-content: stretch;
+  }
+
+  .formActionsEnd > button,
+  .formActions > button {
+    flex: 1;
+  }
+}

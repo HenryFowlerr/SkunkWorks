@@ -15,7 +15,8 @@ function safeReturnPath(value: string | null) {
     const target = new URL(value, window.location.origin);
     if (target.origin !== window.location.origin) return null;
     const allowed = ["/studio", "/workshops", "/invites/redeem"];
-    if (!allowed.some((prefix) => target.pathname === prefix || target.pathname.startsWith(`${prefix}/`))) return null;
+    const inviteTokenRoute = /^\/invite\/[A-Za-z0-9_-]+$/.test(target.pathname);
+    if (!inviteTokenRoute && !allowed.some((prefix) => target.pathname === prefix || target.pathname.startsWith(`${prefix}/`))) return null;
     return `${target.pathname}${target.search}${target.hash}`;
   } catch {
     return null;

@@ -25,6 +25,32 @@ export default function HomePage() {
         <p className="welcome-note">Early prototype · A reviewed guide is a reference, not a machine-control instruction.</p>
       </section>
 
+      <section className="demo-access" aria-labelledby="demo-access-title">
+        <div>
+          <p className="eyebrow">Original synthetic inputs</p>
+          <h2 id="demo-access-title">Explore the authored sample packets</h2>
+          <p>Each packet includes its matching drawing, final model and bend manifest. They are source files for a real job upload; downloading them does not create a job or claim a live AI run.</p>
+        </div>
+        <div className="demo-packets">
+          <article className="demo-packet">
+            <h3>Sensor mount · SKW-SM-104 · Rev A</h3>
+            <nav aria-label="Sensor mount revision A sample files">
+              <a href="/demo/sensor-mount-alpha.drawing.pdf" download>Rev A · Drawing PDF</a>
+              <a href="/demo/sensor-mount-alpha.final.glb" download>Rev A · Final GLB model</a>
+              <a href="/demo/sensor-mount-alpha.bend.json" download>Rev A · Bend manifest</a>
+            </nav>
+          </article>
+          <article className="demo-packet">
+            <h3>Sensor mount · SKW-SM-205 · Rev B</h3>
+            <nav aria-label="Sensor mount revision B sample files">
+              <a href="/demo/sensor-mount-bravo.drawing.pdf" download>Rev B · Drawing PDF</a>
+              <a href="/demo/sensor-mount-bravo.final.glb" download>Rev B · Final GLB model</a>
+              <a href="/demo/sensor-mount-bravo.bend.json" download>Rev B · Bend manifest</a>
+            </nav>
+          </article>
+        </div>
+      </section>
+
       <aside className="welcome-identity" aria-label="Bend identity example">
         <div className="identity-heading"><span className="status-dot" /> Sample bend identity</div>
         <div className="identity-row"><span className="eyebrow">Drawing</span><span className="mono">B4 · 92° internal</span></div>
@@ -56,6 +82,14 @@ export default function HomePage() {
         .button-secondary { border: 1px solid var(--line-strong); background: var(--surface); }
         .button-secondary:hover { background: var(--surface-muted); }
         .welcome-note { margin: 17px 0 0; color: var(--ink-muted); font-size: .79rem; }
+        .demo-access { max-width: 900px; border-top: 1px solid var(--line); padding-top: 20px; }
+        .demo-access h2 { margin: 6px 0 7px; font-size: 1.05rem; letter-spacing: -.02em; }
+        .demo-access > div:first-child > p:last-child { max-width: 660px; margin: 0; color: var(--ink-muted); font-size: .82rem; line-height: 1.55; }
+        .demo-packets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; margin-top: 14px; }
+        .demo-packet { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px; background: rgb(255 254 250 / 62%); }
+        .demo-packet h3 { margin: 0 0 10px; font-size: .79rem; font-weight: 640; }
+        .demo-packet nav { display: flex; flex-wrap: wrap; gap: 8px 13px; }
+        .demo-packet a { min-height: 38px; display: inline-flex; align-items: center; color: var(--ink); font-size: .75rem; text-underline-offset: 3px; }
         .welcome-identity { max-width: 700px; display: grid; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgb(255 254 250 / 62%); padding: 16px 19px; }
         .identity-heading { display: flex; align-items: center; gap: 9px; margin-bottom: 3px; font-size: .78rem; font-weight: 630; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
@@ -64,7 +98,7 @@ export default function HomePage() {
         .identity-rule { height: 1px; background: var(--line); }
         .welcome-footer { display: flex; align-items: center; gap: 12px; margin-top: 45px; color: var(--ink-muted); font-size: .7rem; letter-spacing: .02em; }
         .footer-line { width: 35px; height: 1px; background: var(--line-strong); }
-        @media (max-width: 520px) { .welcome-shell { padding-inline: 21px; } .welcome-topbar > .eyebrow { font-size: .62rem; } .welcome-content h1 { max-width: 350px; font-size: clamp(3rem, 16vw, 4.3rem); } .identity-row { align-items: flex-start; flex-direction: column; gap: 3px; } .welcome-footer { flex-wrap: wrap; margin-top: 26px; } }
+        @media (max-width: 620px) { .welcome-shell { padding-inline: 21px; } .welcome-topbar > .eyebrow { font-size: .62rem; } .welcome-content h1 { max-width: 350px; font-size: clamp(3rem, 16vw, 4.3rem); } .demo-packets { grid-template-columns: 1fr; } .demo-packet a { min-height: 44px; } .identity-row { align-items: flex-start; flex-direction: column; gap: 3px; } .welcome-footer { flex-wrap: wrap; margin-top: 26px; } }
       `}</style>
     </main>
   );
