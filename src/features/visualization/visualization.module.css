@@ -1,0 +1,250 @@
+.scene {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  color: var(--ink);
+}
+.sceneToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sceneEyebrow {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.sceneReadout {
+  margin: 3px 0 0;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+.sceneControls {
+  display: flex;
+  gap: 4px;
+}
+.sceneViewport {
+  position: relative;
+  width: 100%;
+  min-height: 300px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: #f6f5f0;
+}
+.sceneCanvasHost, .modelCanvasHost {
+  position: absolute;
+  inset: 0;
+}
+.sceneCanvasHost { z-index: 0; }
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  outline-offset: -4px;
+  touch-action: pan-y;
+}
+.scenePlaceholder, .sceneError, .modelPlaceholder, .modelError {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  min-height: 300px;
+  place-items: center;
+  padding: 20px;
+  color: var(--ink-muted);
+  text-align: center;
+}
+.sceneError, .modelError {
+  color: var(--red);
+  background: var(--red-soft);
+}
+.sceneLoading {
+  display: grid;
+  min-height: 240px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--ink-muted);
+  background: var(--surface);
+  font-size: 0.84rem;
+}
+.sceneCaption {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  min-height: 28px;
+  font-size: 0.8rem;
+}
+.referenceMarker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--blue);
+  font-weight: 650;
+}
+.referenceMarker > span {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--blue-soft);
+}
+.reviewNotice {
+  color: var(--amber);
+  font-weight: 650;
+}
+.sceneLimit {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+.modelViewer {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.modelViewport {
+  position: relative;
+  min-height: 320px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: #f6f5f0;
+}
+.modelCanvasHost { z-index: 0; }
+.modelOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  color: var(--ink-muted);
+  text-align: center;
+}
+.modelError { z-index: 2; }
+.modelViewport .canvas {
+  min-height: 320px;
+}
+.modelToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.modelControls {
+  display: flex;
+  gap: 4px;
+}
+.modelNote {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+.mapEditor {
+  display: grid;
+  gap: 14px;
+}
+.mapSection {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.mapSection h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.mapGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.mapGridThree {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.mapList {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mapListItem {
+  display: grid;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 11px;
+  background: var(--surface);
+}
+.mapListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.mapInlineLabel {
+  display: grid;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 630;
+}
+.mapInlineLabel input, .mapInlineLabel select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 8px 9px;
+  color: var(--ink);
+  background: var(--surface);
+}
+.mapHelp {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+.mapError {
+  margin: 0;
+  color: var(--red);
+  font-size: 0.8rem;
+}
+.mapPreview {
+  display: grid;
+  gap: 8px;
+}
+.previewNav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.mapHint {
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--amber);
+  background: var(--amber-soft);
+  font-size: 0.78rem;
+}
+@media (max-width: 560px) {
+  .sceneViewport, .canvas, .scenePlaceholder, .sceneError, .modelViewport, .modelViewport .canvas,
+  .modelPlaceholder, .modelError {
+    min-height: 250px;
+  }
+  .mapGrid {
+    grid-template-columns: 1fr;
+  }
+}
