@@ -20,3 +20,13 @@ The product and engineering boundary are recorded in `docs/product/overview.md`,
 - Use immutable release snapshots and `expectedVersion` for mutable writes. Show actual server errors and do not convert fixture behavior into deployment success.
 - Respect `docs/integration/protocol.md`: inspect before editing, use isolated worktrees, review diffs, merge current main, run relevant checks, and never force-push.
 - Tests and checks are required when a task asks for verification. Record the exact command and outcome.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
