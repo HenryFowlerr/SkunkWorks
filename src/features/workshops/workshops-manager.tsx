@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 
-import type { EvidenceRef, EvidenceState, Id, Machine, Role, WorkshopSnapshot } from "@/contracts";
+import type { EvidenceRef, EvidenceState, Id, Machine, MachineInput, Role, WorkshopSnapshot } from "@/contracts";
 import { api } from "@/lib/api/client";
 import { Button, Field, Panel, PanelBody, StatusBadge, TextInput } from "@/components/ui";
 
@@ -122,7 +122,7 @@ function firstValidationError(name: string, editors: MachineEditor[]): string | 
   return null;
 }
 
-function toMachinePayload(editors: MachineEditor[]): Machine[] {
+function toMachinePayload(editors: MachineEditor[]): MachineInput[] {
   return editors.map((editor) => {
     const rawLength = editor.usableBendLengthMm.trim();
     let usableBendLengthMm: Machine["usableBendLengthMm"];
@@ -174,7 +174,7 @@ function toMachinePayload(editors: MachineEditor[]): Machine[] {
         name: tool.name.trim(),
         specification: tool.specification?.trim() || null,
       })),
-      notes: editor.notes.map((note) => ({ ...note, text: note.text.trim() })),
+      notes: editor.notes.map((note) => ({ id: note.id, text: note.text.trim(), source: note.source })),
       approvedOrderConstraints: editor.approvedOrderConstraints.map((constraint) => ({
         ...constraint,
         beforeBendId: constraint.beforeBendId.trim(),
@@ -423,7 +423,7 @@ function MachineEditorForm({
         <div className={styles.subsectionHeader}>
           <div><h3>Process notes</h3><p>New or edited notes remain unconfirmed until the server confirms the profile.</p></div>
           <Button tone="secondary" small type="button" onClick={() => update({
-            notes: [...machine.notes, { id: createId(), text: "", confirmedBy: null }],
+            notes: [...machine.notes, { id: createId(), text: "", authorId: null, createdAt: null, source: null, confirmedBy: null }],
           })}>Add note</Button>
         </div>
         {machine.notes.length === 0 ? <p className={styles.emptyInline}>No process notes recorded.</p> : null}

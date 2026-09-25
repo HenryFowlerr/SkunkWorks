@@ -125,7 +125,15 @@ describe("workshop profile manager", () => {
       id: savedSnapshotId,
       version: 2,
       name: input.name,
-      machines: input.machines,
+      machines: input.machines.map((inputMachine) => ({
+        ...inputMachine,
+        notes: inputMachine.notes.map((note) => ({
+          ...note,
+          authorId: null,
+          createdAt: "2026-09-26T01:00:00.000Z",
+          confirmedBy: null,
+        })),
+      })),
     }));
 
     render(<WorkshopsManager workspaceId={workspaceId} role="fabricator" />);
@@ -153,7 +161,8 @@ describe("workshop profile manager", () => {
     const savedMachine = savedInput?.machines[0];
     expect(savedMachine?.tools).toHaveLength(2);
     expect(savedMachine?.tools[0]?.specification).toBe("90 degree, 12 mm opening");
-    expect(savedMachine?.notes[0]?.confirmedBy).toBeNull();
+    expect(savedMachine?.notes[0]).not.toHaveProperty("confirmedBy");
+    expect(savedMachine?.notes[0]?.source).toBeNull();
     expect(savedMachine?.approvedOrderConstraints[0]?.noteId).toBe(savedMachine?.notes[0]?.id);
   });
 
