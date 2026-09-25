@@ -71,8 +71,10 @@ type Actor = {id: Id; displayName: string;
 
 type Asset = {id: Id; jobId: Id; releaseId: Id | null; kind: 'drawing_pdf' | 'model_glb' |
   'bend_manifest' | 'issue_photo'; filename: string; mimeType: string;
-  byteSize: number; sha256: string; version: number;
+  byteSize: number; sha256: string | null; version: number;
   status: 'pending' | 'ready' | 'failed'; drawingRevision: string | null};
+
+`sha256` is null while an upload is pending or has failed. A `ready` asset must have a valid 64-character hexadecimal digest computed by the server after verifying the stored bytes; the browser's claimed hash is not trusted. A published release may only reference ready, server-verified source assets.
 
 type Machine = {id: Id; name: string; process: string; model: string | null;
   usableBendLengthMm: SourcedValue<number>;
@@ -124,8 +126,11 @@ type Release = {id: Id; jobId: Id; revisionNumber: number;
   publishedAt: string; publishedBy: Id; supersedesReleaseId: Id | null;
   allowPredecessorVisitors: boolean};
 type ReleaseView = {job: Job; release: Release;
+  sourceAssets: Asset[];
   replacementReleaseId: Id | null; canFollowReplacement: boolean; actor: Actor;
   permissions: {canAsk: boolean; canFlag: boolean; canRespond: boolean}};
+
+`ReleaseView.sourceAssets` contains exactly the source assets named by `release.snapshot.sourceAssetIds`. The server resolves those IDs only within the same job; each returned item is a ready source asset (`releaseId: null`) with a server-verified digest. The DTO contains no storage path or bearer URL. The browser requests each authorized, expiring URL separately through `assets.getLink`.
 
 type ContextRef = {jobId: Id; releaseId: Id | null;
   draftId: Id | null; draftVersion: number | null;
