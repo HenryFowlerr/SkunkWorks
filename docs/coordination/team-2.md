@@ -15,8 +15,8 @@
 
 ## Verification
 
-- `npm test` — passed, 9 test files / 64 tests.
-- `npm run check` — passed: TypeScript, ESLint, tests (9 files / 64 tests), and Next.js production build.
+- `npm test` — passed, 9 test files / 66 tests (rerun 2026-09-26).
+- `npm run check` — passed: TypeScript, ESLint, tests (9 files / 66 tests), and Next.js production build. TEAM-1 independently reran the combined check on the same contract plus backend-WIP tree and confirmed the 66-test count.
 - `git diff --cached --check` — passed before the contract commit.
 - Validation was run after merging Team 1's `afb3365` Vitest alias commit. No contract-only override remains.
 - The contract milestone does not verify a real Supabase project, live OpenAI call, private object upload, deployment, QR scan, or cross-device state.
@@ -31,7 +31,7 @@
 
 ## Current backend state and next work
 
-The contract milestone is separate from ongoing Team 2 backend/auth/API/Supabase work in the worktree; those files were not included in commit `4a7cd09`. No active dedicated SkunkWorks Supabase project or credentials were available at the last account inspection. No project was created or changed and no migration was applied. Therefore persistence, authentication, storage, AI generation, routes, and live permissions remain unverified; the explicit unavailable transport must stay in place until real handlers are integrated.
+The contract milestone is separate from ongoing Team 2 backend/auth/API/Supabase work in the worktree; those files were not included in commit `4a7cd09`. The current production build exposes `/`, auth sign-in/up/out, `/api/me`, and `/auth/callback`; studio/floor pages and core job/upload/draft/release/flag handlers are not yet present. No active dedicated SkunkWorks Supabase project or credentials were available at the last account inspection. No project was created or changed and no migration was applied. Therefore persistence, authentication, storage, AI generation, routes, and live permissions remain unverified; the explicit unavailable transport must stay in place until real handlers are integrated.
 
 Next bounded work: continue the owned backend implementation after confirming the shared project and credentials through the authorized account path; complete upload-byte verification/finalization and release source-asset authorization, then integrate routes against the v1.0 schemas. Do not claim live behavior from fixtures or the contract-only client.
 
