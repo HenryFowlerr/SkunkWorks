@@ -251,12 +251,14 @@ function BendMapEditorForm({ value, bends, onChange, readOnly = false }: BendMap
                 <h3>Panel model</h3>
                 <div className={styles.mapGrid}>
                   <TextInput
+                    id="panel-reference-face-label"
                     label="Reference-face label"
                     value={model.referenceFaceLabel}
                     onChange={(event) => updateModelLabel('referenceFaceLabel', event.currentTarget.value)}
                     disabled={readOnly}
                   />
                   <TextInput
+                    id="panel-thickness-mm"
                     label="Sheet thickness (mm)"
                     type="number"
                     min="0.1"
