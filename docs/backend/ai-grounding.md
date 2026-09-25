@@ -1,0 +1,56 @@
+# AI evidence and provider boundary
+
+The live provider is the OpenAI Responses API. `OPENAI_API_KEY` and `OPENAI_MODEL` are read only by `src/server/ai/openai.ts`; there is no model default, browser adapter, or mock fallback. `OPENAI_TIMEOUT_MS` accepts 1,000–50,000 ms (default 25,000), and `OPENAI_PDF_DETAIL` accepts `auto`, `low`, or `high` (default `high`). The adapter disables SDK retries and requests `store: false`. Successful generation and question routes pass the nonempty configured model identifier to internal persistence. It remains server-side metadata and is not added to the public `Generation` or `Answer` DTO.
+
+The caller must first authorize the job/release, load its exact source assets from private storage, and assemble `PdfEvidenceFile` plus grounding sources. The adapter does not fetch a client URL or choose assets. Each PDF includes trusted 1-based page count and page text extracted by the server; the model also receives the actual PDF bytes through a Responses `input_file`. A document citation is accepted only for an allowlisted uploaded asset and a page with trusted extracted text, and its excerpt must be a verbatim substring of that page after whitespace/Unicode normalization. The Responses file-input guide documents PDF page text and page images, the `detail` control, the `user_data` upload purpose when uploaded file IDs are used, and the 50 MB combined input limit: [OpenAI file inputs](https://developers.openai.com/api/docs/guides/file-inputs).
+
+Workshop-note citations must resolve to a confirmed note on the exact selected workshop snapshot and machine. Human-clarification sources must be loaded by the server from the immutable clarification record. The model receives source keys, labels and evidence text, never a storage path or bearer token. Pages with no extracted text are explicitly listed as unreadable; even though the PDF input may contain their visual pages, the prompt tells the model not to use those visuals as evidence. Such a page cannot support a citation until OCR or another trusted extraction path exists. GLB bytes are not passed to this semantic adapter and are never treated as bend topology. Bend and hinge IDs come from the selected explicit manifest or a matching server-saved mapping; step IDs are minted by the server. The adapter rejects any model-returned bend/step ID outside those allowlists. The current manifest contains no fold rotation, so the service supplies a missing value unless an authorised evidence/review path establishes it; the model never infers or changes it.
+
+Generation and Q&A are separate prompts and JSON Schemas. The Responses API `text.format` Structured Outputs form constrains the response shape; OpenAI documents that schema adherence is different from JSON mode, but schema validity does not prove engineering truth: [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs). Local Zod and domain-schema checks still run. Each supported fact, step instruction, machine proposal and supported answer must cite at least one exact excerpt. Conflicts require two distinct cited excerpts and cannot carry a chosen fact value. `not_found` and `unreadable` facts must carry null values and no citations. Unavailable angle conventions and units remain missing rather than inferred. Numeric claims in generated instructions, rationales and Q&A must occur in a cited excerpt; finished angles also need an explicit degree marker and convention wording, and radii need an explicit millimetre marker.
+
+The adapter reports absent credentials/model configuration, provider timeout, provider/network/model-feature failure, refusal, malformed output and locally rejected unsupported claims as separate internal error codes. The API layer should map provider failures to the v1.0 error envelope (`PROVIDER_TIMEOUT` for timeout; `PROVIDER_UNAVAILABLE` for other provider/configuration/refusal/output/grounding failures) while persisting its own safe diagnostic code. Do not log raw provider error objects, credentials, PDF bytes, extracted source packets, user questions, or model output. Never return raw provider errors to clients.
+
+## Generation route and trusted inputs
+
+`POST /api/jobs/[jobId]/generate` is a synchronous server operation with a 60-second route budget. It requires an active designer/admin workspace role, a same-origin JSON request, `Idempotency-Key`, and `expectedJobVersion`. The persistence adapter atomically claims the key and creates a request-bound running generation. Duplicate in-flight keys return `GENERATION_RUNNING`; completed keys replay the stored success; failed keys replay a sanitized failure. The provider call is awaited, and success or failure is written before the route returns.
+
+`POST /api/questions` also requires `Idempotency-Key`. Member and release-visitor repositories bind the key to the exact question payload, return a stored answer when one exists, and the route replays that answer without another provider call. A provider failure leaves the question unanswered so retrying the same key can resume it. On a successful answer, the route stores the configured `modelIdentifier` with the internal answer persistence record while keeping it out of the public answer.
+
+Before calling the provider, the service reloads the job bundle, selected confirmed workshop snapshot and machine, and generation-bound ready job assets. It recomputes the input fingerprint and checks the stored generation fingerprint. A pre-existing draft is not required. The selected drawing PDFs and confirmed machine notes are the model evidence. One optional selected `bend_manifest` is parsed as strict JSON version 1.0:
+
+```json
+{
+  "manifestVersion": "1.0",
+  "panelModel": {
+    "schemaVersion": "1.0",
+    "units": "mm",
+    "thicknessMm": 2,
+    "rootPanelId": "P1",
+    "panels": [],
+    "hinges": [],
+    "origin": "authored_manifest",
+    "referenceFaceLabel": "Outside face"
+  },
+  "bends": [{ "bendId": "B1", "hingeId": "H1" }]
+}
+```
+
+`panelModel` is validated by `PanelModelInputSchema`; `bends` accepts only explicit bend-ID to hinge-ID mappings. Bend IDs must be unique and every non-null hinge ID must exist in the panel model. The parser ignores the submitted `origin` and derives `authored_manifest`; unknown fields, a forged `reviewed` field, duplicate mappings, unknown hinge pointers, unsupported versions and malformed JSON cannot create an approved map. The file is size-capped at 2 MB and loaded only through the generation-authorized private storage adapter after byte-size and SHA-256 verification. Its bytes are not sent to the model as an evidence source because contract v1.0 has no manifest evidence reference.
+
+The manifest supplies topology and identity only. It does not establish an engineering angle, bend direction, radius or signed fold rotation. The model sees only the explicit allowlisted bend/hinge identifiers and PDF text/images; signed rotations from the manifest remain `not_found` until supported through an authorised evidence/review path. If there is no manifest, a matching current server-saved mapping may provide only its topology and bend/hinge IDs; the service checks its input fingerprint and selected source/setup IDs and discards any saved fold-rotation evidence before generation. If neither mapping is available, or the selected manifest is malformed, invalid or ambiguous (multiple selected manifests), generation still uses the selected drawing/profile and persists an incomplete draft with an open blocking mapping finding instead of inferring bend topology from the PDF or GLB. A valid manifest with no bend mappings also creates an incomplete draft. The server mints step IDs only for explicit bend mappings.
+
+Generated panel models always have `reviewed: false`; `PanelModelInputSchema` rejects client-submitted review authority. There is currently no API operation that promotes a mapping to `reviewed: true`, so publication remains blocked until the review lane provides a server-authorised mapping review transition. The follow-up request to TEAM-3 documents this JSON format for the editor.
+
+`loadTrustedPdfEvidence` accepts only repository-authorized assets. It selects `drawing_pdf` files, loads them through the private-storage adapter, rechecks their byte size and SHA-256, and invokes `extractPdfEvidence`. It does not load GLB as semantic topology. Only confirmed notes from the selected machine and page text from the extracted PDFs are passed to the AI adapter. The PDF extractor enforces a strict 50,000,000-byte ceiling and a 100-page maximum, uses 1-based page numbers, and releases page/document resources on success or failure. Scanned pages with no selectable text remain empty and are explicitly marked unreadable in the prompt; they cannot support a citation until OCR is added.
+
+On completion, a single database operation locks the generation/job/draft, recomputes the current fingerprint and checks the original job and base-draft versions and expiry. Stale output is discarded and the generation expires; generated content cannot replace newer edits. Provider errors and preflight failures finalize the request’s generation and idempotency record with a safe diagnostic code. The successful generated draft starts with open findings, proposed machine-order decisions and no current reviews; the saved panel model is marked unreviewed so a human must approve the new technical content.
+
+Generation API behavior is covered by deterministic adapter tests, including first generation with no draft or manifest, valid and invalid manifests, persisted provider failures, idempotent replay and stale completion rejection. Live provider acceptance still requires a configured `OPENAI_API_KEY` and `OPENAI_MODEL`, a model deployment that supports PDF input plus strict Structured Outputs, a real authorized PDF/optional manifest/confirmed workshop snapshot, and a live database with the generation RPCs applied. These checks have not run in this environment.
+
+## Limits that need an explicit human check
+
+- Exact quote validation confirms the cited string exists on an authorized page; it cannot prove that the excerpt semantically supports every sentence around it. The design/process reviews remain mandatory.
+- Page text extraction must happen upstream. A page without trusted extracted text cannot support a model citation in this implementation and should become an `unreadable`/missing-data finding. This is deliberately conservative for scanned or handwritten drawings until a trusted OCR pipeline is added.
+- The structured output can make concise proposals, not certify manufacturability, infer arbitrary CAD topology, simulate press motion, or claim machine safety. Changes to a drawing or workshop source should be regenerated and reviewed.
+- The default high-detail PDF setting can surface a configured model that lacks the required PDF/vision or structured-output capability as a real provider failure. No model availability is assumed here; live acceptance must use the model configured for the environment.
+- Model availability, credentials, production hosting time budget, and a live drawing run were not available to this adapter implementation environment. Those remain integration checks.

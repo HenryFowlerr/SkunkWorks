@@ -188,6 +188,12 @@ export const UploadPreparationSchema = z.object({
 }).strict();
 export type UploadPreparation = z.infer<typeof UploadPreparationSchema>;
 
+export const ResumeAssetUploadResultSchema = z.discriminatedUnion("state", [
+  z.object({ state: z.literal("ready"), asset: AssetSchema }).strict(),
+  z.object({ state: z.literal("upload_required"), preparation: UploadPreparationSchema }).strict(),
+]);
+export type ResumeAssetUploadResult = z.infer<typeof ResumeAssetUploadResultSchema>;
+
 export const UploadAssetPreparationBodySchema = z.object({
   kind: UploadAssetKindSchema,
   filename: nonEmptyString,
@@ -305,6 +311,9 @@ export type RevokeShareLinkResult = z.infer<typeof RevokeShareLinkResultSchema>;
 export const AskQuestionInputSchema = z.object({
   context: ContextRefSchema,
   question: nonEmptyString,
+  // Optional for v1.0 source compatibility. The typed client creates a key
+  // when omitted; callers should retain and reuse one for explicit retries.
+  idempotencyKey: IdempotencyKeySchema.optional(),
 }).strict();
 export type AskQuestionInput = z.infer<typeof AskQuestionInputSchema>;
 

@@ -9,6 +9,7 @@ import {
   AssetSchema,
   AuthSessionViewSchema,
   ConfirmWorkshopInputSchema,
+  CompleteAssetInputSchema,
   CreateDraftFromReleaseInputSchema,
   CreateFlagInputSchema,
   CreateGenerationInputSchema,
@@ -49,6 +50,7 @@ import {
   UpdateJobInputsSchema,
   UploadAssetKindSchema,
   UploadPreparationSchema,
+  ResumeAssetUploadResultSchema,
   UploadReleasePhotoPreparationBodySchema,
   UploadAssetPreparationBodySchema,
   WorkshopSnapshotSchema,
@@ -100,6 +102,7 @@ import type {
   SignUpResult,
   UpdateJobInputs,
   UploadAssetKind,
+  UploadPreparation,
   WorkspaceInvite,
   WorkspaceMembership,
   WorkshopSnapshot,
@@ -136,6 +139,8 @@ export class ApiClientError extends Error {
   readonly retryable: boolean;
   readonly fieldErrors?: Record<string, string[]>;
   readonly status?: number;
+  /** Asset ID to pass to assets.completeUpload when a transfer/finalize response was lost. */
+  readonly resumeAssetId?: string;
 
   constructor(input: {
     code: ApiErrorCode;
@@ -143,6 +148,7 @@ export class ApiClientError extends Error {
     retryable: boolean;
     fieldErrors?: Record<string, string[]>;
     status?: number;
+    resumeAssetId?: string;
   }) {
     super(input.message);
     this.name = "ApiClientError";
@@ -150,6 +156,7 @@ export class ApiClientError extends Error {
     this.retryable = input.retryable;
     this.fieldErrors = input.fieldErrors;
     this.status = input.status;
+    this.resumeAssetId = input.resumeAssetId;
   }
 }
 
@@ -172,6 +179,180 @@ export const unavailableApiTransport: ApiTransport = {
     });
   },
 };
+
+export type FetchTransportOptions = {
+  /** Injectable fetch for deterministic transport tests; production uses `fetch`. */
+  fetchImpl?: typeof fetch;
+  /** Exact configured Supabase project URL. Uploads are rejected without it. */
+  supabaseUrl?: string;
+  /** Public project key; it is never a service-role credential. */
+  publishableKey?: string;
+};
+
+/**
+ * Real same-origin JSON transport plus credentialless upload to a short-lived
+ * private-storage URL. It never supplies fixture data. Fetch does not expose
+ * upload byte progress, so onProgress receives 1 only after completion.
+ */
+export function createFetchApiTransport(options: FetchTransportOptions = {}): ApiTransport {
+  const fetchImpl = options.fetchImpl ?? ((input: RequestInfo | URL, init?: RequestInit) =>
+    globalThis.fetch(input, init));
+  const expectedStorageOrigin = (() => {
+    try {
+      return options.supabaseUrl ? new URL(options.supabaseUrl).origin : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  return {
+    async request(request) {
+      if (!request.path.startsWith("/api/") || request.path.startsWith("//")) {
+        throw new ApiClientError({
+          code: "VALIDATION_FAILED",
+          message: "API requests must use a same-origin /api route.",
+          retryable: false,
+        });
+      }
+
+      const headers: Record<string, string> = {
+        Accept: "application/json",
+        ...request.headers,
+      };
+      const init: RequestInit = {
+        method: request.method,
+        headers,
+        credentials: "same-origin",
+        cache: "no-store",
+        redirect: "error",
+      };
+      if (request.body !== undefined) {
+        headers["Content-Type"] = "application/json";
+        init.body = JSON.stringify(request.body);
+      }
+
+      let response: Response;
+      try {
+        response = await fetchImpl(request.path, init);
+      } catch {
+        throw new ApiClientError({
+          code: "ENDPOINT_UNAVAILABLE",
+          message: "The same-origin API could not be reached.",
+          retryable: true,
+        });
+      }
+
+      if (!response.headers.get("content-type")?.toLowerCase().includes("json")) {
+        throw new ApiClientError({
+          code: response.status === 404 ? "ENDPOINT_UNAVAILABLE" : "VALIDATION_FAILED",
+          message: response.status === 404
+            ? "This same-origin API route is not implemented."
+            : "The API returned a non-JSON response outside contract version 1.0.",
+          retryable: response.status >= 500,
+          status: response.status,
+        });
+      }
+
+      try {
+        return await response.json() as unknown;
+      } catch {
+        throw new ApiClientError({
+          code: "VALIDATION_FAILED",
+          message: "The API returned invalid JSON outside contract version 1.0.",
+          retryable: false,
+          status: response.status,
+        });
+      }
+    },
+
+    async upload(request) {
+      const url = new URL(request.url);
+      const localHost = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(url.hostname);
+      const tokens = url.searchParams.getAll("token");
+      if (
+        !expectedStorageOrigin ||
+        url.origin !== expectedStorageOrigin ||
+        !url.pathname.includes("/storage/v1/object/upload/sign/") ||
+        tokens.length !== 1 ||
+        !tokens[0] ||
+        url.hash ||
+        (url.protocol !== "https:" && !(url.protocol === "http:" && localHost)) ||
+        url.username ||
+        url.password
+      ) {
+        throw new ApiClientError({
+          code: "VALIDATION_FAILED",
+          message: "The private upload URL is not a signed URL for the configured storage project.",
+          retryable: false,
+        });
+      }
+
+      const incomingHeaders = Object.entries(request.headers);
+      const publishableHeader = incomingHeaders.find(([name]) => name.toLowerCase() === "apikey")?.[1];
+      const upsertHeader = incomingHeaders.find(([name]) => name.toLowerCase() === "x-upsert")?.[1];
+      const hasUnsafeHeader = incomingHeaders.some(([name]) =>
+        !["apikey", "x-upsert", "content-type"].includes(name.toLowerCase()),
+      );
+      if (
+        hasUnsafeHeader ||
+        !options.publishableKey ||
+        publishableHeader !== options.publishableKey ||
+        upsertHeader !== "false"
+      ) {
+        throw new ApiClientError({
+          code: "VALIDATION_FAILED",
+          message: "The private upload instructions contain unexpected credentials or headers.",
+          retryable: false,
+        });
+      }
+
+      let response: Response;
+      const body = new FormData();
+      body.append("cacheControl", "3600");
+      body.append("", request.file);
+      // The multipart boundary is generated by fetch. The file part retains
+      // its own MIME type from the File object.
+      const headers = Object.fromEntries(
+        Object.entries(request.headers).filter(([name]) => name.toLowerCase() !== "content-type"),
+      );
+      try {
+        response = await fetchImpl(url.toString(), {
+          method: request.method,
+          headers,
+          body,
+          credentials: "omit",
+          cache: "no-store",
+          redirect: "error",
+          referrerPolicy: "no-referrer",
+        });
+      } catch {
+        throw new ApiClientError({
+          code: "ENDPOINT_UNAVAILABLE",
+          message: "The private storage upload could not be reached.",
+          retryable: true,
+        });
+      }
+
+      if (!response.ok) {
+        const status = response.status;
+        throw new ApiClientError({
+          code: status === 401 || status === 403
+            ? "FORBIDDEN"
+            : status === 413 || status === 415
+              ? "UNSUPPORTED_ASSET"
+              : status >= 500
+                ? "PROVIDER_UNAVAILABLE"
+                : "VALIDATION_FAILED",
+          message: "Private storage rejected the upload.",
+          retryable: status === 408 || status === 429 || status >= 500,
+          status,
+        });
+      }
+
+      request.onProgress?.(1);
+    },
+  };
+}
 
 async function requestData<TData>(
   transport: ApiTransport,
@@ -224,6 +405,63 @@ function queryPath(path: string, entries: Record<string, string | undefined>) {
 export function createApiClient(transport: ApiTransport = unavailableApiTransport) {
   const call = <TData>(request: ApiTransportRequest, schema: z.ZodType<TData>) =>
     requestData(transport, request, schema);
+
+  const completePreparedUpload = async (assetId: Id): Promise<Asset> => call({
+    method: "POST",
+    path: `/api/assets/${encodeURIComponent(assetId)}/complete`,
+    body: {},
+  }, AssetSchema);
+
+  const resumePreparedUpload = async (
+    assetId: Id,
+    file: File,
+    onProgress?: (progress: number) => void,
+  ): Promise<Asset> => {
+    const resumed = await call({
+      method: "POST",
+      path: `/api/assets/${encodeURIComponent(assetId)}/resume`,
+      body: {},
+    }, ResumeAssetUploadResultSchema);
+    if (resumed.state === "ready") return resumed.asset;
+    await transport.upload({ ...resumed.preparation.upload, file, onProgress });
+    return completePreparedUpload(assetId);
+  };
+
+  const uploadAndComplete = async (
+    prepared: UploadPreparation,
+    file: File,
+    onProgress?: (progress: number) => void,
+  ): Promise<Asset> => {
+    try {
+      await transport.upload({ ...prepared.upload, file, onProgress });
+    } catch (uploadError) {
+      // A storage PUT may have landed even when its response was lost. First
+      // ask the server to verify/finalize that exact object before retrying it.
+      try {
+        return await completePreparedUpload(prepared.assetId);
+      } catch {
+        if (uploadError instanceof ApiClientError && !canResumeUpload(uploadError)) {
+          throw uploadError;
+        }
+        try {
+          return await resumePreparedUpload(prepared.assetId, file, onProgress);
+        } catch (resumeError) {
+          throw withResumeAssetId(resumeError, prepared.assetId);
+        }
+      }
+    }
+
+    try {
+      return await completePreparedUpload(prepared.assetId);
+    } catch (error) {
+      if (error instanceof ApiClientError && !canResumeUpload(error)) throw error;
+      try {
+        return await resumePreparedUpload(prepared.assetId, file, onProgress);
+      } catch (resumeError) {
+        throw withResumeAssetId(resumeError, prepared.assetId);
+      }
+    }
+  };
 
   return {
     auth: {
@@ -322,12 +560,7 @@ export function createApiClient(transport: ApiTransport = unavailableApiTranspor
           headers: idempotencyHeaders(key),
           body,
         }, UploadPreparationSchema);
-        await transport.upload({ ...prepared.upload, file, onProgress });
-        return call({
-          method: "POST",
-          path: `/api/assets/${encodeURIComponent(prepared.assetId)}/complete`,
-          body: {},
-        }, AssetSchema);
+        return uploadAndComplete(prepared, file, onProgress);
       },
       async uploadReleasePhoto(input: {
         releaseId: Id;
@@ -345,13 +578,18 @@ export function createApiClient(transport: ApiTransport = unavailableApiTranspor
           path: `/api/releases/${encodeURIComponent(releaseId)}/photos`,
           headers: idempotencyHeaders(key),
           body,
-        }, UploadPreparationSchema);
-        await transport.upload({ ...prepared.upload, file, onProgress });
-        return call({
-          method: "POST",
-          path: `/api/assets/${encodeURIComponent(prepared.assetId)}/complete`,
-          body: {},
-        }, AssetSchema);
+        }, ResumeAssetUploadResultSchema);
+        if (prepared.state === "ready") return prepared.asset;
+        return uploadAndComplete(prepared.preparation, file, onProgress);
+      },
+      completeUpload(input: { assetId: Id }): Promise<Asset> {
+        const parsed = CompleteAssetInputSchema.parse(input);
+        return completePreparedUpload(parsed.assetId);
+      },
+      resumeUpload(input: { assetId: Id; file: File; onProgress?: (progress: number) => void }): Promise<Asset> {
+        const parsed = z.object({ assetId: IdSchema }).strict().parse({ assetId: input.assetId });
+        if (!(input.file instanceof File)) throw new TypeError("assets.resumeUpload requires a browser File.");
+        return resumePreparedUpload(parsed.assetId, input.file, input.onProgress);
       },
       getLink(input: { assetId: Id }): Promise<AssetLink> {
         const parsed = z.object({ assetId: IdSchema }).strict().parse(input);
@@ -422,8 +660,14 @@ export function createApiClient(transport: ApiTransport = unavailableApiTranspor
     },
     questions: {
       ask(input: AskQuestionInput): Promise<Answer> {
-        const body = AskQuestionInputSchema.parse(input);
-        return call({ method: "POST", path: "/api/questions", body }, AnswerSchema);
+        const { idempotencyKey, ...body } = AskQuestionInputSchema.parse(input);
+        const key = idempotencyKey ?? globalThis.crypto.randomUUID();
+        return call({
+          method: "POST",
+          path: "/api/questions",
+          headers: idempotencyHeaders(key),
+          body,
+        }, AnswerSchema);
       },
     },
     flags: {
@@ -447,7 +691,33 @@ export function createApiClient(transport: ApiTransport = unavailableApiTranspor
   };
 }
 
-// The default export is intentionally unusable until real route handlers are
-// connected. Local fixtures do not become implicit application state.
-export const api = createApiClient(unavailableApiTransport);
+function canResumeUpload(error: ApiClientError): boolean {
+  return !["UNAUTHENTICATED", "FORBIDDEN", "RELEASE_REVOKED", "UNSUPPORTED_ASSET", "VALIDATION_FAILED"].includes(error.code);
+}
+
+function withResumeAssetId(error: unknown, assetId: Id): unknown {
+  if (error instanceof ApiClientError) {
+    return new ApiClientError({
+      code: error.code,
+      message: error.message,
+      retryable: error.retryable,
+      fieldErrors: error.fieldErrors,
+      status: error.status,
+      resumeAssetId: assetId,
+    });
+  }
+  return new ApiClientError({
+    code: "ENDPOINT_UNAVAILABLE",
+    message: "The private upload could not be completed. Resume it with the same file.",
+    retryable: true,
+    resumeAssetId: assetId,
+  });
+}
+
+// The default client uses real same-origin API routes and private upload URLs.
+// Missing handlers fail explicitly; local fixtures never become application state.
+export const api = createApiClient(createFetchApiTransport({
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+}));
 export type ApiClient = ReturnType<typeof createApiClient>;

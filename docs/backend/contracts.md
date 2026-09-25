@@ -5,7 +5,7 @@ Version 1.0 DTOs and runtime validators are exported from `src/contracts`. They 
 ## Trust boundaries
 
 - API responses use `{ data, meta }` or `{ error, meta }`. `meta.contractVersion` is exactly `1.0`; error codes on the wire are restricted to `ApiWireErrorCodeSchema`.
-- `ENDPOINT_UNAVAILABLE` is local client state. It is deliberately excluded from wire error envelopes. The default `api` currently uses `unavailableApiTransport` and rejects every request and upload; this contract milestone does not provide working service routes or pretend fixture-backed success.
+- `ENDPOINT_UNAVAILABLE` is local client state. It is deliberately excluded from wire error envelopes. The default `api` uses a real same-origin JSON fetch transport; when a route is still missing and Next returns an HTML 404, the client reports `ENDPOINT_UNAVAILABLE`. `unavailableApiTransport` remains available only for explicit tests; neither transport returns fixture-backed success.
 - Mutating methods with an idempotency key send it in the `Idempotency-Key` header and omit it from the request body. Expected-version values stay part of the typed request body.
 - Draft write schemas omit server authority fields such as `panelModel.reviewed`, proposal decisions, and finding resolution metadata. Server transitions must derive those fields from authenticated records.
 - `Asset.sha256` may be `null` while pending or failed. A ready asset requires a valid 64-character hexadecimal digest. Upload preparation returns only the asset ID and short-lived upload instructions; the server verifies stored bytes and computes the digest during completion.
@@ -20,7 +20,7 @@ The client groups methods under `auth`, `workspaces`, `workshops`, `jobs`, `asse
 ```ts
 api.releases.get({ releaseId }): Promise<ReleaseView>
 api.assets.getLink({ assetId }): Promise<AssetLink>
-api.questions.ask({ context, question }): Promise<Answer>
+api.questions.ask({ context, question, idempotencyKey }): Promise<Answer>
 api.flags.list({ jobId } | { releaseId }): Promise<Flag[]>
 api.flags.create({ context, question, photoAssetIds, idempotencyKey }): Promise<Flag>
 api.flags.acknowledge({ flagId, expectedVersion }): Promise<Flag>
@@ -28,7 +28,7 @@ api.flags.acknowledge({ flagId, expectedVersion }): Promise<Flag>
 
 `ReleaseView` includes `sourceAssets` metadata for the published snapshot's authorized source asset IDs; it does not include private storage URLs.
 
-`assets.uploadAsset` and `assets.uploadReleasePhoto` orchestrate prepare → private upload → server completion, with optional progress callbacks. They do not calculate or submit trusted checksums from browser input. `ApiTransport` is injectable for contract tests; it is not a persisted browser mock or enabled production fallback.
+`assets.uploadAsset` and `assets.uploadReleasePhoto` orchestrate prepare → private upload → server completion, with optional progress callbacks. Browser upload requests omit application cookies, disable cache/referrers, require HTTPS (or loopback development), and do not calculate or submit trusted checksums. The fetch transport can report completion but not byte-level upload progress. `ApiTransport` is injectable for contract tests; the production client uses real fetch and is not a persisted browser mock.
 
 ## Verification
 

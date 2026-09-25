@@ -1,0 +1,594 @@
+import "server-only";
+
+import { createHash } from "node:crypto";
+import {
+  AssetLinkSchema,
+  AssetSchema,
+  UploadPreparationSchema,
+  type Asset,
+  type Id,
+  type AssetLink,
+  type UploadPreparation,
+} from "@/contracts";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { DataAdapterError, throwDatabaseError } from "./errors";
+import type { AuthorizedPrivateAsset } from "./repository";
+
+export const PRIVATE_ASSET_BUCKET = "skunkworks-private" as const;
+const SIGNED_UPLOAD_TTL_SECONDS = 2 * 60 * 60;
+const SIGNED_DOWNLOAD_TTL_SECONDS = 5 * 60;
+
+type StoredAssetRow = {
+  id: Id;
+  workspace_id: Id;
+  job_id: Id;
+  release_id: Id | null;
+  kind: Asset["kind"];
+  filename: string;
+  mime_type: string;
+  byte_size: number;
+  sha256: string | null;
+  version: number;
+  status: Asset["status"];
+  drawing_revision: string | null;
+  storage_key: string;
+  uploaded_by_user_id: Id | null;
+  uploaded_by_visitor_session_id: Id | null;
+};
+
+type VisitorSessionRow = {
+  id: Id;
+  access_link_id: Id;
+  expires_at: string;
+  revoked_at: string | null;
+};
+export type PrivateStorageAdapter = {
+  prepareMemberSourceUpload(input: {
+    sessionClient: SupabaseClient;
+    workspaceId: Id;
+    jobId: Id;
+    assetId: Id;
+  }): Promise<UploadPreparation>;
+  prepareVisitorPhotoUpload(input: {
+    sessionToken: string;
+    releaseId: Id;
+    assetId: Id;
+  }): Promise<UploadPreparation>;
+  finalizeMemberAsset(input: {
+    workspaceId: Id;
+    jobId: Id;
+    assetId: Id;
+    actorId: Id;
+  }): Promise<Asset>;
+  finalizeVisitorPhoto(input: {
+    sessionToken: string;
+    releaseId: Id;
+    assetId: Id;
+  }): Promise<Asset>;
+  authorizeMemberAsset(input: {
+    workspaceId: Id;
+    jobId: Id;
+    assetId: Id;
+  }): Promise<AuthorizedPrivateAsset>;
+  authorizeVisitorAsset(input: {
+    sessionToken: string;
+    releaseId: Id;
+    assetId: Id;
+  }): Promise<AuthorizedPrivateAsset>;
+  streamAuthorizedAsset(asset: AuthorizedPrivateAsset): Promise<Response>;
+  loadAuthorizedAsset(asset: AuthorizedPrivateAsset): Promise<Uint8Array>;
+  createSignedAssetLink(asset: AuthorizedPrivateAsset): Promise<AssetLink>;
+  resumeMemberSourceUpload(input: {
+    sessionClient: SupabaseClient;
+    workspaceId: Id;
+    jobId: Id;
+    assetId: Id;
+  }): Promise<{ state: "ready"; asset: Asset } | { state: "upload_required"; preparation: UploadPreparation }>;
+  resumeVisitorPhotoUpload(input: {
+    sessionToken: string;
+    releaseId: Id;
+    assetId: Id;
+  }): Promise<{ state: "ready"; asset: Asset } | { state: "upload_required"; preparation: UploadPreparation }>;
+};
+
+export function createPrivateStorageAdapter(
+  options: { serviceClient: SupabaseClient; publishableKey: string; supabaseUrl: string },
+): PrivateStorageAdapter {
+  const { serviceClient, publishableKey, supabaseUrl } = options;
+  const config = { publishableKey, supabaseUrl };
+  return {
+    async prepareMemberSourceUpload({ sessionClient, workspaceId, jobId, assetId }) {
+      const { data: authData, error: authError } = await sessionClient.auth.getUser();
+      if (authError || !authData.user) {
+        throw new DataAdapterError("UNAUTHENTICATED", "A verified session is required.", {
+          cause: authError ?? undefined,
+        });
+      }
+
+      const { data, error } = await sessionClient
+        .from("assets")
+        .select("*")
+        .eq("id", assetId)
+        .eq("workspace_id", workspaceId)
+        .eq("job_id", jobId)
+        .eq("status", "pending")
+        .maybeSingle();
+      throwDatabaseError(error, "read prepared asset");
+      const row = data as StoredAssetRow | null;
+      if (
+        !row ||
+        row.kind === "issue_photo" ||
+        row.uploaded_by_user_id !== authData.user.id ||
+        row.uploaded_by_visitor_session_id !== null
+      ) {
+        throw new DataAdapterError("FORBIDDEN", "The prepared upload is not available to this actor.");
+      }
+
+      return createSignedUploadInstruction(sessionClient, config, row);
+    },
+
+    async resumeMemberSourceUpload(input) {
+      const { sessionClient, workspaceId, jobId, assetId } = input;
+      const { data: authData, error: authError } = await sessionClient.auth.getUser();
+      if (authError || !authData.user) {
+        throw new DataAdapterError("UNAUTHENTICATED", "A verified session is required.", {
+          cause: authError ?? undefined,
+        });
+      }
+      const { data, error } = await sessionClient.from("assets").select("*")
+        .eq("id", assetId).eq("workspace_id", workspaceId).eq("job_id", jobId).maybeSingle();
+      throwDatabaseError(error, "read asset upload state");
+      const row = data as StoredAssetRow | null;
+      if (!row || row.kind === "issue_photo" || row.uploaded_by_user_id !== authData.user.id) {
+        throw new DataAdapterError("NOT_FOUND", "Asset not found.");
+      }
+      if (row.status === "ready" && row.sha256) return { state: "ready", asset: mapAsset(row) };
+      if (row.status !== "pending") throw new DataAdapterError("VERSION_CONFLICT", "Asset upload is no longer pending.");
+
+      const { data: exists, error: existsError } = await serviceClient.storage
+        .from(PRIVATE_ASSET_BUCKET).exists(row.storage_key);
+      if (existsError) throwDatabaseError(existsError, "check pending uploaded object");
+      if (exists) {
+        const asset = await finalizePendingAsset(serviceClient, row);
+        return { state: "ready", asset };
+      }
+
+      return {
+        state: "upload_required",
+        preparation: await createSignedUploadInstruction(sessionClient, config, row),
+      };
+    },
+
+    async prepareVisitorPhotoUpload({ sessionToken, releaseId, assetId }) {
+      const session = await findLiveVisitorSession(serviceClient, sessionToken, releaseId);
+      const { data, error } = await serviceClient
+        .from("assets")
+        .select("*")
+        .eq("id", assetId)
+        .eq("release_id", releaseId)
+        .eq("status", "pending")
+        .maybeSingle();
+      throwDatabaseError(error, "read prepared visitor photo");
+      const row = data as StoredAssetRow | null;
+      if (
+        !row ||
+        row.kind !== "issue_photo" ||
+        row.uploaded_by_visitor_session_id !== session.id ||
+        row.uploaded_by_user_id !== null
+      ) {
+        throw new DataAdapterError("FORBIDDEN", "The prepared photo is not bound to this release session.");
+      }
+
+      return createSignedUploadInstruction(serviceClient, config, row);
+    },
+
+    async resumeVisitorPhotoUpload({ sessionToken, releaseId, assetId }) {
+      const session = await findLiveVisitorSession(serviceClient, sessionToken, releaseId);
+      const { data, error } = await serviceClient.from("assets").select("*")
+        .eq("id", assetId).eq("release_id", releaseId).maybeSingle();
+      throwDatabaseError(error, "read visitor photo upload state");
+      const row = data as StoredAssetRow | null;
+      if (!row || row.kind !== "issue_photo" || row.uploaded_by_visitor_session_id !== session.id || row.uploaded_by_user_id !== null) {
+        throw new DataAdapterError("FORBIDDEN", "The photo upload is not bound to this release session.");
+      }
+      if (row.status === "ready" && row.sha256) return { state: "ready", asset: mapAsset(row) };
+      if (row.status !== "pending") throw new DataAdapterError("VERSION_CONFLICT", "Photo upload is no longer pending.");
+
+      const { data: exists, error: existsError } = await serviceClient.storage
+        .from(PRIVATE_ASSET_BUCKET).exists(row.storage_key);
+      if (existsError) throwDatabaseError(existsError, "check pending visitor photo object");
+      if (exists) return { state: "ready", asset: await finalizePendingAsset(serviceClient, row) };
+      return {
+        state: "upload_required",
+        preparation: await createSignedUploadInstruction(serviceClient, config, row),
+      };
+    },
+
+    async finalizeMemberAsset({ workspaceId, jobId, assetId, actorId }) {
+      const { data, error } = await serviceClient
+        .from("assets")
+        .select("*")
+        .eq("id", assetId)
+        .eq("workspace_id", workspaceId)
+        .eq("job_id", jobId)
+        .maybeSingle();
+      throwDatabaseError(error, "read asset for finalization");
+      const row = data as StoredAssetRow | null;
+      if (!row) throw new DataAdapterError("NOT_FOUND", "Asset not found.");
+      if (row.uploaded_by_user_id !== actorId || row.kind === "issue_photo") {
+        throw new DataAdapterError("FORBIDDEN", "Only the initiating member can finalize this source upload.");
+      }
+      return finalizePendingAsset(serviceClient, row);
+    },
+
+    async finalizeVisitorPhoto({ sessionToken, releaseId, assetId }) {
+      const session = await findLiveVisitorSession(serviceClient, sessionToken, releaseId);
+      const { data, error } = await serviceClient
+        .from("assets")
+        .select("*")
+        .eq("id", assetId)
+        .eq("release_id", releaseId)
+        .maybeSingle();
+      throwDatabaseError(error, "read visitor photo for finalization");
+      const row = data as StoredAssetRow | null;
+      if (
+        !row ||
+        row.kind !== "issue_photo" ||
+        row.uploaded_by_visitor_session_id !== session.id ||
+        row.uploaded_by_user_id !== null
+      ) {
+        throw new DataAdapterError("FORBIDDEN", "Only the initiating release session can finalize this photo.");
+      }
+      return finalizePendingAsset(serviceClient, row);
+    },
+
+    async authorizeMemberAsset({ workspaceId, jobId, assetId }) {
+      const { data, error } = await serviceClient
+        .from("assets")
+        .select("*")
+        .eq("id", assetId)
+        .eq("workspace_id", workspaceId)
+        .eq("job_id", jobId)
+        .eq("status", "ready")
+        .maybeSingle();
+      throwDatabaseError(error, "authorize workspace asset");
+      const row = data as StoredAssetRow | null;
+      if (!row) throw new DataAdapterError("NOT_FOUND", "Asset not found.");
+      return authorizedAsset(row);
+    },
+
+    async authorizeVisitorAsset({ sessionToken, releaseId, assetId }) {
+      const session = await findLiveVisitorSession(serviceClient, sessionToken, releaseId);
+      const { data: grantData, error: grantError } = await serviceClient
+        .from("release_visitor_session_grants")
+        .select("workspace_id,job_id,release_id")
+        .eq("session_id", session.id)
+        .eq("release_id", releaseId)
+        .maybeSingle();
+      throwDatabaseError(grantError, "authorize visitor release");
+      const grant = grantData as { workspace_id: Id; job_id: Id; release_id: Id } | null;
+      if (!grant) throw new DataAdapterError("RELEASE_REVOKED", "This release is not granted to the session.");
+
+      const { data: releaseAsset, error: releaseAssetError } = await serviceClient
+        .from("release_assets")
+        .select("asset_id")
+        .eq("release_id", releaseId)
+        .eq("asset_id", assetId)
+        .maybeSingle();
+      throwDatabaseError(releaseAssetError, "check release source asset");
+
+      let allowed = Boolean(releaseAsset);
+      if (!allowed) {
+        const { data: photo, error: photoError } = await serviceClient
+          .from("flag_photo_assets")
+          .select("asset_id")
+          .eq("release_id", releaseId)
+          .eq("asset_id", assetId)
+          .maybeSingle();
+        throwDatabaseError(photoError, "check attached release photo");
+        allowed = Boolean(photo);
+      }
+      if (!allowed) throw new DataAdapterError("NOT_FOUND", "Asset not found.");
+
+      const { data, error } = await serviceClient
+        .from("assets")
+        .select("*")
+        .eq("id", assetId)
+        .eq("workspace_id", grant.workspace_id)
+        .eq("job_id", grant.job_id)
+        .eq("status", "ready")
+        .maybeSingle();
+      throwDatabaseError(error, "load authorized release asset");
+      const row = data as StoredAssetRow | null;
+      if (!row) throw new DataAdapterError("NOT_FOUND", "Asset not found.");
+      if (row.kind === "issue_photo" && row.release_id !== releaseId) {
+        throw new DataAdapterError("NOT_FOUND", "Asset not found.");
+      }
+      if (row.kind !== "issue_photo" && row.release_id !== null) {
+        throw new DataAdapterError("NOT_FOUND", "Asset not found.");
+      }
+      return authorizedAsset(row);
+    },
+
+    async streamAuthorizedAsset(asset) {
+      assertSafeAssetPath(asset);
+      const { data: blob, error } = await serviceClient.storage
+        .from(PRIVATE_ASSET_BUCKET)
+        .download(asset.objectKey, {}, { cache: "no-store" });
+      if (error || !blob) {
+        throw new DataAdapterError("NOT_FOUND", "Private asset is unavailable.");
+      }
+
+      const headers = new Headers();
+      headers.set("Content-Type", asset.asset.mimeType);
+      headers.set("Content-Length", String(asset.asset.byteSize));
+      headers.set("Content-Disposition", `inline; filename="${safeFilename(asset.asset.filename)}"`);
+      headers.set("Cache-Control", "private, no-store");
+      headers.set("X-Content-Type-Options", "nosniff");
+      return new Response(blob.stream(), { status: 200, headers });
+    },
+
+    async loadAuthorizedAsset(asset) {
+      assertSafeAssetPath(asset);
+      const { data: blob, error } = await serviceClient.storage
+        .from(PRIVATE_ASSET_BUCKET).download(asset.objectKey, {}, { cache: "no-store" });
+      if (error || !blob) throw new DataAdapterError("NOT_FOUND", "Private asset is unavailable.");
+      if (blob.size !== asset.asset.byteSize) {
+        throw new DataAdapterError("VALIDATION_FAILED", "Stored object size differs from the verified asset record.");
+      }
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const digest = createHash("sha256").update(bytes).digest("hex");
+      if (digest !== asset.asset.sha256) {
+        throw new DataAdapterError("VALIDATION_FAILED", "Stored object digest differs from the verified asset record.");
+      }
+      return bytes;
+    },
+
+    async createSignedAssetLink(asset) {
+      assertSafeAssetPath(asset);
+      const { data, error } = await serviceClient.storage
+        .from(PRIVATE_ASSET_BUCKET)
+        .createSignedUrl(asset.objectKey, SIGNED_DOWNLOAD_TTL_SECONDS, { download: asset.asset.filename });
+      throwDatabaseError(error, "create signed asset link");
+      if (!data?.signedUrl) throw new DataAdapterError("INTERNAL_ERROR", "Storage returned no signed asset URL.");
+      const url = new URL(data.signedUrl);
+      if (url.origin !== new URL(supabaseUrl).origin) {
+        throw new DataAdapterError("INTERNAL_ERROR", "Storage returned a URL outside the configured project.");
+      }
+      return AssetLinkSchema.parse({
+        url: data.signedUrl,
+        expiresAt: new Date(Date.now() + SIGNED_DOWNLOAD_TTL_SECONDS * 1000).toISOString(),
+      });
+    },
+  };
+}
+
+async function createSignedUploadInstruction(
+  sessionClient: SupabaseClient,
+  config: { publishableKey: string; supabaseUrl: string },
+  row: StoredAssetRow,
+): Promise<UploadPreparation> {
+  assertSafeStorageKey(row.storage_key);
+  if (row.status !== "pending" || row.sha256 !== null) {
+    throw new DataAdapterError("VERSION_CONFLICT", "Asset is no longer awaiting upload.");
+  }
+
+  const { data, error } = await sessionClient.storage
+    .from(PRIVATE_ASSET_BUCKET)
+    .createSignedUploadUrl(row.storage_key, { upsert: false });
+  throwDatabaseError(error, "create signed upload instruction");
+  if (!data?.signedUrl) throw new DataAdapterError("INTERNAL_ERROR", "Storage returned no upload URL.");
+  const signedUrl = new URL(data.signedUrl);
+  if (signedUrl.origin !== new URL(config.supabaseUrl).origin || !signedUrl.searchParams.has("token")) {
+    throw new DataAdapterError("INTERNAL_ERROR", "Storage returned an invalid signed upload URL.");
+  }
+  const expiresAt = new Date(Date.now() + SIGNED_UPLOAD_TTL_SECONDS * 1000).toISOString();
+
+  return UploadPreparationSchema.parse({
+    assetId: row.id,
+    upload: {
+      url: signedUrl.toString(),
+      method: "PUT",
+      headers: {
+        apikey: config.publishableKey,
+        "Content-Type": row.mime_type,
+        "x-upsert": "false",
+      },
+      expiresAt,
+    },
+  });
+}
+
+async function finalizePendingAsset(
+  serviceClient: SupabaseClient,
+  row: StoredAssetRow,
+): Promise<Asset> {
+  if (row.status === "ready" && row.sha256) return mapAsset(row);
+  if (row.status !== "pending") {
+    throw new DataAdapterError("VERSION_CONFLICT", "Asset is not pending verification.");
+  }
+  assertSafeStorageKey(row.storage_key);
+
+  const { data: blob, error: downloadError } = await serviceClient.storage
+    .from(PRIVATE_ASSET_BUCKET)
+    .download(row.storage_key, {}, { cache: "no-store" });
+  if (downloadError || !blob) {
+    throw new DataAdapterError("INTERNAL_ERROR", "Uploaded object could not be verified.");
+  }
+
+  const digest = createHash("sha256");
+  const prefix: number[] = [];
+  let byteSize = 0;
+  try {
+    const reader = blob.stream().getReader();
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      byteSize += value.byteLength;
+      digest.update(value);
+      for (let index = 0; index < value.length && prefix.length < 32; index += 1) {
+        prefix.push(value[index]);
+      }
+    }
+  } catch (cause) {
+    throw new DataAdapterError("INTERNAL_ERROR", "Uploaded object could not be read for verification.", {
+      cause,
+    });
+  }
+
+  const sha256 = digest.digest("hex");
+  const contentType = blob.type.split(";")[0]?.trim().toLowerCase();
+  const signatureType = inspectAssetSignature(row.kind, prefix);
+  const typeMatches =
+    signatureType !== null &&
+    (row.kind === "model_glb"
+      ? contentType === "model/gltf-binary" || contentType === "application/octet-stream"
+      : contentType === signatureType);
+  if (byteSize !== row.byte_size || !typeMatches) {
+    await failAsset(serviceClient, row, byteSize !== row.byte_size ? "BYTE_SIZE_MISMATCH" : "CONTENT_MISMATCH");
+    throw new DataAdapterError("VALIDATION_FAILED", "Uploaded bytes do not match the prepared asset.");
+  }
+
+  const { data, error: finalizeError } = await serviceClient
+    .from("assets")
+    .update({
+      status: "ready",
+      sha256,
+      completed_at: new Date().toISOString(),
+      failure_code: null,
+    })
+    .eq("id", row.id)
+    .eq("workspace_id", row.workspace_id)
+    .eq("job_id", row.job_id)
+    .eq("status", "pending")
+    .select("*")
+    .maybeSingle();
+  throwDatabaseError(finalizeError, "finalize verified asset");
+
+  if (data) return mapAsset(data as StoredAssetRow);
+
+  // A competing finalizer may have committed the same bytes. Return that
+  // winner only if its verified digest matches; never last-write-wins.
+  const { data: refreshed, error: refreshError } = await serviceClient
+    .from("assets")
+    .select("*")
+    .eq("id", row.id)
+    .eq("workspace_id", row.workspace_id)
+    .eq("job_id", row.job_id)
+    .maybeSingle();
+  throwDatabaseError(refreshError, "reload finalized asset");
+  const finalRow = refreshed as StoredAssetRow | null;
+  if (finalRow?.status === "ready" && finalRow.sha256 === sha256) return mapAsset(finalRow);
+
+  throw new DataAdapterError("VERSION_CONFLICT", "Asset finalization raced with another update.");
+}
+
+async function failAsset(
+  serviceClient: SupabaseClient,
+  row: StoredAssetRow,
+  reason: string,
+) {
+  const { error } = await serviceClient
+    .from("assets")
+    .update({ status: "failed", failure_code: reason })
+    .eq("id", row.id)
+    .eq("workspace_id", row.workspace_id)
+    .eq("job_id", row.job_id)
+    .eq("status", "pending");
+  throwDatabaseError(error, "mark failed asset");
+
+  // Failed objects remain unreadable under RLS even if cleanup fails. A
+  // replacement uses a fresh asset ID and path rather than overwriting.
+  const { error: storageError } = await serviceClient.storage
+    .from(PRIVATE_ASSET_BUCKET)
+    .remove([row.storage_key]);
+  if (storageError) {
+    // Avoid logging storage/provider output; an orphan is inaccessible because
+    // the only member SELECT policy requires status = 'ready'.
+    void storageError;
+  }
+}
+
+async function findLiveVisitorSession(
+  serviceClient: SupabaseClient,
+  sessionToken: string,
+  releaseId: Id,
+): Promise<VisitorSessionRow> {
+  const tokenHash = createHash("sha256").update(sessionToken, "utf8").digest("hex");
+  const { data, error } = await serviceClient.rpc("resolve_release_visitor_session_internal", {
+    p_session_token_hash: tokenHash,
+    p_release_id: releaseId,
+  });
+  throwDatabaseError(error, "validate live visitor session");
+  if (!data || typeof data !== "object") {
+    throw new DataAdapterError("RELEASE_REVOKED", "Release access is unavailable.");
+  }
+  const scope = data as Record<string, unknown>;
+  return {
+    id: scope.sessionId as Id,
+    access_link_id: scope.accessLinkId as Id,
+    expires_at: String(scope.expiresAt),
+    revoked_at: null,
+  };
+}
+
+function mapAsset(row: StoredAssetRow): Asset {
+  return AssetSchema.parse({
+    id: row.id,
+    jobId: row.job_id,
+    releaseId: row.release_id,
+    kind: row.kind,
+    filename: row.filename,
+    mimeType: row.mime_type,
+    byteSize: row.byte_size,
+    sha256: row.sha256,
+    version: row.version,
+    status: row.status,
+    drawingRevision: row.drawing_revision,
+  });
+}
+
+function authorizedAsset(row: StoredAssetRow): AuthorizedPrivateAsset {
+  return { bucketId: PRIVATE_ASSET_BUCKET, objectKey: row.storage_key, asset: mapAsset(row) };
+}
+
+function inspectAssetSignature(kind: Asset["kind"], bytes: number[]): string | null {
+  const startsWith = (...signature: number[]) =>
+    signature.every((byte, index) => bytes[index] === byte);
+  if (kind === "drawing_pdf") {
+    return startsWith(0x25, 0x50, 0x44, 0x46, 0x2d) ? "application/pdf" : null;
+  }
+  if (kind === "model_glb") {
+    return startsWith(0x67, 0x6c, 0x54, 0x46) ? "model/gltf-binary" : null;
+  }
+  if (kind === "bend_manifest") {
+    const first = bytes.find((byte) => ![0x09, 0x0a, 0x0d, 0x20].includes(byte));
+    return first === 0x7b || first === 0x5b ? "application/json" : null;
+  }
+  if (kind === "issue_photo") {
+    if (startsWith(0xff, 0xd8, 0xff)) return "image/jpeg";
+    if (startsWith(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) return "image/png";
+    if (
+      startsWith(0x52, 0x49, 0x46, 0x46) &&
+      bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+    ) return "image/webp";
+  }
+  return null;
+}
+
+function assertSafeAssetPath(asset: AuthorizedPrivateAsset) {
+  if (asset.bucketId !== PRIVATE_ASSET_BUCKET || asset.asset.status !== "ready") {
+    throw new DataAdapterError("FORBIDDEN", "Asset is not authorized for private storage access.");
+  }
+  assertSafeStorageKey(asset.objectKey);
+}
+
+function assertSafeStorageKey(key: string) {
+  const pattern =
+    /^workspaces\/[0-9a-f-]{36}\/jobs\/[0-9a-f-]{36}\/assets\/[0-9a-f-]{36}\/blob$/i;
+  if (!pattern.test(key)) throw new DataAdapterError("VALIDATION_FAILED", "Invalid private storage key.");
+}
+
+function safeFilename(filename: string) {
+  return filename.replace(/[\r\n"\\/]/g, "_").slice(0, 180) || "asset";
+}
