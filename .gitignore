@@ -1,0 +1,11 @@
+.next/
+node_modules/
+playwright-report/
+test-results/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.vercel/
+.DS_Store
