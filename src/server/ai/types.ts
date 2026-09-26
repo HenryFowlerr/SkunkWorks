@@ -61,6 +61,18 @@ export type QuestionInput = {
   workshopSnapshot: WorkshopSnapshot | null;
   knownBendIds: string[];
   knownStepTargets: StepTarget[];
+  /** Loaded by the server from the exact immutable release, never from the question body. */
+  approvedContext?: {
+    releaseId: string;
+    revisionNumber: number;
+    machineId: string | null;
+    selectedStep: {
+      id: string;
+      bendId: string;
+      instruction: string;
+      guidanceDecision: "include" | "exclude" | "pending" | null;
+    } | null;
+  };
 };
 
 export type DraftProposal = {

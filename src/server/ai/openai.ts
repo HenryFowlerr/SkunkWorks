@@ -2,13 +2,15 @@ import "server-only";
 
 import OpenAI from "openai";
 import { z } from "zod";
-import { ContextRefSchema } from "../../contracts/domain";
+import { randomUUID } from "node:crypto";
+import { AnswerSchema, ContextRefSchema } from "../../contracts/domain";
 import { GenerationJsonSchema, GenerationOutputSchema, QuestionJsonSchema, QuestionOutputSchema } from "./schemas";
 import { GENERATION_INSTRUCTIONS, QUESTION_INSTRUCTIONS, generationUserPrompt, questionUserPrompt } from "./prompts";
 import {
   prepareGenerationEvidence,
   prepareQuestionEvidence,
 } from "./grounding";
+import { retrieveQuestionKnowledge } from "./knowledge-base";
 import { parseGenerationOutput, parseQuestionOutput } from "./validate-output";
 import { AiProviderError, type AskResult, type DraftProposal, type GenerationInput, type QuestionInput } from "./types";
 
@@ -56,20 +58,37 @@ export class OpenAiResponsesAdapter implements AiAdapter {
   }
 
   async answerQuestion(input: QuestionInput): Promise<AskResult> {
-    const model = this.configuredModel();
     const context = ContextRefSchema.parse(input.context);
-    const evidence = prepareQuestionEvidence({ ...input, context });
+    const checkedInput = { ...input, context };
+    const verified = prepareQuestionEvidence(checkedInput);
+    const knowledge = retrieveQuestionKnowledge(checkedInput, verified);
+    if (knowledge.evidence.length === 0) {
+      return {
+        ...AnswerSchema.parse({
+          id: randomUUID(),
+          context,
+          evidenceState: "not_found",
+          text: "I cannot find source-backed guidance for this point. Hold the affected operation and ask engineering to clarify it.",
+          evidence: [],
+          suggestedFlag: "Ask engineering to clarify this operation before continuing.",
+        }),
+        model: "retrieval-only",
+      };
+    }
+    const model = this.configuredModel();
     const response = await this.request({
       model,
       instructions: QUESTION_INSTRUCTIONS,
-      userText: questionUserPrompt({ ...input, context }, evidence),
-      pdfs: input.pdfs,
+      userText: questionUserPrompt(checkedInput, knowledge),
+      // The server-selected text snippets are the complete model-visible knowledge
+      // for Q&A. Do not attach whole private PDFs and invite uncited answers.
+      pdfs: [],
       formatName: "skunkworks_context_answer_v1",
       schema: QuestionJsonSchema,
       maxOutputTokens: 1_500,
     });
     const parsed = parseStructuredOutput(response, QuestionOutputSchema);
-    return parseQuestionOutput(parsed, { ...input, context }, evidence, model);
+    return parseQuestionOutput(parsed, checkedInput, knowledge.evidence, model);
   }
 
   private configuredModel(): string {
