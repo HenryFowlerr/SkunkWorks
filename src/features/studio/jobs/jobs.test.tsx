@@ -92,9 +92,9 @@ function fillRequiredFields() {
   fireEvent.change(screen.getByLabelText("Part number"), { target: { value: "SM-104" } });
   fireEvent.change(screen.getByLabelText("Job title"), { target: { value: "Sensor mount" } });
   fireEvent.change(screen.getByLabelText("Part family"), { target: { value: "straight-bend-bracket" } });
-  fireEvent.change(screen.getByLabelText("Confirmed workshop version"), { target: { value: ids.snapshot } });
+  fireEvent.change(screen.getByLabelText("Manufacturer and confirmed profile"), { target: { value: ids.snapshot } });
   fireEvent.change(screen.getByLabelText("Machine"), { target: { value: ids.machine } });
-  fireEvent.change(screen.getByLabelText(/Drawing PDF/), { target: { files: [files.pdf] } });
+  fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), { target: { files: [files.pdf] } });
   fireEvent.change(screen.getByLabelText(/3D model/), { target: { files: [files.glb] } });
   return files;
 }
@@ -182,7 +182,7 @@ describe("designer jobs and intake", () => {
     const { container } = render(<NewJobIntake workspaceId={ids.workspace} />);
     await screen.findByRole("option", { name: "Christchurch Press Shop · v3" });
     fireEvent.change(screen.getByLabelText("Part number"), { target: { value: "SM-104" } });
-    fireEvent.change(screen.getByLabelText("Confirmed workshop version"), { target: { value: ids.snapshot } });
+    fireEvent.change(screen.getByLabelText("Manufacturer and confirmed profile"), { target: { value: ids.snapshot } });
     submitForm(container);
 
     expect(await screen.findByText("Enter a job title.")).toBeInTheDocument();
@@ -198,9 +198,9 @@ describe("designer jobs and intake", () => {
     fireEvent.change(screen.getByLabelText("Part number"), { target: { value: "SM-104" } });
     fireEvent.change(screen.getByLabelText("Job title"), { target: { value: "Sensor mount" } });
     fireEvent.change(screen.getByLabelText("Part family"), { target: { value: "straight-bend-bracket" } });
-    fireEvent.change(screen.getByLabelText("Confirmed workshop version"), { target: { value: ids.snapshot } });
+    fireEvent.change(screen.getByLabelText("Manufacturer and confirmed profile"), { target: { value: ids.snapshot } });
     fireEvent.change(screen.getByLabelText("Machine"), { target: { value: ids.machine } });
-    fireEvent.change(screen.getByLabelText(/Drawing PDF/), {
+    fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), {
       target: { files: [new File(["not a drawing"], "sensor.txt", { type: "text/plain" })] },
     });
     fireEvent.change(screen.getByLabelText(/3D model/), { target: { files: [files.glb] } });
@@ -218,9 +218,9 @@ describe("designer jobs and intake", () => {
     fireEvent.change(screen.getByLabelText("Part number"), { target: { value: "SM-104" } });
     fireEvent.change(screen.getByLabelText("Job title"), { target: { value: "Sensor mount" } });
     fireEvent.change(screen.getByLabelText("Part family"), { target: { value: "straight-bend-bracket" } });
-    fireEvent.change(screen.getByLabelText("Confirmed workshop version"), { target: { value: ids.snapshot } });
+    fireEvent.change(screen.getByLabelText("Manufacturer and confirmed profile"), { target: { value: ids.snapshot } });
     fireEvent.change(screen.getByLabelText("Machine"), { target: { value: ids.machine } });
-    fireEvent.change(screen.getByLabelText(/Drawing PDF/), { target: { files: [files.pdf] } });
+    fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), { target: { files: [files.pdf] } });
     fireEvent.change(screen.getByLabelText(/3D model/), { target: { files: [files.glb] } });
     submitForm(container);
 
@@ -235,9 +235,9 @@ describe("designer jobs and intake", () => {
     fireEvent.change(screen.getByLabelText("Part number"), { target: { value: "SM-104" } });
     fireEvent.change(screen.getByLabelText("Job title"), { target: { value: "Sensor mount" } });
     fireEvent.change(screen.getByLabelText("Part family"), { target: { value: "straight-bend-bracket" } });
-    fireEvent.change(screen.getByLabelText("Confirmed workshop version"), { target: { value: ids.snapshot } });
+    fireEvent.change(screen.getByLabelText("Manufacturer and confirmed profile"), { target: { value: ids.snapshot } });
     fireEvent.change(screen.getByLabelText("Machine"), { target: { value: ids.machine } });
-    fireEvent.change(screen.getByLabelText(/Drawing PDF/), { target: { files: [files.pdf] } });
+    fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), { target: { files: [files.pdf] } });
     fireEvent.change(screen.getByLabelText(/3D model/), { target: { files: [files.glb] } });
     fireEvent.change(screen.getByLabelText(/Authored bend manifest/), {
       target: { files: [new File(["{ incomplete"], "bend-map.json", { type: "application/json" })] },
@@ -257,7 +257,7 @@ describe("designer jobs and intake", () => {
 
     expect(await screen.findAllByText("FORBIDDEN: this account cannot add source files.")).toHaveLength(2);
     expect(screen.getByLabelText("Part number")).toHaveValue("SM-104");
-    expect(screen.getByLabelText(/Drawing PDF/)).toHaveProperty("files.0.name", files.pdf.name);
+    expect(screen.getByLabelText(/Technical drawing PDFs/)).toHaveProperty("files.0.name", files.pdf.name);
     expect(screen.getByRole("button", { name: "Retry uploads and save intake" })).toBeInTheDocument();
     expect(apiMock.jobs.create).toHaveBeenCalledTimes(1);
 
@@ -367,7 +367,7 @@ describe("designer jobs and intake", () => {
     submitForm(container);
     expect(await screen.findByRole("alert")).toHaveTextContent("The job response was lost.");
 
-    fireEvent.change(screen.getByLabelText("Confirmed workshop version"), { target: { value: nextSnapshot.id } });
+    fireEvent.change(screen.getByLabelText("Manufacturer and confirmed profile"), { target: { value: nextSnapshot.id } });
     fireEvent.change(screen.getByLabelText("Machine"), { target: { value: nextMachineId } });
     submitForm(container);
     await waitFor(() => expect(screen.getByText(/server confirmed the job setup/i)).toBeInTheDocument());
@@ -390,6 +390,48 @@ describe("designer jobs and intake", () => {
     expect(await screen.findAllByText(/ready file with a server-verified SHA-256 hash/)).toHaveLength(2);
     expect(apiMock.jobs.updateInputs).not.toHaveBeenCalled();
     expect(screen.queryByText(/Ready · SHA-256/)).not.toBeInTheDocument();
+  });
+
+  it("uploads multiple technical drawings and attaches every verified PDF to the job", async () => {
+    const secondId = "967df638-397b-49be-bd02-a31c83a66322";
+    apiMock.assets.uploadAsset.mockImplementation(async (input: { kind: Asset["kind"]; file: File }) =>
+      makeAsset(input.kind, input.file.name === "detail.pdf" ? secondId : input.kind === "drawing_pdf" ? ids.pdf : ids.glb));
+    const { container } = render(<NewJobIntake workspaceId={ids.workspace} />);
+    await screen.findByRole("option", { name: /Christchurch Press Shop/ });
+    fillRequiredFields();
+    fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), {
+      target: { files: [new File(["%PDF-1.7"], "sensor.pdf", { type: "application/pdf" }), new File(["%PDF-1.7"], "detail.pdf", { type: "application/pdf" })] },
+    });
+    expect(screen.getByRole("list", { name: "Additional drawings" })).toHaveTextContent("detail.pdf");
+    submitForm(container);
+    await waitFor(() => expect(screen.getByText(/server confirmed the job setup/i)).toBeInTheDocument());
+    expect(apiMock.assets.uploadAsset).toHaveBeenCalledTimes(3);
+    expect(apiMock.jobs.updateInputs).toHaveBeenCalledWith(expect.objectContaining({ sourceAssetIds: [ids.pdf, ids.glb, secondId] }));
+  });
+
+  it("rejects a dropped native CAD file rather than implying it can be processed", async () => {
+    const { container } = render(<NewJobIntake workspaceId={ids.workspace} />);
+    await screen.findByRole("option", { name: /Christchurch Press Shop/ });
+    const modelDrop = screen.getByLabelText(/3D model/).parentElement;
+    if (!modelDrop) throw new Error("Model drop target not found.");
+    fireEvent.drop(modelDrop, { dataTransfer: { files: [new File(["native"], "part.sldprt", { type: "application/octet-stream" })] } });
+    expect(screen.getByText("Choose a .glb file.")).toBeInTheDocument();
+    submitForm(container);
+    expect(apiMock.jobs.create).not.toHaveBeenCalled();
+  });
+
+  it("keeps job intake designer-only and points other roles to supported actions", async () => {
+    const view = render(<NewJobIntake workspaceId={ids.workspace} role="designer" />);
+    await screen.findByRole("option", { name: /Christchurch Press Shop/ });
+    expect(screen.getByText(/Ask a workspace admin to invite a fabricator/)).toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+
+    view.rerender(<NewJobIntake workspaceId={ids.workspace} role="admin" />);
+    expect(screen.getByRole("link", { name: /Create a designer or fabricator invitation link/ })).toHaveAttribute("href", `/studio/invites?workspace=${ids.workspace}`);
+    expect(screen.queryByRole("button", { name: /Create job/ })).not.toBeInTheDocument();
+
+    view.rerender(<NewJobIntake workspaceId={ids.workspace} role="fabricator" />);
+    expect(screen.getByRole("link", { name: /Open manufacturer setup/ })).toHaveAttribute("href", `/studio/workshops?workspace=${ids.workspace}`);
   });
 
   it("surfaces workshop endpoint and authorization errors verbatim", async () => {

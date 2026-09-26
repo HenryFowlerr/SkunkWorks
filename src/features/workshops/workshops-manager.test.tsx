@@ -109,7 +109,7 @@ describe("workshop profile manager", () => {
     vi.mocked(api.workshops.list).mockResolvedValue([snapshot({ machines: [machine()] })]);
     vi.mocked(api.workshops.saveVersion).mockRejectedValue(new Error("Version conflict: reload the current profile."));
 
-    render(<WorkshopsManager workspaceId={workspaceId} role="designer" />);
+    render(<WorkshopsManager workspaceId={workspaceId} role="fabricator" />);
     const machineName = await screen.findByRole("textbox", { name: "Machine 1 name" });
     fireEvent.change(machineName, { target: { value: "Updated press brake" } });
     fireEvent.click(screen.getByRole("button", { name: "Save new version" }));
@@ -170,7 +170,10 @@ describe("workshop profile manager", () => {
     vi.mocked(api.workshops.list).mockResolvedValue([snapshot({ machines: [machine()] })]);
 
     const view = render(<WorkshopsManager workspaceId={workspaceId} role="designer" />);
-    await screen.findByRole("button", { name: "Save new version" });
+    await screen.findByRole("heading", { name: "Manufacturers" });
+    expect(screen.queryByRole("button", { name: "Save new version" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "New manufacturer" })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Machine 1 name" })).toBeDisabled();
     expect(screen.queryByRole("button", { name: "Confirm this version" })).not.toBeInTheDocument();
 
     view.rerender(<WorkshopsManager workspaceId={workspaceId} role="fabricator" />);
@@ -189,7 +192,7 @@ describe("workshop profile manager", () => {
       confirmedAt,
     }));
 
-    render(<WorkshopsManager workspaceId={workspaceId} role="admin" />);
+    render(<WorkshopsManager workspaceId={workspaceId} role="fabricator" />);
     await screen.findByRole("button", { name: "Confirm this version" });
     fireEvent.click(screen.getByRole("button", { name: "Confirm this version" }));
 

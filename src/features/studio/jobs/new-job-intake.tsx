@@ -1,13 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
-import type { Asset, Id, Job, WorkshopSnapshot } from "@/contracts";
-import { Button, Panel, PanelBody, StatusBadge } from "@/components/ui";
+import type { ChangeEvent, DragEvent, FormEvent } from "react";
+import type { Asset, Id, Job, Role, WorkshopSnapshot } from "@/contracts";
+import { Button, StatusBadge } from "@/components/ui";
 import { api } from "@/lib/api/client";
 import styles from "./jobs.module.css";
 
 const MIB = 1024 * 1024;
+const DRAWING_SET_LIMIT = 50 * MIB;
 export const JOB_FILE_LIMITS = Object.freeze({
   drawing_pdf: 25 * MIB,
   model_glb: 50 * MIB,
@@ -43,6 +45,14 @@ function emptyFiles(): IntakeFiles {
     drawing_pdf: { file: null, asset: null, idempotencyKey: null, progress: null, state: "empty", error: null },
     model_glb: { file: null, asset: null, idempotencyKey: null, progress: null, state: "empty", error: null },
     bend_manifest: { file: null, asset: null, idempotencyKey: null, progress: null, state: "empty", error: null },
+  };
+}
+
+function selectedSlot(file: File, kind: FileKind): FileSlot {
+  const error = validateFile(kind, file);
+  return {
+    file, asset: null, idempotencyKey: error ? null : freshIdempotencyKey(), progress: null,
+    state: error ? "error" : "selected", error,
   };
 }
 
@@ -99,9 +109,11 @@ function hasRequestedInputs(job: Job, expected: {
 
 export function NewJobIntake({
   workspaceId,
+  role = "designer",
   onCreated,
 }: {
   workspaceId: string;
+  role?: Role;
   onCreated?: (job: Job) => void;
 }) {
   const [partNumber, setPartNumber] = useState("");
@@ -115,6 +127,8 @@ export function NewJobIntake({
   const [workshopReload, setWorkshopReload] = useState(0);
   const [loadedWorkspaceId, setLoadedWorkspaceId] = useState<string | null>(null);
   const [files, setFiles] = useState<IntakeFiles>(emptyFiles);
+  const [extraDrawings, setExtraDrawings] = useState<FileSlot[]>([]);
+  const [draggingKind, setDraggingKind] = useState<FileKind | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [complete, setComplete] = useState(false);
@@ -126,6 +140,7 @@ export function NewJobIntake({
     model_glb: null,
     bend_manifest: null,
   });
+  const additionalDrawingsInputRef = useRef<HTMLInputElement | null>(null);
   const createKey = useRef<string | null>(null);
   const workshopsAreLoading = workshopsLoading || loadedWorkspaceId !== workspaceId;
 
@@ -176,16 +191,33 @@ export function NewJobIntake({
 
   function changeFile(kind: FileKind, event: ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0] ?? null;
-    const error = file ? validateFile(kind, file) : null;
-    updateFiles(kind, () => ({
-      file,
-      asset: null,
-      idempotencyKey: file && !error ? freshIdempotencyKey() : null,
-      progress: null,
-      state: file ? (error ? "error" : "selected") : "empty",
-      error,
-    }));
+    updateFiles(kind, () => file ? selectedSlot(file, kind) : emptyFiles()[kind]);
+    if (kind === "drawing_pdf" && event.currentTarget.files && event.currentTarget.files.length > 1) {
+      addDrawings(Array.from(event.currentTarget.files).slice(1));
+    }
     clearError(kind);
+  }
+
+  function addDrawings(picked: File[]) {
+    if (!picked.length) return;
+    setExtraDrawings((previous) => [...previous, ...picked.map((file) => selectedSlot(file, "drawing_pdf"))]);
+    clearError("drawing_pdf");
+  }
+
+  function handleDrop(kind: FileKind, event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDraggingKind(null);
+    if (submitting) return;
+    const picked = Array.from(event.dataTransfer.files);
+    if (!picked.length) return;
+    if (fileInputRefs.current[kind]) fileInputRefs.current[kind]!.value = "";
+    updateFiles(kind, () => selectedSlot(picked[0], kind));
+    if (kind === "drawing_pdf") addDrawings(picked.slice(1));
+    clearError(kind);
+  }
+
+  function updateExtraDrawing(index: number, update: (current: FileSlot) => FileSlot) {
+    setExtraDrawings((previous) => previous.map((slot, currentIndex) => currentIndex === index ? update(slot) : slot));
   }
 
   function removeOptionalFile(kind: FileKind) {
@@ -222,6 +254,13 @@ export function NewJobIntake({
         }
       }
     }
+    for (const [index, slot] of extraDrawings.entries()) {
+      if (!slot.file) continue;
+      const fileError = validateFile("drawing_pdf", slot.file);
+      if (fileError) next[`extra-${index}`] = fileError;
+    }
+    const drawingBytes = [files.drawing_pdf, ...extraDrawings].reduce((sum, slot) => sum + (slot.file?.size ?? 0), 0);
+    if (drawingBytes > DRAWING_SET_LIMIT) next.drawingSet = "Drawing PDFs together must be no larger than 50 MiB for the current generation workflow.";
     return next;
   }
 
@@ -267,6 +306,7 @@ export function NewJobIntake({
         model_glb: { ...files.model_glb },
         bend_manifest: { ...files.bend_manifest },
       };
+      const attemptExtraDrawings = extraDrawings.map((slot) => ({ ...slot }));
       for (const definition of FILES) {
         const kind = definition.kind;
         const slot = attemptFiles[kind];
@@ -304,10 +344,37 @@ export function NewJobIntake({
         }
       }
 
+      for (const [index, slot] of attemptExtraDrawings.entries()) {
+        if (!slot.file) continue;
+        if (slot.asset && isVerifiedReadyAsset(slot.asset, currentJob.id, "drawing_pdf")) continue;
+        updateExtraDrawing(index, (previous) => ({ ...previous, state: "uploading", progress: null, error: null }));
+        try {
+          const idempotencyKey = slot.idempotencyKey ?? freshIdempotencyKey();
+          attemptExtraDrawings[index] = { ...slot, idempotencyKey };
+          updateExtraDrawing(index, (previous) => ({ ...previous, idempotencyKey }));
+          const asset = await api.assets.uploadAsset({
+            jobId: currentJob.id, kind: "drawing_pdf", file: slot.file, idempotencyKey,
+            onProgress: (progress) => {
+              if (Number.isFinite(progress)) updateExtraDrawing(index, (previous) => ({ ...previous, progress: Math.max(0, Math.min(1, progress)) }));
+            },
+          });
+          if (!isVerifiedReadyAsset(asset, currentJob.id, "drawing_pdf")) {
+            throw new Error("The API has not returned a ready drawing with a server-verified SHA-256 hash.");
+          }
+          attemptExtraDrawings[index] = { ...slot, idempotencyKey, asset, progress: 1, state: "ready", error: null };
+          updateExtraDrawing(index, () => attemptExtraDrawings[index]);
+        } catch (error) {
+          const message = errorMessage(error);
+          attemptExtraDrawings[index] = { ...slot, state: "error", error: message };
+          updateExtraDrawing(index, () => attemptExtraDrawings[index]);
+          throw error;
+        }
+      }
+
       const sourceAssetIds = FILES.flatMap((definition) => {
         const asset = attemptFiles[definition.kind].asset;
         return asset && isVerifiedReadyAsset(asset, currentJob!.id, definition.kind) ? [asset.id] : [];
-      });
+      }).concat(attemptExtraDrawings.flatMap((slot) => slot.asset && isVerifiedReadyAsset(slot.asset, currentJob!.id, "drawing_pdf") ? [slot.asset.id] : []));
       const requiredKinds = FILES.filter((definition) => definition.required).map((definition) => definition.kind);
       if (requiredKinds.some((kind) => !attemptFiles[kind].asset || !isVerifiedReadyAsset(attemptFiles[kind].asset!, currentJob!.id, kind))) {
         throw new Error("The drawing and model must both be verified by the server before the job can be saved.");
@@ -362,13 +429,24 @@ export function NewJobIntake({
     }
   }
 
+  if (role !== "designer") {
+    return <div className={styles.stack}>
+      <div className={styles.heading}><div>
+        <p className={styles.eyebrow}>Workspace access</p>
+        <h1>Start a job</h1>
+        <p className={styles.muted}>A designer membership is needed to create a job and attach technical sources.</p>
+      </div></div>
+      <p className={styles.inviteLine}>{role === "admin" ? <><Link href={`/studio/invites?workspace=${encodeURIComponent(workspaceId)}`}>Create a designer or fabricator invitation link</Link> for a verified email. Chappe gives you a link to copy; you send it yourself.</> : <><Link href={`/studio/workshops?workspace=${encodeURIComponent(workspaceId)}`}>Open manufacturer setup</Link> to record and confirm a facility profile.</>}</p>
+    </div>;
+  }
+
   return (
     <div className={styles.stack}>
       <div className={styles.heading}>
         <div>
           <p className={styles.eyebrow}>Designer workspace</p>
           <h1>Start a job</h1>
-          <p className={styles.muted}>Attach source files and a confirmed workshop machine before review can begin.</p>
+          <p className={styles.muted}>Bring the drawing and a viewable model together, then choose the manufacturer that will receive the work.</p>
         </div>
         {job ? <StatusBadge label={complete ? "Inputs saved" : "Intake in progress"} tone={complete ? "complete" : "review"} /> : null}
       </div>
@@ -377,8 +455,7 @@ export function NewJobIntake({
       {complete ? <div className={styles.notice} role="status">The server confirmed the job setup and attached every selected file after storage verification.</div> : null}
       {job && !complete ? <div className={styles.notice} role="status">Job {job.partNumber} exists. This form has retained its details so you can finish or retry the source uploads.</div> : null}
 
-      <Panel title="Job intake" eyebrow="New designer record">
-        <PanelBody>
+      <div className={styles.intakeSurface}>
           <form className={styles.form} onSubmit={(event) => void createOrUpdateJob(event)} noValidate>
             <section className={styles.section} aria-labelledby="job-details-heading">
               <h2 className={styles.sectionTitle} id="job-details-heading">Part details</h2>
@@ -403,13 +480,18 @@ export function NewJobIntake({
                     aria-invalid={Boolean(fieldErrors.partFamily)} aria-describedby={fieldErrors.partFamily ? "part-family-error" : "part-family-hint"}
                     onChange={(event) => { setPartFamily(event.currentTarget.value); resetCreateKey(); clearError("partFamily"); }} />
                   {fieldErrors.partFamily ? <p className={styles.fieldError} id="part-family-error" role="alert">{fieldErrors.partFamily}</p> : null}
-                  <p className={styles.hint} id="part-family-hint">Keep this name consistent with the workshop’s approved bend constraints.</p>
+                  <p className={styles.hint} id="part-family-hint">A short label helps match this part to the manufacturer’s documented process notes.</p>
                 </div>
               </div>
             </section>
 
             <section className={styles.section} aria-labelledby="workshop-heading">
-              <h2 className={styles.sectionTitle} id="workshop-heading">Workshop setup</h2>
+              <div className={styles.sectionHeading}>
+                <div>
+                  <h2 className={styles.sectionTitle} id="workshop-heading">Manufacturer</h2>
+                  <p className={styles.hint}>Select a confirmed facility profile. Its documented machine facts will be available for the job check.</p>
+                </div>
+              </div>
               {workshopsError ? (
                 <div className={styles.error} role="alert">
                   <p>{workshopsError}</p>
@@ -418,38 +500,40 @@ export function NewJobIntake({
               ) : null}
               <div className={styles.fieldGrid}>
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="workshop-version">Confirmed workshop version</label>
+                  <label className={styles.label} htmlFor="workshop-version">Manufacturer and confirmed profile</label>
                   <select id="workshop-version" className={styles.control} value={snapshotId} required disabled={workshopsAreLoading || submitting || eligibleSnapshots.length === 0}
                     aria-invalid={Boolean(fieldErrors.workshopSnapshotId)} aria-describedby={fieldErrors.workshopSnapshotId ? "workshop-error" : "workshop-hint"}
                     onChange={(event) => { setSnapshotId(event.currentTarget.value); setMachineId(""); resetCreateKey(); clearError("workshopSnapshotId"); clearError("machineId"); }}>
-                    <option value="">{workshopsAreLoading ? "Loading confirmed setups…" : eligibleSnapshots.length ? "Select a workshop version" : "No confirmed setup available"}</option>
+                    <option value="">{workshopsAreLoading ? "Loading confirmed profiles…" : eligibleSnapshots.length ? "Select a manufacturer profile" : "No confirmed profile available"}</option>
                     {workspaceWorkshops.map((snapshot) => {
                       const available = snapshot.confirmedBy !== null && snapshot.confirmedAt !== null && snapshot.machines.length > 0;
                       return <option key={snapshot.id} value={snapshot.id} disabled={!available}>{snapshot.name} · v{snapshot.version}{available ? "" : " · not ready"}</option>;
                     })}
                   </select>
                   {fieldErrors.workshopSnapshotId ? <p className={styles.fieldError} id="workshop-error" role="alert">{fieldErrors.workshopSnapshotId}</p> : null}
-                  <p className={styles.hint} id="workshop-hint">Only confirmed, versioned setups with at least one machine can be selected.</p>
+                  <p className={styles.hint} id="workshop-hint">A manufacturer can edit its equipment record; a confirmed version is needed before this job is created.</p>
                 </div>
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="workshop-machine">Machine</label>
                   <select id="workshop-machine" className={styles.control} value={machineId} required disabled={!selectedSnapshot || submitting}
                     aria-invalid={Boolean(fieldErrors.machineId)} aria-describedby={fieldErrors.machineId ? "machine-error" : undefined}
                     onChange={(event) => { setMachineId(event.currentTarget.value); resetCreateKey(); clearError("machineId"); }}>
-                    <option value="">{selectedSnapshot ? "Select a machine" : "Choose a workshop version first"}</option>
+                    <option value="">{selectedSnapshot ? "Select a machine" : "Choose a manufacturer first"}</option>
                     {selectedSnapshot?.machines.map((machine) => <option key={machine.id} value={machine.id}>{machine.name} · {machine.process}</option>)}
                   </select>
                   {fieldErrors.machineId ? <p className={styles.fieldError} id="machine-error" role="alert">{fieldErrors.machineId}</p> : null}
                 </div>
               </div>
               {!workshopsAreLoading && !workshopsError && eligibleSnapshots.length === 0 ? (
-                <p className={styles.notice}>No confirmed workshop version with a machine is available. Complete workshop setup and confirmation before starting this intake.</p>
+                <p className={styles.notice}>No confirmed manufacturer profile is available. Add a profile, record at least one machine, and confirm it before saving this job.</p>
               ) : null}
+              <p className={styles.inviteLine}>No manufacturer listed? Ask a workspace admin to invite a fabricator. That person creates and confirms the facility profile before you can select it here.</p>
             </section>
 
             <section className={styles.section} aria-labelledby="source-files-heading">
               <h2 className={styles.sectionTitle} id="source-files-heading">Source files</h2>
-              <p className={styles.hint}>PDF and GLB are required. A JSON bend manifest is optional. These file-size limits are provisional UI guidance; Team 2 must confirm and enforce them on the server.</p>
+              <p className={styles.hint}>Add one or more technical drawing PDFs and a GLB export of the CAD model. Native CAD files such as STEP and SLDPRT are not processed by this intake. An authored bend manifest is optional for the current example workflow.</p>
+              {fieldErrors.drawingSet ? <p className={styles.fileError} role="alert">{fieldErrors.drawingSet}</p> : null}
               <div className={styles.fileGrid}>
                 {FILES.map((definition) => {
                   const slot = files[definition.kind];
@@ -457,15 +541,19 @@ export function NewJobIntake({
                   const hintId = `${labelId}-hint`;
                   const errorId = `${labelId}-error`;
                   return (
-                    <div className={styles.fileCard} key={definition.kind}>
+                    <div className={`${styles.fileCard} ${draggingKind === definition.kind ? styles.fileCardDragging : ""}`} key={definition.kind}
+                      onDragOver={(event) => { event.preventDefault(); if (!submitting) setDraggingKind(definition.kind); }}
+                      onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDraggingKind(null); }}
+                      onDrop={(event) => handleDrop(definition.kind, event)}>
                       <div className={styles.fileHead}>
-                        <label htmlFor={labelId}>{definition.label} {definition.required ? <span aria-hidden="true">*</span> : <span className={styles.optional}>Optional</span>}</label>
+                        <label htmlFor={labelId}>{definition.kind === "model_glb" ? "3D model (GLB CAD export)" : definition.kind === "drawing_pdf" ? "Technical drawing PDFs" : definition.label} {definition.required ? <span aria-hidden="true">*</span> : <span className={styles.optional}>Optional</span>}</label>
+                        <span className={styles.dropHint}>Drop here or choose a file</span>
                       </div>
-                      <input id={labelId} className={styles.fileInput} type="file" accept={definition.accept} required={definition.required}
+                      <input id={labelId} className={styles.fileInput} type="file" accept={definition.accept} required={definition.required} multiple={definition.kind === "drawing_pdf"}
                         ref={(element) => { fileInputRefs.current[definition.kind] = element; }}
                         disabled={submitting} aria-describedby={`${hintId}${fieldErrors[definition.kind] || slot.error ? ` ${errorId}` : ""}`}
                         aria-invalid={Boolean(fieldErrors[definition.kind] || slot.error)} onChange={(event) => changeFile(definition.kind, event)} />
-                      <p className={styles.hint} id={hintId}>Accepted: {definition.accept.split(",").filter((type) => type.startsWith(".")).join(", ")} · up to {formatMiB(JOB_FILE_LIMITS[definition.kind])} (provisional)</p>
+                      <p className={styles.hint} id={hintId}>Accepted: {definition.accept.split(",").filter((type) => type.startsWith(".")).join(", ")} · up to {formatMiB(JOB_FILE_LIMITS[definition.kind])} per file</p>
                       {slot.file ? <p className={styles.fileName}>{slot.file.name} · {formatFileSize(slot.file.size)}</p> : null}
                       {slot.state === "uploading" ? (
                         <div className={styles.fileStatus} aria-live="polite">
@@ -494,6 +582,19 @@ export function NewJobIntake({
                   );
                 })}
               </div>
+              {extraDrawings.length ? <ul className={styles.extraDrawings} aria-label="Additional drawings">{extraDrawings.map((slot, index) => (
+                <li key={slot.idempotencyKey ?? `${slot.file?.name}-${index}`}>
+                  <div><strong>{slot.file?.name}</strong><span>Additional PDF · {slot.file ? formatFileSize(slot.file.size) : ""}</span></div>
+                  {slot.state === "ready" ? <StatusBadge label="Server verified" tone="complete" /> : null}
+                  {slot.state === "uploading" ? <span role="status">{slot.progress === null ? "Uploading…" : `Uploading ${Math.round(slot.progress * 100)}%`}</span> : null}
+                  {slot.error || fieldErrors[`extra-${index}`] ? <span className={styles.fileError} role="alert">{slot.error ?? fieldErrors[`extra-${index}`]}</span> : null}
+                  <Button type="button" tone="quiet" small disabled={submitting} onClick={() => setExtraDrawings((previous) => previous.filter((_, currentIndex) => currentIndex !== index))}>Remove</Button>
+                </li>
+              ))}</ul> : null}
+              <Button type="button" tone="quiet" className={styles.addDrawingButton} disabled={submitting} onClick={() => additionalDrawingsInputRef.current?.click()}>+ Add more drawing PDFs</Button>
+              <input id="additional-drawings" ref={additionalDrawingsInputRef} className={styles.screenReaderOnly} type="file" accept=".pdf,application/pdf" multiple disabled={submitting}
+                onChange={(event) => { addDrawings(Array.from(event.currentTarget.files ?? [])); event.currentTarget.value = ""; }} />
+              <p className={styles.hint}>PDFs may total up to 50 MiB for the current generation workflow. Files remain selected if an upload needs retrying.</p>
             </section>
 
             <div className={styles.buttonRow}>
@@ -503,8 +604,7 @@ export function NewJobIntake({
               {job ? <p className={styles.muted}>Created job {job.partNumber} · server record v{job.version}</p> : null}
             </div>
           </form>
-        </PanelBody>
-      </Panel>
+      </div>
     </div>
   );
 }
