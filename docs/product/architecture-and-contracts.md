@@ -1,3 +1,5 @@
+> Historical initial sheet-metal architecture and stopped three-team plan. Read [the current product brief](overview.md) and [build status](../integration/status.md) first. The code in `src/contracts/` is the current API authority.
+
 **SkunkWorks — architecture, ownership and shared contracts, version 1.0**
 
 This is a proposed design for the verified empty repository. TEAM-1 is integration captain, not the sole implementer or sole person allowed to integrate verified work. TEAM-2 owns the authoritative runtime contracts. TEAM-3 owns the visual engine. Amend this design through the shared coordination protocol if current repository evidence justifies a change; do not independently fork it in three chats.

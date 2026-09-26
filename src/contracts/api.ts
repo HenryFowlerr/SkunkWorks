@@ -112,10 +112,11 @@ export const SignUpResultSchema = z.object({
 export type SignUpResult = z.infer<typeof SignUpResultSchema>;
 
 export const CreateWorkspaceInputSchema = z.object({
-  name: nonEmptyString,
+  name: nonEmptyString.max(120),
   idempotencyKey: IdempotencyKeySchema,
 }).strict();
 export type CreateWorkspaceInput = z.infer<typeof CreateWorkspaceInputSchema>;
+export const CreateWorkspaceBodySchema = CreateWorkspaceInputSchema.omit({ idempotencyKey: true });
 
 export const InviteWorkspaceMemberInputSchema = z.object({
   workspaceId: IdSchema,
@@ -167,6 +168,7 @@ export const CreateJobInputSchema = z.object({
   idempotencyKey: IdempotencyKeySchema,
 }).strict();
 export type CreateJobInput = z.infer<typeof CreateJobInputSchema>;
+export const CreateJobBodySchema = CreateJobInputSchema.omit({ idempotencyKey: true });
 
 export const UpdateJobInputsSchema = z.object({
   jobId: IdSchema,

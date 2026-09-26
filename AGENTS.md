@@ -1,16 +1,8 @@
-# SkunkWorks contributor instructions
+# Chappe contributor instructions
 
 ## Authority and product boundary
 
-The product and engineering boundary are recorded in `docs/product/overview.md`, `docs/integration/protocol.md`, `docs/ownership.md`, and the current contracts in `src/contracts/` after Team 2 lands. Keep the numbered bend identity intact from source drawing through a published release and operator feedback. Do not claim inferred geometry, AI output, or manufacturing suitability as verified fact.
-
-## Ownership
-
-- Team 1 owns the root application setup, `src/app/layout.tsx`, `src/app/globals.css`, `src/app/page.tsx`, shared UI, studio/auth routes, workshop/review/print features, CI, integration docs, and deployment.
-- Team 2 owns `src/contracts/`, `src/app/api/`, `src/server/`, `src/lib/api/`, `src/lib/auth/`, `supabase/`, and backend verification.
-- Team 3 owns `src/features/visualization/`, `src/features/operator/`, `src/app/(floor)/`, `public/demo/`, and geometry verification.
-- A cross-owner change must be requested through `docs/coordination/requests/team-N/` and accepted in the target owner's own status file. Do not edit another team's status or feature paths.
-- Team 1 alone updates package manifests, lockfile, shared root config, shared CSS/UI primitives, CI, and deployment config.
+Read `docs/product/overview.md` for Henry's current product brief, then `docs/integration/status.md` for what is working and what remains. The older team-specific instructions in `docs/coordination/` and `docs/ownership.md` describe stopped workstreams; they are historical context, not current ownership assignments. Use `src/contracts/` for the implemented API vocabulary. Do not claim inferred geometry, AI output, or manufacturing suitability as verified fact.
 
 ## Working rules
 
@@ -18,7 +10,7 @@ The product and engineering boundary are recorded in `docs/product/overview.md`,
 - Keep server secrets out of browser bundles, source control, logs, and QR URLs.
 - UI code calls only the typed same-origin API client. Do not access database tables directly from feature UI.
 - Use immutable release snapshots and `expectedVersion` for mutable writes. Show actual server errors and do not convert fixture behavior into deployment success.
-- Respect `docs/integration/protocol.md`: inspect before editing, use isolated worktrees, review diffs, merge current main, run relevant checks, and never force-push.
+- Inspect current main before editing, use isolated branches/worktrees, review diffs, run relevant checks, and never force-push. Keep `docs/integration/status.md` current so other chats have a truthful handoff.
 - Tests and checks are required when a task asks for verification. Record the exact command and outcome.
 
 <!-- BEGIN:nextjs-agent-rules -->

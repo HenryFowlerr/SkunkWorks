@@ -1,4 +1,6 @@
-# File and integration ownership
+# Historical file and integration ownership
+
+The three team assignments below ended when Henry stopped those agents. Current work follows [the product brief](product/overview.md), [build status](integration/status.md), and `AGENTS.md`.
 
 The three workstreams share the single TypeScript Next.js application. The common contract and change process are in [the architecture](product/architecture-and-contracts.md) and [delivery protocol](integration/protocol.md).
 

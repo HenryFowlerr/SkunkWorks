@@ -113,3 +113,6 @@ The proposed Supabase setup follows the official [SSR client guidance](https://s
 Rendering/import choices refer to [Three.js GLTFLoader](https://threejs.org/docs/pages/GLTFLoader.html); the application structure refers to [Next.js route handlers](https://nextjs.org/docs/app/getting-started/route-handlers). A file-loader capability is not a semantic CAD-unfolding capability.
 
 Industrial context: [SOLIDWORKS bend tables](https://help.solidworks.com/2024/English/SolidWorks/sldworks/c_Bend_Tables.htm) already contain bend identifiers and parameters; [Delem Profile-T](https://www.delem.com/en/solutions/offline-software/profile-t/profile-t) advertises sequencing and collision checks; [Bystronic](https://www.bystronic.com/usa/en-us/news/240220-press-brake-essentials) describes tooling-dependent forming concerns. These explain the boundary around this prototype. They do not establish its customer demand or expected savings.
+# Historical coordination protocol
+
+The three-team ownership process below belonged to stopped agents. For current work, use [the product brief](../product/overview.md), [build status](status.md), and `AGENTS.md`. Keep its safe Git/review principles, but do not wait for absent team owners.

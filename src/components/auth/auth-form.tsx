@@ -69,9 +69,9 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   return (
     <main className="auth-shell">
       <section className="auth-story" aria-labelledby="auth-story-title">
-        <Link className="brand-lockup" href="/" aria-label="SkunkWorks home">
-          <span className="brand-mark" aria-hidden="true">S</span>
-          <span>SkunkWorks</span>
+        <Link className="brand-lockup" href="/" aria-label="Chappe home">
+          <span className="brand-mark" aria-hidden="true">C</span>
+          <span>Chappe</span>
         </Link>
         <div className="auth-story__content">
           <p className="eyebrow">Prototype programmes</p>

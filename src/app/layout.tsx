@@ -4,11 +4,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "SkunkWorks · Prototype handoff",
-    template: "%s · SkunkWorks",
+    default: "Chappe · Engineering to workshop",
+    template: "%s · Chappe",
   },
   description:
-    "Keep every numbered bend understandable from the designer's drawing to the workshop floor.",
+    "Review complex manufacturing instructions and workshop capabilities before releasing a QR-linked floor guide.",
   referrer: "strict-origin-when-cross-origin",
 };
 

@@ -106,8 +106,8 @@ function StudioFrame({ children, context }: { children: ReactNode; context: Stud
   return (
     <div className={styles.frame}>
       <aside className={styles.sidebar}>
-        <Link className={styles.brand} href={`/studio${workspaceQuery}`} aria-label={`SkunkWorks ${workspaceLabel.toLowerCase()}`}>
-          <span className={styles.brandMark} aria-hidden="true">S</span><span>SkunkWorks</span>
+        <Link className={styles.brand} href={`/studio${workspaceQuery}`} aria-label={`Chappe ${workspaceLabel.toLowerCase()}`}>
+          <span className={styles.brandMark} aria-hidden="true">C</span><span>Chappe</span>
         </Link>
         <p className={styles.navLabel}>{workspaceLabel}</p>
         <nav className={styles.nav} aria-label={workspaceLabel}>

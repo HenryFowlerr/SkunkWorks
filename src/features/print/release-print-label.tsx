@@ -104,7 +104,7 @@ function ReleasePrintSession({ releaseId, client }: { releaseId: string; client:
   return (
     <main className={styles.printPage}>
       <header className={styles.printControls}>
-        <div><p className={styles.eyebrow}>SkunkWorks · release label</p><h1>Print release QR label</h1></div>
+        <div><p className={styles.eyebrow}>Chappe · release label</p><h1>Print release QR label</h1></div>
         <div className={styles.controls}>
           {view ? <Button type="button" tone="secondary" small disabled={shareBusy} onClick={() => void issueShareLink(view.release.id)}>{shareBusy ? 'Issuing link…' : 'Issue a new QR link'}</Button> : null}
           <Button type="button" disabled={!view || !qrDataUrl || shareBusy} onClick={() => window.print()}>Print label</Button>
@@ -118,7 +118,7 @@ function ReleasePrintSession({ releaseId, client }: { releaseId: string; client:
       {view ? (
         <section className={styles.label} aria-label={`Printable label for ${view.job.partNumber}`}>
           <div className={styles.labelTop}>
-            <div className={styles.brand}><span className={styles.brandMark}>S</span><span>SkunkWorks</span></div>
+            <div className={styles.brand}><span className={styles.brandMark}>C</span><span>Chappe</span></div>
             <span className={styles.releaseNumber}>RELEASE {String(view.release.revisionNumber).padStart(2, '0')}</span>
           </div>
           <div className={styles.labelBody}>
