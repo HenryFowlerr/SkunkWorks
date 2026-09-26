@@ -1,5 +1,29 @@
 # Current build status
 
+## 26 September: stable part knowledge, native sources and AI replies
+
+This section supersedes older release-bound QR assumptions below. Henry's latest requirements are stable per-part QR, evolving approved knowledge, manufacturer smartphone priority, and no formal CAD revision workflow. The supplied test block and test sheet replace the undecided-demo-product statement. Source implementation is on `codex/part-knowledge-ai`; no live migrations, uploads, provider calls or deployment were performed in this slice.
+
+Implemented:
+
+- Stable `/parts/:jobId` entry checks workspace membership on every visit and resolves current approved guidance. Its login/signup flow preserves the part destination. Private native source previews can be viewed before guidance approval, without displaying draft instructions. Engineering can generate the stable part QR before approval; existing print labels now use it. Internal release IDs remain for approval context and compatibility, not QR identity.
+- Native SolidWorks part/drawing retention with upload limits, MIME normalization, private hash verification and a pending-export state. Native-only pairs can be saved. The cached PNG reader recovers genuine 640 × 480 model/drawing previews from **all four supplied files**, with bounded decompression and CRC checks. These are labelled cached source images, not interactive geometry or verified manufacturing facts. Original files and recovered images stay out of public git.
+- Member text flag creation and designer/admin responses through transactional, service-only RPCs. Idempotency, expected-version, workspace/operation scope and active membership are checked. Replies enter the existing applicable question-evidence path only after explicit engineer submission. Photo upload and anonymous visitor writes remain unsupported.
+- Versioned, prewritten AI prompts for guide proposals (`part-guide.v2`), floor questions (`part-question.v2`) and engineer reply drafts (`engineer-reply.v1`). The reply button uses authorized persisted issue context and checked citations, rejects stale issues before/after generation, and cannot send or persist its suggestion. “Use in reply editor” and “Approve and send reply” are separate actions.
+
+Validation on 26 September 2026:
+
+- `npm run check`: passed TypeScript, ESLint, **286 Vitest tests in 51 files**, and Next production build.
+- `PGLITE_TEST_MODULE=/private/tmp/chappe-feedback-sql/node_modules/@electric-sql/pglite/dist/index.js node --test tests/backend/data/feedback-sql.mjs`: **10/10** isolated PostgreSQL checks, including native source migration/preparation and service-only grants. Uses temporary PGlite 0.3.14; no live database. Does not simulate Supabase auth/storage or true concurrent connections.
+- `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/skunkworks-playwright-browsers npm run test:e2e`: **6/6** existing desktop/phone entry/auth smoke checks; these are not a signed-in end-to-end test.
+- Fixture-backed browser checks: AI suggestion/copy-to-editor at 1440/390 px; actual recovered native images through an injected API transport at 1440/390/320 px; stable print label at 1440/900/390/320 px. No horizontal overflow. The print label fits its 100 × 75 mm print area. UI uses existing review/phone/form patterns and `--ch-*` tokens. These checks verify rendering and controls, not live authentication or database writes.
+- `node scripts/extract-solidworks-previews.mts ...`: recovered four genuine native previews and hashes locally. Tiny drawing annotations remain too small to verify reliably.
+- Integrated the current main documentation update (`2a58993`) before publication; no static Pages assets were changed.
+
+Required before claiming live operation: apply `20260926090000_native_source_retention.sql` and `20260926110000_member_feedback.sql` to the intended Supabase project after review, configure server-only provider credentials, host Next.js server routes, and exercise real member uploads/scan/question/flag/approved-reply flow. The current guide generator still requires an authored bend manifest and readable PDF evidence; it does not infer either supplied part from native CAD. Full 3D conversion and general non-bend generation are not implemented by this slice.
+
+## Earlier deployment and implementation history
+
 Updated 26 September 2026. This file is the concise handoff for any new SkunkWorks/Chappe coding or design chat. Read [the product brief](../product/overview.md) first. Older `AGENT_HANDOFF.md` and `docs/coordination/team-*.md` record stopped workstreams and should not be mistaken for current instructions.
 
 ## Public demo and deployment

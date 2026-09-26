@@ -1,6 +1,14 @@
 # Chappe
 
-Chappe is a website for clearer engineering-to-workshop prototype handoffs. Engineers select a facility, review documented capability gaps, approve visual guidance for unusually complex work, and send a QR-linked guide to the floor. Operators can ask or flag a problem in the context of the exact released operation. SkunkWorks is the team and repository name.
+Chappe connects design information to the person making a part. A stable per-part QR opens an evolving knowledge base with source files, documented manufacturer capabilities, approved guidance, floor flags, and engineer-approved answers. SkunkWorks is the team and repository name.
+
+## Current implementation: supplied SolidWorks parts and AI prompts
+
+The Next.js app accepts native `.SLDPRT` / `.SLDDRW` pairs as private sources, verifies their bytes, and can recover bounded cached PNG previews without sending files to a conversion service. The engineer desk and `/parts/:jobId` phone entry show these as cached images, never as interactive CAD or verified manufacturing evidence. Both of Henry's supplied pairs have yielded genuine 640 × 480 previews locally. Originals and extracted images are not committed to this public repository. See [source inventory](docs/product/supplied-parts.md).
+
+The part QR is available before guidance approval and stays stable when approved guidance changes. Signed-in workspace members can ask questions and submit text flags; designers/admins explicitly approve replies. Prewritten versioned prompts cover draft guidance, evidence-grounded questions, and unsent engineer reply suggestions. See the [prompt runbook](docs/ai/prompt-runbook.md).
+
+This source implementation has passed local checks; **it is not a deployment claim**. Apply the native-source and member-feedback migrations to a reviewed target, configure the Next.js server and OpenAI provider, and verify a real signed-in round trip. The existing static Pages site below is a separate prepared demo. Actual interactive 3D conversion, readable PDF evidence for the supplied parts, anonymous QR access, and photo writes remain pending.
 
 ## Live website
 
