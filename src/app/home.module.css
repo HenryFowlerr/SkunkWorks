@@ -2,31 +2,31 @@
 .topbar, .hero, .section, .workflow, .closing, .footer { width: min(100% - 48px, 1200px); margin-inline: auto; }
 .topbar { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: var(--ch-space-6); border-bottom: 1px solid var(--ch-border); }
 .brand { display: inline-flex; align-items: center; gap: 11px; font-size: 1rem; font-weight: 700; letter-spacing: -.035em; text-decoration: none; }
-.brandMark { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--ch-text); border-radius: 8px; font-family: ui-monospace, monospace; font-size: .82rem; }
+.brandMark { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--ch-text); border-radius: var(--ch-radius-sm); font-family: ui-monospace, monospace; font-size: .82rem; }
 .topnav { display: flex; align-items: center; gap: clamp(16px, 2.4vw, 32px); }
 .topnav a { min-height: 44px; display: inline-flex; align-items: center; font-size: .84rem; font-weight: 570; text-decoration: none; }
 .topnav a:hover { color: var(--ch-blue); }
-.topnav .navCta { min-height: 40px; padding: 0 var(--ch-space-4); border: 1px solid var(--ch-border-strong); border-radius: var(--ch-radius-pill); background: var(--ch-surface); }
+.topnav .navCta { min-height: 40px; padding: 0 var(--ch-space-4); border: 1px solid var(--ch-border-strong); border-radius: var(--ch-radius-sm); background: var(--ch-surface); }
 .eyebrow, .diagramIndex, .featureNumber, .stageNumber { color: var(--ch-blue); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .73rem; letter-spacing: .09em; text-transform: uppercase; }
 .hero { min-height: 620px; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); align-items: center; gap: clamp(40px, 7vw, 110px); padding-block: 96px 112px; }
 .heroCopy h1 { max-width: 760px; margin: 20px 0 25px; font-size: clamp(3.5rem, 6.2vw, 6.4rem); font-weight: 560; line-height: .99; letter-spacing: -.073em; }
 .lede { max-width: 650px; margin: 0; color: var(--ch-text-secondary); font-size: clamp(1.05rem, 1.55vw, 1.2rem); line-height: 1.6; }
 .heroActions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 31px; }
 .heroNote { margin: 19px 0 0; color: var(--ch-text-secondary); font-size: .76rem; line-height: 1.5; }
-.heroDiagram { align-self: center; border: 1px solid var(--ch-border); border-radius: var(--ch-radius-md); padding: var(--ch-space-6); background: var(--ch-canvas-subtle); }
+.heroDiagram { align-self: center; border-top: 1px solid var(--ch-border-strong); border-bottom: 1px solid var(--ch-border); padding: var(--ch-space-6) 0; background: transparent; }
 .diagramHeader { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 13px; color: var(--ch-text-secondary); font-family: ui-monospace, monospace; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; }
 .liveDot { width: 8px; height: 8px; border-radius: 50%; background: var(--ch-blue); }
 .diagramRow { display: grid; grid-template-columns: 26px minmax(0, 1fr) 16px; align-items: center; gap: 12px; min-height: 86px; border-top: 1px solid var(--ch-border); }
 .diagramRow strong { display: block; font-size: .95rem; font-weight: 650; }
 .diagramRow small { display: block; margin-top: 5px; color: var(--ch-text-secondary); font-size: .76rem; line-height: 1.35; }
 .diagramArrow { color: var(--ch-blue); font-size: 1.05rem; }
-.diagramFooter { margin: 0; border-radius: var(--ch-radius-sm); padding: 12px; color: var(--ch-blue); background: var(--ch-blue-tint); font-size: .77rem; line-height: 1.45; }
+.diagramFooter { margin: 0; border-left: 3px solid var(--ch-blue); padding: 0 0 0 12px; color: var(--ch-blue); background: transparent; font-size: .77rem; line-height: 1.45; }
 .section, .workflow { border-top: 1px solid var(--ch-border); padding-block: 90px 100px; }
 .sectionIntro { max-width: 760px; }
 .sectionIntro h2 { margin: 13px 0 17px; font-size: clamp(2.2rem, 4.3vw, 4.3rem); font-weight: 560; line-height: 1.08; letter-spacing: -.055em; }
 .sectionIntro > p:last-child { max-width: 590px; color: var(--ch-text-secondary); font-size: 1rem; line-height: 1.6; }
 .featureGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; margin-top: 38px; }
-.featureCard { min-height: 245px; display: flex; flex-direction: column; border-top: 1px solid var(--ch-border-strong); padding: var(--ch-space-6) 0; background: var(--ch-surface); }
+.featureCard { min-height: 245px; display: flex; flex-direction: column; border-top: 1px solid var(--ch-border-strong); padding: var(--ch-space-6) 0; background: transparent; }
 .featureCard h3 { margin: 37px 0 11px; font-size: 1.25rem; letter-spacing: -.03em; }
 .featureCard p { margin: 0; color: var(--ch-text-secondary); font-size: .88rem; line-height: 1.58; }
 .workflow { display: grid; grid-template-columns: minmax(250px, .88fr) minmax(0, 1.12fr); gap: clamp(35px, 6vw, 95px); }
@@ -34,7 +34,7 @@
 .stageList li { display: grid; grid-template-columns: 36px 1fr; gap: 19px; border-top: 1px solid var(--ch-border); padding: 20px 0 22px; }
 .stageList h3 { margin: 0 0 6px; font-size: 1.04rem; }
 .stageList p { margin: 0; color: var(--ch-text-secondary); font-size: .86rem; line-height: 1.55; }
-.closing { display: flex; align-items: end; justify-content: space-between; gap: var(--ch-space-8); border-radius: var(--ch-radius-md); padding: clamp(28px, 5vw, 56px); background: var(--ch-blue-tint); }
+.closing { display: flex; align-items: end; justify-content: space-between; gap: var(--ch-space-8); border-top: 1px solid var(--ch-border-strong); border-bottom: 1px solid var(--ch-border); padding: clamp(28px, 5vw, 56px) 0; background: transparent; }
 .closing h2 { max-width: 790px; margin: 12px 0 0; font-size: clamp(2rem, 3.8vw, 3.6rem); font-weight: 570; line-height: 1.1; letter-spacing: -.05em; }
 .closing > a { flex: 0 0 auto; }
 .footer { display: grid; grid-template-columns: minmax(150px, .6fr) minmax(290px, 1.4fr); gap: 30px; padding-block: 56px 30px; color: var(--ch-text-secondary); font-size: .78rem; }

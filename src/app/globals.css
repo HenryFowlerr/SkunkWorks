@@ -10,8 +10,8 @@
   --ink-muted: var(--ch-text-secondary);
   --line: var(--ch-border);
   --line-strong: var(--ch-border-strong);
-  --blue: var(--ch-blue);
-  --blue-soft: var(--ch-blue-tint);
+  --blue: var(--ch-action);
+  --blue-soft: var(--ch-action-tint);
   --amber: var(--ch-status-review);
   --amber-soft: var(--ch-status-review-bg);
   --red: var(--ch-status-conflict);
@@ -21,7 +21,7 @@
   --radius-sm: var(--ch-radius-sm);
   --radius-md: var(--ch-radius-md);
   --radius-lg: var(--ch-radius-lg);
-  --shadow-panel: 0 12px 40px rgb(29 29 31 / 6%);
+  --shadow-panel: 0 8px 24px rgb(27 37 33 / 8%);
   font-family: var(--ch-font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -36,16 +36,16 @@ button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 3px solid var(--ch-blue);
+  outline: 3px solid var(--ch-focus);
   outline-offset: 2px;
 }
-::selection { color: var(--ink); background: var(--ch-blue-tint); }
+::selection { color: var(--ink); background: var(--ch-action-tint); }
 
 .eyebrow, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .eyebrow { color: var(--ink-muted); font-size: 0.72rem; letter-spacing: 0.11em; text-transform: uppercase; }
 .mono { font-variant-numeric: tabular-nums; }
 .brand-lockup { display: inline-flex; align-items: center; gap: 10px; color: inherit; font-size: 0.94rem; font-weight: 650; letter-spacing: -0.02em; text-decoration: none; }
-.brand-mark { display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 28px; border: 1px solid var(--ink); border-radius: 8px; font-family: ui-monospace, monospace; font-size: 0.82rem; }
+.brand-mark { display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 28px; border: 1px solid var(--ink); border-radius: var(--ch-radius-sm); font-family: ui-monospace, monospace; font-size: 0.82rem; }
 
 .button {
   min-height: 44px;
@@ -54,7 +54,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   justify-content: center;
   gap: 9px;
   border: 1px solid transparent;
-  border-radius: var(--ch-radius-pill);
+  border-radius: var(--ch-radius-sm);
   padding: 0 15px;
   font-size: 0.88rem;
   font-weight: 620;
@@ -64,8 +64,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 .button:disabled { cursor: not-allowed; opacity: 0.5; }
-.button--primary { color: white; background: var(--ch-blue); }
-.button--primary:hover:not(:disabled) { background: var(--ch-blue-hover); }
+.button--primary { color: white; background: var(--ch-action); }
+.button--primary:hover:not(:disabled) { background: var(--ch-action-hover); }
 .button--secondary { border-color: var(--line-strong); background: var(--surface); }
 .button--secondary:hover:not(:disabled) { background: var(--surface-muted); }
 .button--quiet { color: var(--ink-muted); background: transparent; }
@@ -91,20 +91,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .field__hint { color: var(--ink-muted); }
 .field__error { color: var(--red); }
 
-.panel { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); }
-.panel__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); padding: 16px 18px; }
+.panel { min-width: 0; border-top: 1px solid var(--line); background: transparent; }
+.panel--surface { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); }
+.panel__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); padding: 16px 0; }
+.panel--surface .panel__header { padding-inline: 18px; }
 .panel__heading { min-width: 0; }
 .panel__title { margin: 4px 0 0; font-size: 1rem; letter-spacing: -0.02em; }
-.panel__body { padding: 18px; }
+.panel__body { padding: 18px 0; }
+.panel--surface .panel__body { padding-inline: 18px; }
 
-.status-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; border-radius: 999px; padding: 3px 9px; font-size: 0.71rem; font-weight: 640; line-height: 1.2; white-space: nowrap; }
+.status-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; border-radius: var(--ch-radius-sm); padding: 3px 9px; font-size: 0.71rem; font-weight: 640; line-height: 1.2; white-space: nowrap; }
 .status-pill--neutral { color: #555950; background: #eeefe9; }
-.status-pill--info { color: #174f7b; background: var(--blue-soft); }
+.status-pill--info { color: var(--ch-action); background: var(--blue-soft); }
 .status-pill--review { color: #80500c; background: var(--amber-soft); }
 .status-pill--blocked { color: #96382f; background: var(--red-soft); }
 .status-pill--complete { color: #285c44; background: var(--green-soft); }
 
-.source-reference { display: inline-flex; align-items: flex-start; gap: 7px; color: var(--blue); font-size: 0.77rem; line-height: 1.4; text-decoration: none; }
+.source-reference { display: inline-flex; align-items: flex-start; gap: 7px; color: var(--ch-action); font-size: 0.77rem; line-height: 1.4; text-decoration: none; }
 .source-reference:hover { text-decoration: underline; text-underline-offset: 3px; }
 .source-reference__icon { flex: 0 0 auto; font-size: 0.8rem; }
 .source-reference__text { display: grid; gap: 1px; }
@@ -133,7 +136,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .auth-message--error { color: #87352e; border-color: #e6b7b1; background: var(--red-soft); }
 .auth-message--notice { color: #285c44; border-color: #b5d4c0; background: var(--green-soft); }
 .auth-switch { margin: 22px 0 0; color: var(--ink-muted); font-size: 0.82rem; }
-.auth-switch a { color: var(--blue); font-weight: 650; text-underline-offset: 3px; }
+.auth-switch a { color: var(--ch-action); font-weight: 650; text-underline-offset: 3px; }
 .auth-service-note { margin: 22px 0 0; border-top: 1px solid var(--line); padding-top: 14px; color: var(--ink-muted); font-size: 0.71rem; line-height: 1.45; }
 
 @media (max-width: 760px) {

@@ -74,7 +74,7 @@ Desktop list: open issues first, with job, release, operation, reporter, age and
 
 | Component | Placement and behaviour | Wording rule |
 |---|---|---|
-| Primary button | One per decision region, blue; top or near task end | Verb + object: “Publish release” |
+| Primary button | One per decision region, petrol action; top or near task end | Verb + object: “Publish release” |
 | Secondary button | Adjacent for alternative action | “Save draft”, “View source” |
 | Destructive action | Separate, explicit confirmation | Name what will be removed |
 | Status label | Beside related fact, with text and semantic colour | “Unknown — no profile data” |
@@ -105,7 +105,7 @@ New CSS should consume `--ch-*` variables from [`design-tokens.css`](../../src/a
   background: var(--ch-surface);
 }
 .reviewRow[aria-selected="true"] {
-  background: var(--ch-blue-tint);
+  background: var(--ch-action-tint);
 }
 .reviewRow__meta {
   color: var(--ch-text-secondary);
