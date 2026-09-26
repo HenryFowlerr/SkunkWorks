@@ -1,5 +1,9 @@
 # Current build status
 
+## 26 September: engineering and manufacturing UX
+
+`codex/workflow-ux` builds on `codex/part-knowledge-ai`. Dedicated manufacturing list, handoff and equipment routes now separate the two work areas. Engineering adds part search, progress and section navigation; manufacturing groups approved specifications, exact selected facility evidence and contextual answers. Public Pages also separates its received-work and equipment screens. See [the workflow audit](../product/workflow-ux-audit.md) for routes, source rules, verification and unresolved product gaps. No live migrations, production uploads, AI calls or deployment occurred.
+
 ## 26 September: stable part knowledge, native sources and AI replies
 
 This section supersedes older release-bound QR assumptions below. Henry's latest requirements are stable per-part QR, evolving approved knowledge, manufacturer smartphone priority, and no formal CAD revision workflow. The supplied test block and test sheet replace the undecided-demo-product statement. Source implementation is on `codex/part-knowledge-ai`; no live migrations, uploads, provider calls or deployment were performed in this slice.

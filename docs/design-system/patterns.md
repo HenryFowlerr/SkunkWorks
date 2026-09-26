@@ -114,3 +114,7 @@ New CSS should consume `--ch-*` variables from [`design-tokens.css`](../../src/a
 ```
 
 Do not add inline hex values to new modules. Prefer an existing shared component; if a pattern must be repeated, add a shared component and document its states. Verify on an actual screenshot at desktop and phone widths; a passing build does not prove the hierarchy is right.
+
+## Separate engineering and manufacturing work areas
+
+Use a shared compact top navigation to switch work areas, then task-specific side navigation. Engineering opens the parts/jobs list and review desk. Manufacturing opens parts/handoffs, with equipment editing on a separate route. A handoff groups approved part requirements, selected facility evidence and contextual questions; unavailable historical evidence must not be replaced with a newer profile. Use flat rows, a definition list for specifications, and a contained horizontally scrollable operation table on narrow phones. Switching workspace returns to that work area's list rather than preserving the previous part URL.

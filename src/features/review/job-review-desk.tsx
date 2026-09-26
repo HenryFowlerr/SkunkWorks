@@ -645,14 +645,23 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
     <main className={styles.reviewShell}>
       <header className={styles.reviewHeader}>
         <div>
-          <p className={styles.eyebrow}>Designer review desk · {role}</p>
+          <p className={styles.eyebrow}>Engineering · part review</p>
           <h1>{jobLoad?.job.title ?? 'Job review'}</h1>
           {jobLoad ? <p className={styles.subtitle}>{jobLoad.job.partNumber} · {jobLoad.job.partFamily} · version {jobLoad.job.version}</p> : <p className={styles.subtitle}>Job {jobId}</p>}
         </div>
-        <Button type="button" tone="secondary" small onClick={() => setReloadCount((count) => count + 1)} disabled={loading}>Reload server state</Button>
+        <Button type="button" tone="secondary" small onClick={() => setReloadCount((count) => count + 1)} disabled={loading}>Refresh part</Button>
       </header>
 
-      {jobLoad ? <PartQr key={jobLoad.job.id} jobId={jobLoad.job.id} /> : null}
+      {jobLoad ? <>
+        <section className={styles.workflowSummary} aria-label="Part handoff progress">
+          <div><strong>Sources</strong><span>{sourceAssets.filter(a => a.status === 'ready').length} retained files · {drawing ? 'drawing PDF available' : 'readable drawing PDF needed'}</span></div>
+          <div><strong>Guidance</strong><span>{draft ? `${draft.content.steps.filter(s => s.guidance?.decision === 'include').length} detailed operations selected` : 'No draft prepared'}</span></div>
+          <div><strong>Floor handoff</strong><span>{jobLoad.job.latestReleaseId ? 'Approved guidance available' : 'Awaiting engineering approval'}</span></div>
+          <div><strong>Questions</strong><span>{flagsLoading ? 'Loading…' : `${flags.filter(f => f.status === 'open').length} awaiting an answer`}</span></div>
+        </section>
+        <nav className={styles.taskNav} aria-label="Engineering part sections"><a href="#part-sources">Sources and specifications</a><a href="#facility-check">Facility check</a><a href="#part-guidance">Guidance</a><a href="#part-approval">Approval and handoff</a><a href="#part-issues">Floor questions</a></nav>
+        <PartQr key={jobLoad.job.id} jobId={jobLoad.job.id} />
+      </> : null}
       {loadError ? <p className={styles.error} role="alert">{loadError}</p> : null}
       {operationError ? <p className={styles.error} role="alert">{operationError}</p> : null}
       {actionMessage ? <p className={styles.success} role="status">{actionMessage}</p> : null}
@@ -663,7 +672,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
           <section className={styles.reviewGrid}>
             <div className={styles.reviewColumn}>
               <NativePartSources assets={sourceAssets} client={client} />
-              <Panel title="Source drawing" eyebrow="Authorized source" className={styles.sourcePanel}>
+              <Panel id="part-sources" title="Source drawing" eyebrow="Authorized source" className={styles.sourcePanel}>
                 <PanelBody>
                   {drawing ? (
                     <>
@@ -679,7 +688,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
               </Panel>
 
               {draft ? (
-                <Panel title="Process sequence and phone guidance" eyebrow="Engineer decision">
+                <Panel id="part-guidance" title="Process sequence and phone guidance" eyebrow="Engineer decision">
                   <PanelBody>
                     {currentStep ? <div className={styles.currentStep}><p className={styles.eyebrow}>Step {currentStepIndex + 1} of {draft.content.steps.length} · {currentStep.id}</p><h3>{currentStep.instruction}</h3><p>Bend {currentStep.bendId}</p><EvidenceList evidence={currentStep.evidence} assets={sourceAssets} links={assetLinks} /></div> : <p className={styles.subtle}>This draft has no instruction steps yet.</p>}
                     {currentStep ? <div className={styles.guideEditor}>
@@ -769,7 +778,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
                   </Panel>
                 </>
               ) : !loading && !loadError ? (
-                <Panel title="Generate the first draft" eyebrow="Uses this job’s real source packet">
+                <Panel id="part-guidance" title="Generate the first draft" eyebrow="Uses this job’s real source packet">
                   <PanelBody>
                     <p className={styles.subtle}>Ask the service to read the uploaded drawing, model and selected workshop setup. The review desk opens only after the API returns a saved draft.</p>
                     {generationError ? <p className={styles.error} role="alert">{generationError}</p> : null}
@@ -822,7 +831,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
           ) : null}
 
           <section className={styles.reviewGrid}>
-            <Panel title="Review and publish" eyebrow="Server-authorized actions">
+            <Panel id="part-approval" title="Review and publish" eyebrow="Server-authorized actions">
               <PanelBody>
                 {draft ? <>
                   <p className={styles.subtle}>Review actions are sent to the API with your current session and role. API authorization and validation errors are shown above.</p>
@@ -838,7 +847,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
               </PanelBody>
             </Panel>
 
-            <Panel title="Factory-floor issues" eyebrow="Exact release context" action={<Button type="button" tone="quiet" small disabled={flagsLoading} onClick={() => setReloadCount((count) => count + 1)}>Reload issues</Button>}>
+            <Panel id="part-issues" title="Factory-floor issues" eyebrow="Exact release context" action={<Button type="button" tone="quiet" small disabled={flagsLoading} onClick={() => setReloadCount((count) => count + 1)}>Reload issues</Button>}>
               <PanelBody className={styles.flagList}>
                 {flagsLoading ? <p className={styles.subtle} role="status">Loading issue responses…</p> : null}
                 {flagsError ? <p className={styles.error} role="alert">{flagsError}</p> : null}

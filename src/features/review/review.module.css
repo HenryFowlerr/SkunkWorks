@@ -94,3 +94,10 @@
   .originalText { font-size: .75rem; }
   .sceneBox { min-height: 240px; }
 }
+
+.workflowSummary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-block:1px solid var(--ch-border); gap:var(--ch-space-4); padding:var(--ch-space-4) 0; }
+.workflowSummary div { display:grid; gap:var(--ch-space-2); }
+.workflowSummary span { color:var(--ch-text-secondary); line-height:1.5; font-size:.85rem; }
+.taskNav { display:flex; flex-wrap:wrap; gap:var(--ch-space-4); }
+.taskNav a { min-height:44px; display:inline-flex; align-items:center; }
+@media(max-width:760px) { .workflowSummary { grid-template-columns:repeat(2,minmax(0,1fr)); } }
