@@ -24,3 +24,10 @@
 ## Next bounded action
 
 Read `AGENT_HANDOFF.md`, continue from the pushed combined commit, implement the missing Team 2 route packages against the existing contracts, wire the Team 1 proxy to `updateSession`, then obtain the dedicated Supabase/OpenAI/deploy configuration before applying a reviewed migration or claiming any live gate.
+
+## 2026-09-26 continuation
+
+- Henry has not selected the demo part. Keep the existing synthetic bend packets as explicit examples and avoid presenting them as Henry's chosen product.
+- Team 1 continuation branch `codex/part-agnostic-foundation` adds `src/proxy.ts` for studio session refresh; connects the actual jobs page to job detail navigation; exposes Start job for designers/admins; preserves selected workspace in those links; and gives fabricators a distinct workshop jobs view with setup navigation. Code commit: `9581852`.
+- `npm ci --prefer-offline --no-audit --no-fund` and `npm run check` passed on that commit: typecheck, lint, 24 Vitest files / 146 tests, and Next.js production build with Proxy detected. No real Supabase/OpenAI/deployment verification was performed.
+- Next: Team 2 should complete the missing persisted job, draft, release, QR, question and flag routes. Team 1 then needs a live browser run through the connected workflow. The selected physical part and output artwork remain open decisions.

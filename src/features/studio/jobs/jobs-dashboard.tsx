@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { Job } from "@/contracts";
-import { Button, Panel, PanelBody, StatusBadge } from "@/components/ui";
+import type { Job, Role } from "@/contracts";
+import { Button, Panel, PanelBody, StatusBadge, buttonClassName } from "@/components/ui";
 import { api } from "@/lib/api/client";
 import styles from "./jobs.module.css";
 
@@ -18,11 +19,14 @@ function jobStage(job: Job) {
 
 export function JobsDashboard({
   workspaceId,
+  role = "designer",
   onOpenJob,
 }: {
   workspaceId: string;
+  role?: Role;
   onOpenJob?: (job: Job) => void;
 }) {
+  const isFabricator = role === "fabricator";
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,13 +58,18 @@ export function JobsDashboard({
     <div className={styles.stack}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>Designer workspace</p>
-          <h1>Jobs</h1>
-          <p className={styles.muted}>Source-backed work moving from design review to the factory floor.</p>
+          <p className={styles.eyebrow}>{isFabricator ? "Workshop workspace" : "Designer workspace"}</p>
+          <h1>{isFabricator ? "Workshop jobs" : "Jobs"}</h1>
+          <p className={styles.muted}>{isFabricator
+            ? "Review the selected setup and guide before work begins. Open a job to see its source and current review state."
+            : "Source-backed work moving from design review to the factory floor."}</p>
         </div>
-        <Button type="button" tone="secondary" onClick={() => { setLoading(true); setError(null); setReloadVersion((value) => value + 1); }} disabled={isLoading}>
-          {isLoading ? "Refreshing…" : "Refresh jobs"}
-        </Button>
+        <div className={styles.headingActions}>
+          {isFabricator ? null : <Link className={buttonClassName()} href={`/studio/jobs/new?workspace=${encodeURIComponent(workspaceId)}`}>Start job</Link>}
+          <Button type="button" tone="secondary" onClick={() => { setLoading(true); setError(null); setReloadVersion((value) => value + 1); }} disabled={isLoading}>
+            {isLoading ? "Refreshing…" : "Refresh jobs"}
+          </Button>
+        </div>
       </div>
 
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
@@ -71,7 +80,9 @@ export function JobsDashboard({
           {!isLoading && !error && visibleJobs.length === 0 ? (
             <div>
               <p className={styles.muted}>No jobs have been created in this workspace yet.</p>
-              <p className={styles.muted}>Start a job intake to attach a drawing, model and confirmed workshop machine.</p>
+              <p className={styles.muted}>{isFabricator
+                ? "When a designer shares a job with this workspace, its drawing, setup and guide review will appear here."
+                : "Start a job intake to attach a drawing, model and confirmed workshop machine."}</p>
             </div>
           ) : null}
           {visibleJobs.length > 0 ? (

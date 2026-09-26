@@ -90,6 +90,8 @@ function StudioFrame({ children, context }: { children: ReactNode; context: Stud
   const router = useRouter();
   const workspaceOptions = context.session.memberships;
   const [signOutError, setSignOutError] = useState<string | null>(null);
+  const workspaceLabel = context.role === "fabricator" ? "Workshop workspace" : "Designer workspace";
+  const workspaceQuery = `?workspace=${encodeURIComponent(context.workspaceId)}`;
 
   async function signOut() {
     setSignOutError(null);
@@ -104,14 +106,14 @@ function StudioFrame({ children, context }: { children: ReactNode; context: Stud
   return (
     <div className={styles.frame}>
       <aside className={styles.sidebar}>
-        <Link className={styles.brand} href="/studio" aria-label="SkunkWorks designer desk">
+        <Link className={styles.brand} href={`/studio${workspaceQuery}`} aria-label={`SkunkWorks ${workspaceLabel.toLowerCase()}`}>
           <span className={styles.brandMark} aria-hidden="true">S</span><span>SkunkWorks</span>
         </Link>
-        <p className={styles.navLabel}>Designer workspace</p>
-        <nav className={styles.nav} aria-label="Designer workspace">
-          <Link href="/studio">Jobs <span aria-hidden="true">↗</span></Link>
-          <Link href="/studio/workshops">Workshop setup <span aria-hidden="true">↗</span></Link>
-          <Link href="/studio/invites">Invitations <span aria-hidden="true">↗</span></Link>
+        <p className={styles.navLabel}>{workspaceLabel}</p>
+        <nav className={styles.nav} aria-label={workspaceLabel}>
+          <Link href={`/studio${workspaceQuery}`}>Jobs <span aria-hidden="true">↗</span></Link>
+          <Link href={`/studio/workshops${workspaceQuery}`}>{context.role === "fabricator" ? "Equipment and setup" : "Workshop setup"} <span aria-hidden="true">↗</span></Link>
+          {context.role === "admin" ? <Link href={`/studio/invites${workspaceQuery}`}>Invitations <span aria-hidden="true">↗</span></Link> : null}
         </nav>
         <div className={styles.sidebarFooter}>
           <label className={styles.workspaceLabel} htmlFor="workspace-switcher">Workspace</label>
