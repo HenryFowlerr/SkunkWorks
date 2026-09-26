@@ -26,6 +26,7 @@ type IssueRow = {
   kind: "question" | "flag";
   body: string;
   status: "pending" | "answered";
+  hold_active: boolean;
   answer: string | null;
   created_at: string;
   answered_at: string | null;
@@ -86,7 +87,7 @@ async function loadSession(id: unknown): Promise<SessionRow> {
 }
 async function view(session: SessionRow) {
   const issues = await query<IssueRow[]>(
-    `demo_issues?session_id=eq.${session.id}&select=id,session_id,operation_id,kind,body,status,answer,created_at,answered_at&order=created_at.desc`,
+    `demo_issues?session_id=eq.${session.id}&select=id,session_id,operation_id,kind,body,status,hold_active,answer,created_at,answered_at&order=created_at.desc`,
   );
   return {
     session: {
@@ -102,6 +103,7 @@ async function view(session: SessionRow) {
         kind: issue.kind,
         body: issue.body,
         status: issue.status,
+        holdActive: issue.hold_active,
         answer: issue.answer,
         createdAt: issue.created_at,
         answeredAt: issue.answered_at,
@@ -179,10 +181,12 @@ Deno.serve(async (request: Request) => {
       }
       const answer = typeof body.answer === "string" ? body.answer.trim() : "";
       if (!answer || answer.length > 1000) throw new HttpError(400, "Use 1–1000 characters.");
+      const holdActive = typeof body.holdActive === "boolean" ? body.holdActive : true;
       const updated = await query<IssueRow[]>(
         `demo_issues?id=eq.${body.issueId}&session_id=eq.${session.id}&status=eq.pending`,
         { method: "PATCH", body: JSON.stringify({
-          status: "answered", answer, answered_at: new Date().toISOString(),
+          status: "answered", answer, hold_active: holdActive,
+          answered_at: new Date().toISOString(),
         }) },
       );
       if (!updated[0]) throw new HttpError(409, "This issue was already answered or is unavailable.");
