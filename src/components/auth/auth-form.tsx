@@ -23,7 +23,7 @@ function safeReturnPath(value: string | null) {
   }
 }
 
-export function AuthForm({ mode }: { mode: AuthMode }) {
+export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string }) {
   const router = useRouter();
   const isSignUp = mode === "signUp";
   const [displayName, setDisplayName] = useState("");
@@ -32,6 +32,9 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const returnQuery = returnTo?.startsWith("/invite/") && /^\/invite\/[A-Za-z0-9_-]{43}$/.test(returnTo)
+    ? `?returnTo=${encodeURIComponent(returnTo)}`
+    : "";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,10 +44,13 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
     try {
       if (isSignUp) {
+        const requested = returnTo ?? new URLSearchParams(window.location.search).get("returnTo");
+        const returnPath = safeReturnPath(requested);
         const result = await api.auth.signUp({
           email: email.trim(),
           password,
           ...(displayName.trim() ? { displayName: displayName.trim() } : {}),
+          ...(returnPath ? { returnPath } : {}),
         });
         setPassword("");
         setNotice(
@@ -57,8 +63,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
       await api.auth.signIn({ email: email.trim(), password });
       setPassword("");
-      const returnTo = new URLSearchParams(window.location.search).get("returnTo");
-      router.replace(safeReturnPath(returnTo) ?? "/studio");
+      const requested = returnTo ?? new URLSearchParams(window.location.search).get("returnTo");
+      router.replace(safeReturnPath(requested) ?? "/studio");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The account request could not be completed.");
     } finally {
@@ -145,7 +151,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
           <p className="auth-switch">
             {isSignUp ? "Already have an account?" : "New to this workspace?"}{" "}
-            <Link href={isSignUp ? "/login" : "/signup"}>{isSignUp ? "Sign in" : "Create an account"}</Link>
+            <Link href={`${isSignUp ? "/login" : "/signup"}${returnQuery}`}>{isSignUp ? "Sign in" : "Create an account"}</Link>
           </p>
           <p className="auth-service-note">Account changes are confirmed only after the service responds.</p>
         </div>

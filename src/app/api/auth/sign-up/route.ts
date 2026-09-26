@@ -6,12 +6,16 @@ export async function POST(request: Request): Promise<Response> {
   return handleApiOperation(async () => {
     const input = await parseApiBody(request, SignUpInputSchema);
     const supabase = await createSupabaseServerClient();
-    const callback = new URL("/auth/callback?next=/studio", request.url).toString();
+    const destination = input.returnPath && /^\/invite\/[A-Za-z0-9_-]{43}$/.test(input.returnPath)
+      ? input.returnPath
+      : "/studio";
+    const callback = new URL("/auth/callback", request.url);
+    callback.searchParams.set("next", destination);
     const { data, error } = await supabase.auth.signUp({
       email: input.email,
       password: input.password,
       options: {
-        emailRedirectTo: callback,
+        emailRedirectTo: callback.toString(),
         ...(input.displayName ? { data: { display_name: input.displayName } } : {}),
       },
     });

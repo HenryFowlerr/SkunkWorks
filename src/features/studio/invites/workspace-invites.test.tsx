@@ -15,16 +15,19 @@ describe("WorkspaceInvites", () => {
       id: "invite-1",
       workspaceId: "workspace-1",
       role: "fabricator",
+      invitedEmail: "floor@example.com",
       createdAt: "2026-09-26T00:00:00.000Z",
       expiresAt: "2026-09-27T00:00:00.000Z",
       inviteUrl: "https://app.example/invite/opaque-token",
     });
     render(<WorkspaceInvites workspaceId="workspace-1" role="admin" />);
 
+    fireEvent.change(screen.getByLabelText("Recipient email"), { target: { value: "floor@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Create invitation link" }));
 
     expect(await screen.findByText("https://app.example/invite/opaque-token")).toBeTruthy();
-    expect(invite).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "workspace-1", role: "fabricator" }));
+    expect(invite).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "workspace-1", role: "fabricator", invitedEmail: "floor@example.com" }));
+    expect(screen.getByText("For floor@example.com")).toBeTruthy();
   });
 
   it("does not offer invitation creation to non-admin roles", () => {
@@ -37,6 +40,7 @@ describe("WorkspaceInvites", () => {
   it("reports an API failure without displaying an issued link", async () => {
     invite.mockRejectedValueOnce(new Error("Workspace invitations are unavailable."));
     render(<WorkspaceInvites workspaceId="workspace-1" role="admin" />);
+    fireEvent.change(screen.getByLabelText("Recipient email"), { target: { value: "floor@example.com" } });
     await act(async () => {
       fireEvent.submit(screen.getByRole("button", { name: "Create invitation link" }).closest("form")!);
     });
