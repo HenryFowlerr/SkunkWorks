@@ -42,6 +42,9 @@ export function getPublishBlockers(draft: PublishDraftSnapshot, isDirty = false)
   if (draft.content.machineProposals.some((proposal) => proposal.status === 'proposed')) {
     blockers.push('Decide every machine order proposal.');
   }
+  if (draft.content.steps.some((step) => !step.guidance || step.guidance.decision === 'pending')) {
+    blockers.push('Decide which operations need detailed phone guidance.');
+  }
   return blockers;
 }
 

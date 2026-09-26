@@ -75,6 +75,9 @@ export function assertPublishable(state: PublicationState, expectedDraftVersion:
   ) {
     throw new DomainError("MAPPING_REQUIRED", "Every numbered bend must map to exactly one ordered step.");
   }
+  if (draft.content.steps.some((step) => !step.guidance || step.guidance.decision === "pending")) {
+    throw new DomainError("REVIEW_REQUIRED", "The engineer must decide whether each operation needs detailed phone guidance.");
+  }
   const hingeIds = new Set(draft.content.panelModel.hinges.map((hinge) => hinge.id));
   for (const bend of draft.content.bends) {
     const rotation = bend.foldRotationDeg;

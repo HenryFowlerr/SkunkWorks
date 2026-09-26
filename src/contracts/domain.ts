@@ -354,12 +354,21 @@ export const BendSchema = z.object({
 }).strict();
 export type Bend = z.infer<typeof BendSchema>;
 
+export const StepGuidanceSchema = z.object({
+  suggestion: z.enum(["complex", "routine", "uncertain"]),
+  rationale: z.string().trim().max(500),
+  decision: z.enum(["pending", "include", "exclude"]),
+}).strict();
+export type StepGuidance = z.infer<typeof StepGuidanceSchema>;
+
 export const StepSchema = z.object({
   id: IdSchema,
   bendId: nonEmptyString,
   instruction: nonEmptyString,
   evidence: z.array(EvidenceRefSchema),
   camera: z.object({ positionMm: Vec3Schema, targetMm: Vec3Schema }).strict().nullable(),
+  // Legacy drafts may lack this field; publication requires an explicit decision.
+  guidance: StepGuidanceSchema.optional(),
 }).strict();
 export type Step = z.infer<typeof StepSchema>;
 

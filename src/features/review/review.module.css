@@ -18,6 +18,9 @@
 .currentStep { display: grid; gap: 6px; }
 .currentStep h3 { margin: 2px 0; font-size: 1.02rem; line-height: 1.4; }
 .currentStep > p:not(.eyebrow) { margin: 0; font-size: .8rem; font-weight: 650; }
+.guideEditor { display: grid; gap: 8px; border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; }
+.guideEditor .subtle { margin: 0; }
+.guideEditor :global(textarea) { resize: vertical; }
 .stepList { display: grid; gap: 5px; max-height: 250px; overflow: auto; margin: 14px -6px; padding: 6px; scroll-padding-block: 8px; }
 .stepRow { display: grid; grid-template-columns: minmax(0, 1fr) 92px; align-items: stretch; gap: 4px; min-width: 0; }
 .stepButton, .stepActive { display: grid; grid-template-columns: 34px minmax(65px, .3fr) 1fr; align-items: center; gap: 8px; width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 7px 9px; text-align: left; color: var(--ink); background: var(--surface); font-size: .73rem; cursor: pointer; }

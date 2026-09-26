@@ -12,6 +12,8 @@ Read `docs/product/overview.md` for Henry's current product brief, then `docs/in
 - Use immutable release snapshots and `expectedVersion` for mutable writes. Show actual server errors and do not convert fixture behavior into deployment success.
 - Inspect current main before editing, use isolated branches/worktrees, review diffs, run relevant checks, and never force-push. Keep `docs/integration/status.md` current so other chats have a truthful handoff.
 - Tests and checks are required when a task asks for verification. Record the exact command and outcome.
+- When a long chat starts losing efficiency or approaches its context limit, start a fresh Codex task for a bounded continuation. First commit or publish the current work, then give the new task the exact branch/PR, current status, tests, open risks, and the two canonical docs above. Do not make the new task infer progress from chat history alone.
+- Use parallel agents or separate tasks for independent slices when they speed up delivery. Give each an isolated worktree and explicit file boundaries; integrate their verified changes back into `main` and update this handoff.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

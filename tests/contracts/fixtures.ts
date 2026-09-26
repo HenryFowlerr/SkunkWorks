@@ -162,6 +162,7 @@ export const draftContent: DraftContent = {
     instruction: "Make bend B1 upward to the marked angle.",
     evidence: [documentEvidence],
     camera: { positionMm: [180, 120, 180], targetMm: [50, 20, 0] },
+    guidance: { suggestion: "complex", rationale: "The marked direction needs a visual check.", decision: "include" },
   }],
   findings: [],
   machineProposals: [],

@@ -196,7 +196,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
   const snapshot = release?.snapshot ?? null;
   const allSteps = snapshot?.steps ?? [];
   // An older step without a recorded engineer decision is not an approved floor guide.
-  const steps = allSteps.filter((step) => (step as Step & { guidance?: { decision: string } }).guidance?.decision === 'include');
+  const steps = allSteps.filter((step) => step.guidance?.decision === 'include');
   const currentStep: Step | null = steps[stepIndex] ?? null;
   const currentBend = currentStep ? snapshot?.bends.find((bend) => bend.bendId === currentStep.bendId) ?? null : null;
   const drawingAsset = view ? readySourceAsset(view.sourceAssets, 'drawing_pdf') : null;
