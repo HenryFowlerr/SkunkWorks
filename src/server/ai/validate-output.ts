@@ -56,6 +56,11 @@ export function parseGenerationOutput(
       instruction: candidate.instruction.trim(),
       evidence: citations,
       camera: null,
+      guidance: {
+        suggestion: candidate.guidanceSuggestion,
+        rationale: candidate.guidanceRationale.trim().slice(0, 500),
+        decision: "pending",
+      },
     }));
   }
 

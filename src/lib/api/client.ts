@@ -22,6 +22,8 @@ import {
   DecideProposalInputSchema,
   DraftSchema,
   EvidenceRefSchema,
+  FacilityCheckBodySchema,
+  FacilityCheckResultSchema,
   FlagSchema,
   FollowReplacementInputSchema,
   GenerationResultSchema,
@@ -76,6 +78,8 @@ import type {
   DecideProposalInput,
   Draft,
   EvidenceRef,
+  FacilityCheckBody,
+  FacilityCheckResult,
   Flag,
   FollowReplacementInput,
   Generation,
@@ -435,6 +439,11 @@ export function createApiClient(transport: ApiTransport = unavailableApiTranspor
       updateInputs(input: UpdateJobInputs): Promise<Job> {
         const { jobId, ...body } = UpdateJobInputsSchema.parse(input);
         return call({ method: "PATCH", path: `/api/jobs/${encodeURIComponent(jobId)}`, body }, JobSchema);
+      },
+      checkFacility(input: { jobId: Id } & FacilityCheckBody): Promise<FacilityCheckResult> {
+        const jobId = IdSchema.parse(input.jobId);
+        const body = FacilityCheckBodySchema.parse({ expectedJobVersion: input.expectedJobVersion, requirements: input.requirements });
+        return call({ method: "POST", path: `/api/jobs/${encodeURIComponent(jobId)}/facility-check`, body }, FacilityCheckResultSchema);
       },
     },
     assets: {

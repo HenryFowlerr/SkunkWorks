@@ -621,6 +621,33 @@ export class WorkspaceDataRepository {
     return draft;
   }
 
+  async recordDraftReview(input: {
+    jobId: Id;
+    expectedVersion: number;
+    kind: "design" | "process";
+  }): Promise<Draft> {
+    this.requireRole(input.kind === "design" ? "designer" : "fabricator");
+    const { data, error } = await this.client.rpc("record_draft_review_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_job_id: input.jobId,
+      p_actor_id: this.scope.actorId,
+      p_expected_version: input.expectedVersion,
+      p_kind: input.kind,
+    });
+    throwDatabaseError(error, "record draft review");
+    const result = data as { draftId?: Id; version?: number } | null;
+    if (!result?.draftId || result.version !== input.expectedVersion) {
+      throw new DataAdapterError("INTERNAL_ERROR", "Review returned no current draft version.");
+    }
+    const draft = await this.getDraftById(input.jobId, result.draftId);
+    if (!draft || draft.version !== input.expectedVersion || !draft.reviews.some((review) =>
+      review.kind === input.kind && review.actorId === this.scope.actorId && review.draftVersion === input.expectedVersion
+    )) {
+      throw new DataAdapterError("VERSION_CONFLICT", "Draft changed before its review could be reloaded.");
+    }
+    return draft;
+  }
+
   async claimIdempotency(input: {
     operation: string;
     key: string;

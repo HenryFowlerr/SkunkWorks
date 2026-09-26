@@ -86,6 +86,7 @@ function makeContent(order: string[] = ["B1", "B2"]): DraftContent {
       instruction: `Form ${bendId}`,
       evidence: [{ kind: "document", assetId: "drawing-1", page: 1, region: null, excerpt: bendId }],
       camera: null,
+      guidance: { suggestion: "uncertain", rationale: "Engineer review required.", decision: "include" },
     })),
     findings: [],
     machineProposals: [],
@@ -356,6 +357,35 @@ describe("machine proposal validation and decision", () => {
 });
 
 describe("publication gate and transaction semantics", () => {
+  it("requires an explicit guide decision for every process step", () => {
+    const aggregate = publishAggregate();
+    const pending = {
+      ...aggregate,
+      draft: {
+        ...aggregate.draft,
+        content: {
+          ...aggregate.draft.content,
+          steps: aggregate.draft.content.steps.map((step, index) => index === 0
+            ? { ...step, guidance: { ...step.guidance!, decision: "pending" as const } }
+            : step),
+        },
+      },
+    };
+    expectCode(() => assertPublishable(pending, 4), "REVIEW_REQUIRED");
+    const omitted = {
+      ...aggregate,
+      draft: {
+        ...aggregate.draft,
+        content: {
+          ...aggregate.draft.content,
+          steps: aggregate.draft.content.steps.map((step, index) => index === 0
+            ? { ...step, guidance: { ...step.guidance!, decision: "exclude" as const } }
+            : step),
+        },
+      },
+    };
+    expect(() => assertPublishable(omitted, 4)).not.toThrow();
+  });
   it("blocks a publish after source fingerprint drift", () => {
     expectCode(() => assertPublishable({ ...publishAggregate(), currentInputFingerprint: "new-inputs" }, 4), "VERSION_CONFLICT");
   });

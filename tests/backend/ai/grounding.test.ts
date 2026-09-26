@@ -136,6 +136,8 @@ function makeOutput() {
       bendId: "B4",
       instruction: "Set B4 to 90° in the up direction.",
       citations: [citation(pageKey, "B4 internal angle 90°"), citation(pageKey, "Direction up")],
+      guidanceSuggestion: "uncertain" as const,
+      guidanceRationale: "The available source does not show whether this operation is unusual.",
     }],
     machineOrder: ["B4", "B5"],
     machineRationale: "Follow the confirmed B4-before-B5 setup constraint.",
