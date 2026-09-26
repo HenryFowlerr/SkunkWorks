@@ -157,7 +157,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
         const next = await client.releases.get({ releaseId });
         if (active) {
           setView(next);
-          setTab(next.sourceAssets.some((asset) => asset.kind === 'model_glb' && asset.status === 'ready') ? 'model' : 'guide');
+          setTab('guide');
         }
       } catch (error) {
         if (active) setLoadError(explainError(error));
@@ -332,7 +332,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
       setPhotoAsset(null);
       flagIdempotencyKey.current = null;
       photoIdempotencyKey.current = null;
-      setLastAction('Flag saved to the published release.');
+      setLastAction('Flag saved to the published release. Hold this operation while engineering reviews it.');
     } catch (error) {
       setFlagError(explainError(error));
     } finally {
@@ -368,6 +368,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
   const advanceStep = (direction: -1 | 1) => {
     setStepIndex((index) => Math.max(0, Math.min(steps.length, index + direction)));
     setPreviewProgress(0);
+    setAnswer(null);
   };
 
   const onPointerUp = (event: PointerEvent<HTMLElement>) => {
@@ -383,19 +384,6 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
     return (
       <div className={styles.guideGrid}>
         <div className={styles.guideMain}>
-          {sceneData ? (
-            <BendScene data={sceneData} completedStepCount={currentStep ? allSteps.findIndex((step) => step.id === currentStep.id) : 0}
-              activeStepProgress={currentStep ? previewProgress : 0}
-              selectedBendId={currentStep?.bendId ?? null} interactive reducedMotion={false}
-              onBendSelect={(bendId) => {
-                const selectedIndex = steps.findIndex((step) => step.bendId === bendId);
-                if (selectedIndex >= 0) { setStepIndex(selectedIndex); setPreviewProgress(0); }
-              }} />
-          ) : (
-            <Panel title="Illustrative geometry unavailable" eyebrow="Published release">
-              <PanelBody><p>This release has no reviewed geometry preview. Use the released drawing and approved guide.</p></PanelBody>
-            </Panel>
-          )}
           <Panel title={currentStep ? 'Operation ' + currentStep.bendId : 'Guide complete'} eyebrow={currentStep ? 'Step ' + (stepIndex + 1) + ' of ' + steps.length : 'All released steps'}>
             <PanelBody>
               {currentStep ? (
@@ -422,6 +410,10 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
                     <span className={styles.muted}>Swipe left or right to change guide step</span>
                     <Button type="button" onClick={() => advanceStep(1)} disabled={stepIndex >= steps.length}>Next</Button>
                   </div>
+                  <div className={styles.helpActions} aria-label="Help with this operation">
+                    <Button type="button" tone="secondary" onClick={() => setTab('ask')}>Ask about this operation</Button>
+                    <Button type="button" tone="secondary" onClick={() => setTab('flags')}>Flag an issue</Button>
+                  </div>
                   <div className={styles.sourceBlock}>
                     <h3>Released evidence</h3>
                     <EvidenceList evidence={[...currentStep.evidence, ...(currentBend?.finishedAngle.evidence ?? []), ...(currentBend?.foldRotationDeg.evidence ?? [])]} assets={view.sourceAssets} />
@@ -435,6 +427,20 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
               )}
             </PanelBody>
           </Panel>
+          {sceneData ? (
+            <div className={styles.sceneFrame}>
+              <p className={styles.sceneLabel}>Illustrative bend view · select an area or use the operation list above</p>
+              <BendScene data={sceneData} completedStepCount={currentStep ? allSteps.findIndex((step) => step.id === currentStep.id) : 0}
+                activeStepProgress={currentStep ? previewProgress : 0}
+                selectedBendId={currentStep?.bendId ?? null} interactive reducedMotion={false}
+                onBendSelect={(bendId) => {
+                  const selectedIndex = steps.findIndex((step) => step.bendId === bendId);
+                  if (selectedIndex >= 0) { setStepIndex(selectedIndex); setPreviewProgress(0); setAnswer(null); }
+                }} />
+            </div>
+          ) : (
+            <p className={styles.muted}>No reviewed geometry preview is available for this release. Use the approved guide and drawing.</p>
+          )}
         </div>
         <aside className={styles.guideSide}>
           <Panel title="Released drawing" eyebrow="Controlled source">
@@ -488,6 +494,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
         <Panel title="Ask about this operation" eyebrow="Release-bound question">
           <PanelBody>
             <p className={styles.muted}>Your question includes this release and the selected operation. Check any cited evidence before acting; an uncertain answer should go to the designer.</p>
+            <p className={styles.contextLine}>Context: {view.job.partNumber} · release R{view.release.revisionNumber} · {currentStep ? `operation ${currentStep.bendId}` : 'general release'}</p>
             {view.permissions.canAsk ? (
               <form className={styles.form} onSubmit={(event) => void askQuestion(event)}>
                 <TextInput id="floor-question" label="Question for the designer&apos;s released information" value={question}
@@ -503,8 +510,9 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
           </PanelBody>
         </Panel>
         {answer ? (
-          <Panel title="Answer" eyebrow={answer.evidenceState.replace('_', ' ')}>
+          <Panel title={answer.evidenceState === 'supported' ? 'Answer from released sources' : 'Engineering decision needed'} eyebrow={answer.evidenceState.replace('_', ' ')}>
             <PanelBody><p className={styles.answerText}>{answer.text}</p><EvidenceList evidence={answer.evidence} assets={view.sourceAssets} />
+              {answer.evidenceState !== 'supported' ? <p className={styles.holdNotice}>Hold this operation until engineering clarifies it. This answer does not establish the missing detail.</p> : null}
               {answer.evidenceState !== 'supported' || answer.suggestedFlag ? <Button type="button" tone="secondary" onClick={() => {
                 setFlagQuestion(answer.suggestedFlag || question || 'I need a designer to clarify this operation.');
                 setTab('flags');
@@ -524,6 +532,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
           <Panel title="Raise a floor flag" eyebrow={currentStep ? 'Operation ' + currentStep.bendId : 'Published release'}>
             <PanelBody>
               <p className={styles.muted}>This note is stored against the current release and step. Attach a photo only if it helps the designer understand the issue.</p>
+              <p className={styles.contextLine}>Context: {view.job.partNumber} · release R{view.release.revisionNumber} · {currentStep ? `operation ${currentStep.bendId}` : 'general release'}</p>
               {view.permissions.canFlag ? (
                 <form className={styles.form} onSubmit={(event) => void submitFlag(event)}>
                   <label className="field" htmlFor="floor-flag-question">

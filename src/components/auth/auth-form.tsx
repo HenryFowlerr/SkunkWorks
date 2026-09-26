@@ -80,10 +80,10 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
           <span>Chappe</span>
         </Link>
         <div className="auth-story__content">
-          <p className="eyebrow">Prototype programmes</p>
-          <h1 id="auth-story-title">Every bend keeps its place.</h1>
+          <p className="eyebrow">Engineering → workshop → floor</p>
+          <h1 id="auth-story-title">Keep the hard details connected.</h1>
           <p>
-            Keep the drawing, workshop setup, reviewed guide and floor questions connected to the same part revision.
+            Keep the drawing, selected facility, reviewed guide and floor questions connected to the same job and release.
           </p>
           <ol className="auth-flow" aria-label="Handoff stages">
             <li><span className="mono">01</span><span>Source packet</span></li>
@@ -153,6 +153,7 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
             {isSignUp ? "Already have an account?" : "New to this workspace?"}{" "}
             <Link href={`${isSignUp ? "/login" : "/signup"}${returnQuery}`}>{isSignUp ? "Sign in" : "Create an account"}</Link>
           </p>
+          <p className="auth-switch">Want to see the journey first? <Link href="/demo">Explore the prepared demo</Link></p>
           <p className="auth-service-note">Account changes are confirmed only after the service responds.</p>
         </div>
       </section>

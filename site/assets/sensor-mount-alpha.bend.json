@@ -1,0 +1,273 @@
+{
+  "manifestVersion": "skunkworks-bend-manifest/1.0",
+  "part": {
+    "partNumber": "SKW-SM-104",
+    "drawingRevision": "A",
+    "name": "Sensor mount - synthetic demonstration",
+    "partFamily": "single-sheet-straight-bend-bracket"
+  },
+  "panelModel": {
+    "schemaVersion": "1.0",
+    "units": "mm",
+    "thicknessMm": 2.0,
+    "rootPanelId": "base",
+    "panels": [
+      {
+        "id": "base",
+        "polygonMm": [
+          [
+            0,
+            0
+          ],
+          [
+            120.0,
+            0
+          ],
+          [
+            120.0,
+            80.0
+          ],
+          [
+            0,
+            80.0
+          ]
+        ]
+      },
+      {
+        "id": "left-flange",
+        "polygonMm": [
+          [
+            -25.0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            80.0
+          ],
+          [
+            -25.0,
+            80.0
+          ]
+        ]
+      },
+      {
+        "id": "left-return",
+        "polygonMm": [
+          [
+            -43.0,
+            0
+          ],
+          [
+            -25.0,
+            0
+          ],
+          [
+            -25.0,
+            80.0
+          ],
+          [
+            -43.0,
+            80.0
+          ]
+        ]
+      },
+      {
+        "id": "right-flange",
+        "polygonMm": [
+          [
+            120.0,
+            0
+          ],
+          [
+            146.0,
+            0
+          ],
+          [
+            146.0,
+            80.0
+          ],
+          [
+            120.0,
+            80.0
+          ]
+        ]
+      },
+      {
+        "id": "top-tab",
+        "polygonMm": [
+          [
+            40.0,
+            80.0
+          ],
+          [
+            80.0,
+            80.0
+          ],
+          [
+            80.0,
+            100.0
+          ],
+          [
+            40.0,
+            100.0
+          ]
+        ]
+      },
+      {
+        "id": "bottom-tab",
+        "polygonMm": [
+          [
+            45.0,
+            -18.0
+          ],
+          [
+            75.0,
+            -18.0
+          ],
+          [
+            75.0,
+            0
+          ],
+          [
+            45.0,
+            0
+          ]
+        ]
+      }
+    ],
+    "hinges": [
+      {
+        "id": "hinge-b1-left",
+        "parentPanelId": "base",
+        "childPanelId": "left-flange",
+        "axisStartMm": [
+          0,
+          0
+        ],
+        "axisEndMm": [
+          0,
+          80.0
+        ]
+      },
+      {
+        "id": "hinge-b2-return",
+        "parentPanelId": "left-flange",
+        "childPanelId": "left-return",
+        "axisStartMm": [
+          -25.0,
+          0
+        ],
+        "axisEndMm": [
+          -25.0,
+          80.0
+        ]
+      },
+      {
+        "id": "hinge-b3-right",
+        "parentPanelId": "base",
+        "childPanelId": "right-flange",
+        "axisStartMm": [
+          120.0,
+          0
+        ],
+        "axisEndMm": [
+          120.0,
+          80.0
+        ]
+      },
+      {
+        "id": "hinge-b4-top",
+        "parentPanelId": "base",
+        "childPanelId": "top-tab",
+        "axisStartMm": [
+          40.0,
+          80.0
+        ],
+        "axisEndMm": [
+          80.0,
+          80.0
+        ]
+      },
+      {
+        "id": "hinge-b5-bottom",
+        "parentPanelId": "base",
+        "childPanelId": "bottom-tab",
+        "axisStartMm": [
+          45.0,
+          0
+        ],
+        "axisEndMm": [
+          75.0,
+          0
+        ]
+      }
+    ],
+    "origin": "authored_manifest",
+    "referenceFaceLabel": "Outside face",
+    "reviewed": true
+  },
+  "bendMappings": [
+    {
+      "bendId": "B1",
+      "hingeId": "hinge-b1-left",
+      "foldRotationDeg": 90.0,
+      "finishedAngle": {
+        "degrees": 90,
+        "convention": "internal"
+      }
+    },
+    {
+      "bendId": "B2",
+      "hingeId": "hinge-b2-return",
+      "foldRotationDeg": -90.0,
+      "finishedAngle": {
+        "degrees": 90,
+        "convention": "internal"
+      }
+    },
+    {
+      "bendId": "B3",
+      "hingeId": "hinge-b3-right",
+      "foldRotationDeg": -90.0,
+      "finishedAngle": {
+        "degrees": 90,
+        "convention": "internal"
+      }
+    },
+    {
+      "bendId": "B4",
+      "hingeId": "hinge-b4-top",
+      "foldRotationDeg": 90.0,
+      "finishedAngle": {
+        "degrees": 90,
+        "convention": "internal"
+      }
+    },
+    {
+      "bendId": "B5",
+      "hingeId": "hinge-b5-bottom",
+      "foldRotationDeg": -90.0,
+      "finishedAngle": {
+        "degrees": 90,
+        "convention": "internal"
+      }
+    }
+  ],
+  "stepOrder": [
+    "B1",
+    "B3",
+    "B4",
+    "B5",
+    "B2"
+  ],
+  "provenance": {
+    "source": "Original synthetic artwork generated for the SkunkWorks prototype",
+    "authorship": "Explicitly authored demonstration geometry; not customer data",
+    "intendedUse": "Interface and geometry verification only; not for production",
+    "coordinateConvention": "Millimetres; +Z points toward the reference face; positive rotation follows the right-hand rule about each directed hinge axis"
+  }
+}

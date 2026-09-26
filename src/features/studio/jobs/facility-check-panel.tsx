@@ -78,7 +78,7 @@ export function FacilityCheckPanel({ jobId }: { jobId: string }) {
 
   const assessment = result?.assessments[0];
   return (
-    <Panel title="Facility evidence check" eyebrow="Engineer review">
+    <Panel title="Facility evidence preview" eyebrow="Engineer review · selected workshop">
       <PanelBody>
         <div className={styles.stack}>
           <p className={styles.help}>Compare a requirement you transcribe from an attached drawing with the selected workshop profile. The excerpt and page are entered by you; this preview does not verify them against the PDF or save a release decision.</p>
@@ -122,7 +122,10 @@ export function FacilityCheckPanel({ jobId }: { jobId: string }) {
             <div className={styles.result} role="status">
               <div className={styles.resultHead}>
                 <strong>{assessment.requirement.label}</strong>
-                <StatusBadge label={assessment.status} tone={assessment.status === "conflict" ? "review" : assessment.status === "supported" ? "complete" : "neutral"} />
+                <StatusBadge
+                  label={assessment.status === "supported" ? "Documented support" : assessment.status === "conflict" ? "Documented conflict" : "Unknown — more evidence needed"}
+                  tone={assessment.status === "conflict" ? "blocked" : assessment.status === "supported" ? "complete" : "review"}
+                />
               </div>
               <p>{assessment.explanation}</p>
               <p className={styles.detail}>Drawing: {drawings.find((asset) => asset.id === assessment.requirement.source.assetId)?.filename ?? "attached drawing"}, page {assessment.requirement.source.page} · “{assessment.requirement.source.excerpt}”</p>
