@@ -73,6 +73,15 @@ export function prepareQuestionEvidence(input: QuestionInput): PreparedEvidence[
     }
   }
   if (input.workshopSnapshot) WorkshopSnapshotSchema.parse(input.workshopSnapshot);
+  const approvedById = new Map((input.approvedClarifications ?? []).map((item) => [item.recordId, item.text]));
+  if (approvedById.size !== (input.approvedClarifications ?? []).length) {
+    throw new TypeError("Approved clarification record IDs must be unique.");
+  }
+  for (const source of input.sources) {
+    if (source.kind === "human_clarification" && approvedById.get(source.recordId) !== source.text) {
+      throw new TypeError("Question clarification must exactly match an approved response loaded for this release.");
+    }
+  }
   return prepareEvidence(input.pdfs, input.sources, input.workshopSnapshot ?? undefined);
 }
 

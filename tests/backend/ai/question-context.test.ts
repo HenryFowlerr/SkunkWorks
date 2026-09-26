@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { assembleReleaseQuestionInput } from "../../../src/server/api/question-context";
-import { ids, release, releaseContext, sourceAsset, workshopSnapshot } from "../../contracts/fixtures";
+import { ids, openFlag, release, releaseContext, sourceAsset, workshopSnapshot } from "../../contracts/fixtures";
 
 const bytes = new Uint8Array(await readFile(resolve(process.cwd(), "public/demo/sensor-mount-alpha.drawing.pdf")));
 const drawing = {
@@ -70,5 +70,28 @@ describe("published question context", () => {
       ...common,
       request: { ...request, context: { ...releaseContext, releaseId: ids.generation } },
     })).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("adds only an engineer response for this release and operation to the knowledge packet", async () => {
+    const approved = {
+      ...openFlag,
+      status: "responded" as const,
+      version: 2,
+      response: {
+        text: "For B1, use the orientation marked on drawing A.",
+        authorId: ids.member,
+        at: "2026-09-26T01:00:00.000Z",
+        kind: "explanation" as const,
+        replacementReleaseId: null,
+      },
+    };
+    const input = await assembleReleaseQuestionInput({
+      request, release, assets: [drawing], workshop: workshopSnapshot,
+      flags: [openFlag, approved, { ...approved, id: ids.review, context: { ...releaseContext, bendId: "B2" } }],
+      readSource: async () => bytes,
+    });
+    expect(input.approvedClarifications).toEqual([{ recordId: ids.flag, text: approved.response.text }]);
+    expect(input.sources.filter((source) => source.kind === "human_clarification"))
+      .toEqual([{ kind: "human_clarification", recordId: ids.flag, text: approved.response.text }]);
   });
 });

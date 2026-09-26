@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getRelease: vi.fn(),
   getJobBundle: vi.fn(),
   getWorkshopSnapshot: vi.fn(),
+  listFlags: vi.fn(),
   answerQuestion: vi.fn(),
 }));
 
@@ -34,10 +35,12 @@ beforeEach(() => {
     getRelease: mocks.getRelease,
     getJobBundle: mocks.getJobBundle,
     getWorkshopSnapshot: mocks.getWorkshopSnapshot,
+    listFlags: mocks.listFlags,
   } });
   mocks.getRelease.mockResolvedValue(release);
   mocks.getJobBundle.mockResolvedValue({ job, assets: [sourceAsset], draft: null, releases: [release] });
   mocks.getWorkshopSnapshot.mockResolvedValue(workshopSnapshot);
+  mocks.listFlags.mockResolvedValue([]);
   mocks.createSupabaseServiceClient.mockReturnValue({ storage: {} });
   mocks.assembleReleaseQuestionInput.mockResolvedValue({ context: releaseContext, question: "How is B1 oriented?" });
   mocks.createAiAdapter.mockReturnValue({ answerQuestion: mocks.answerQuestion });
@@ -59,6 +62,7 @@ describe("questions route", () => {
     await expect(response.json()).resolves.toMatchObject({ data: { context: releaseContext, evidenceState: "not_found" } });
     expect(mocks.getJobApiContext).toHaveBeenCalledWith(ids.job);
     expect(mocks.getRelease).toHaveBeenCalledWith(ids.release);
+    expect(mocks.listFlags).toHaveBeenCalledWith({ releaseId: ids.release });
     expect(mocks.assembleReleaseQuestionInput).toHaveBeenCalledWith(expect.objectContaining({ release }));
     expect(mocks.answerQuestion).toHaveBeenCalledTimes(1);
   });

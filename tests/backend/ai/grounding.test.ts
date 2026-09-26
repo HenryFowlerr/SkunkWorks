@@ -15,6 +15,7 @@ const ids = {
   confirmer: "10000000-0000-4000-8000-000000000008",
   stepB4: "10000000-0000-4000-8000-000000000009",
   stepB5: "10000000-0000-4000-8000-000000000010",
+  flag: "10000000-0000-4000-8000-000000000012",
 };
 
 const pageText = "B4 internal angle 90°. Radius 2 mm and conflicting radius 3 mm. Direction up. B4 before B5.";
@@ -217,6 +218,17 @@ describe("AI grounding validation", () => {
       .toThrow(/unsupported claim/i);
     expect(() => parseQuestionOutput({ ...valid, referencedStepIds: ["10000000-0000-4000-8000-000000000099"] }, input, evidence, "model"))
       .toThrow(/unsupported claim/i);
+  });
+
+  it("rejects an unapproved or altered clarification as question evidence", () => {
+    const input = makeQuestionInput();
+    const clarification = { kind: "human_clarification" as const, recordId: ids.flag, text: "B4 orientation confirmed by engineering." };
+    input.sources.push(clarification);
+    expect(() => prepareQuestionEvidence(input)).toThrow(/approved response/i);
+    input.approvedClarifications = [{ recordId: ids.flag, text: "Different engineer response." }];
+    expect(() => prepareQuestionEvidence(input)).toThrow(/approved response/i);
+    input.approvedClarifications = [{ recordId: ids.flag, text: clarification.text }];
+    expect(prepareQuestionEvidence(input).some((source) => source.sourceKey === `human_clarification:${ids.flag}`)).toBe(true);
   });
 
   it("turns absent or unreadable answers into explicit safe responses", () => {

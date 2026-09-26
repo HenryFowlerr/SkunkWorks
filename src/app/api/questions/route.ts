@@ -20,11 +20,13 @@ export async function POST(request: Request): Promise<Response> {
     if (release.jobId !== input.context.jobId) throw new ApiFault("NOT_FOUND", "Release not found for this job.");
     const bundle = await repository.getJobBundle(release.jobId);
     const workshop = await repository.getWorkshopSnapshot(release.snapshot.workshopSnapshotId);
+    const flags = await repository.listFlags({ releaseId: release.id });
     const storage = createSupabaseServiceClient();
     const aiInput = await assembleReleaseQuestionInput({
       request: input,
       release,
       assets: bundle.assets,
+      flags,
       workshop,
       readSource: async (asset) => {
         const authorized = await repository.authorizeMemberAsset(release.jobId, asset.id);
