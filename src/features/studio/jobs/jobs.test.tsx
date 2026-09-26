@@ -124,6 +124,28 @@ describe("designer jobs and intake", () => {
 
   afterEach(() => cleanup());
 
+  it("retains a native SolidWorks pair without pretending exports or AI analysis exist", async () => {
+    const { container } = render(<NewJobIntake workspaceId={ids.workspace} />);
+    await screen.findByRole("option", { name: /Christchurch Press Shop/ });
+    fillRequiredFields();
+    fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), { target: { files: [] } });
+    fireEvent.change(screen.getByLabelText(/3D model/), { target: { files: [] } });
+    fireEvent.change(screen.getByLabelText(/Native SolidWorks part/), {
+      target: { files: [new File(["opaque part"], "Engineering test block.SLDPRT")] },
+    });
+    fireEvent.change(screen.getByLabelText(/Native SolidWorks drawing/), {
+      target: { files: [new File(["opaque drawing"], "Engineering test block.SLDDRW")] },
+    });
+    apiMock.assets.uploadAsset.mockImplementation(async ({ kind }: { kind: Asset["kind"] }) =>
+      makeAsset(kind, kind === "native_part" ? ids.glb : ids.pdf));
+    submitForm(container);
+    await screen.findByText("Inputs saved");
+    expect(apiMock.assets.uploadAsset.mock.calls.map(([input]) => input.kind)).toEqual(["native_part", "native_drawing"]);
+    expect(screen.getAllByText("Source retained")).toHaveLength(2);
+    expect(screen.getByText(/Exports needed:/)).toHaveTextContent("Saving native sources does not make the part ready for AI generation");
+    expect(apiMock.jobs.updateInputs).toHaveBeenCalledWith(expect.objectContaining({ sourceAssetIds: [ids.glb, ids.pdf] }));
+  });
+
   it("loads the workspace list from the API and exposes the open action", async () => {
     const existing = makeJob({ sourceAssetIds: [ids.pdf, ids.glb] });
     apiMock.jobs.list.mockResolvedValue([existing]);

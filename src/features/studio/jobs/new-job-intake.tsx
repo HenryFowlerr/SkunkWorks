@@ -3,18 +3,14 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent, FormEvent } from "react";
-import type { Asset, Id, Job, Role, WorkshopSnapshot } from "@/contracts";
+import { SOURCE_UPLOAD_LIMIT_BYTES, type Asset, type Id, type Job, type Role, type WorkshopSnapshot } from "@/contracts";
 import { Button, StatusBadge } from "@/components/ui";
 import { api } from "@/lib/api/client";
 import styles from "./jobs.module.css";
 
 const MIB = 1024 * 1024;
 const DRAWING_SET_LIMIT = 50 * MIB;
-export const JOB_FILE_LIMITS = Object.freeze({
-  drawing_pdf: 25 * MIB,
-  model_glb: 50 * MIB,
-  bend_manifest: 2 * MIB,
-});
+export const JOB_FILE_LIMITS = SOURCE_UPLOAD_LIMIT_BYTES;
 
 type FileKind = keyof typeof JOB_FILE_LIMITS;
 type FileSlot = {
@@ -35,8 +31,10 @@ const FILES: Array<{
   mimeTypes: string[];
   required: boolean;
 }> = [
-  { kind: "drawing_pdf", label: "Drawing PDF", accept: ".pdf,application/pdf", extension: ".pdf", mimeTypes: ["application/pdf"], required: true },
-  { kind: "model_glb", label: "3D model (GLB)", accept: ".glb,model/gltf-binary,application/octet-stream", extension: ".glb", mimeTypes: ["model/gltf-binary", "application/octet-stream"], required: true },
+  { kind: "drawing_pdf", label: "Drawing PDF", accept: ".pdf,application/pdf", extension: ".pdf", mimeTypes: ["application/pdf"], required: false },
+  { kind: "model_glb", label: "3D model (GLB)", accept: ".glb,model/gltf-binary,application/octet-stream", extension: ".glb", mimeTypes: ["model/gltf-binary", "application/octet-stream"], required: false },
+  { kind: "native_part", label: "Native SolidWorks part (SLDPRT)", accept: ".sldprt", extension: ".sldprt", mimeTypes: [], required: false },
+  { kind: "native_drawing", label: "Native SolidWorks drawing (SLDDRW)", accept: ".slddrw", extension: ".slddrw", mimeTypes: [], required: false },
   { kind: "bend_manifest", label: "Authored bend manifest (JSON)", accept: ".json,application/json", extension: ".json", mimeTypes: ["application/json", "text/json"], required: false },
 ];
 
@@ -44,6 +42,8 @@ function emptyFiles(): IntakeFiles {
   return {
     drawing_pdf: { file: null, asset: null, idempotencyKey: null, progress: null, state: "empty", error: null },
     model_glb: { file: null, asset: null, idempotencyKey: null, progress: null, state: "empty", error: null },
+    native_part: { file: null, asset: null, idempotencyKey: null, progress: null, state: "empty", error: null },
+    native_drawing: { file: null, asset: null, idempotencyKey: null, progress: null, state: "empty", error: null },
     bend_manifest: { file: null, asset: null, idempotencyKey: null, progress: null, state: "empty", error: null },
   };
 }
@@ -69,7 +69,7 @@ function validateFile(kind: FileKind, file: File): string | null {
   if (file.size === 0) return "This file is empty.";
   if (file.size > JOB_FILE_LIMITS[kind]) return `Choose a file no larger than ${formatMiB(JOB_FILE_LIMITS[kind])}.`;
   if (!file.name.toLocaleLowerCase().endsWith(config.extension)) return `Choose a ${config.extension} file.`;
-  if (file.type && !config.mimeTypes.includes(file.type.toLocaleLowerCase())) {
+  if (config.mimeTypes.length && file.type && !config.mimeTypes.includes(file.type.toLocaleLowerCase())) {
     return `The selected file reports an unsupported type. Choose ${config.accept.split(",")[0].toUpperCase()}.`;
   }
   return null;
@@ -139,6 +139,8 @@ export function NewJobIntake({
     drawing_pdf: null,
     model_glb: null,
     bend_manifest: null,
+    native_part: null,
+    native_drawing: null,
   });
   const additionalDrawingsInputRef = useRef<HTMLInputElement | null>(null);
   const createKey = useRef<string | null>(null);
@@ -239,6 +241,8 @@ export function NewJobIntake({
     else if (!selectedSnapshot?.machines.some((machine) => machine.id === machineId)) {
       next.machineId = "Choose a machine from the selected workshop version.";
     }
+    if (!files.drawing_pdf.file && !files.native_drawing.file) next.drawing_pdf = "This source file is required.";
+    if (!files.model_glb.file && !files.native_part.file) next.model_glb = "This source file is required.";
     for (const definition of FILES) {
       const selected = files[definition.kind].file;
       if (definition.required && !selected) next[definition.kind] = "This source file is required.";
@@ -305,6 +309,8 @@ export function NewJobIntake({
         drawing_pdf: { ...files.drawing_pdf },
         model_glb: { ...files.model_glb },
         bend_manifest: { ...files.bend_manifest },
+        native_part: { ...files.native_part },
+        native_drawing: { ...files.native_drawing },
       };
       const attemptExtraDrawings = extraDrawings.map((slot) => ({ ...slot }));
       for (const definition of FILES) {
@@ -375,8 +381,7 @@ export function NewJobIntake({
         const asset = attemptFiles[definition.kind].asset;
         return asset && isVerifiedReadyAsset(asset, currentJob!.id, definition.kind) ? [asset.id] : [];
       }).concat(attemptExtraDrawings.flatMap((slot) => slot.asset && isVerifiedReadyAsset(slot.asset, currentJob!.id, "drawing_pdf") ? [slot.asset.id] : []));
-      const requiredKinds = FILES.filter((definition) => definition.required).map((definition) => definition.kind);
-      if (requiredKinds.some((kind) => !attemptFiles[kind].asset || !isVerifiedReadyAsset(attemptFiles[kind].asset!, currentJob!.id, kind))) {
+      if ((!attemptFiles.drawing_pdf.asset && !attemptFiles.native_drawing.asset) || (!attemptFiles.model_glb.asset && !attemptFiles.native_part.asset)) {
         throw new Error("The drawing and model must both be verified by the server before the job can be saved.");
       }
 
@@ -452,7 +457,8 @@ export function NewJobIntake({
       </div>
 
       {formError ? <div className={styles.error} role="alert">{formError}</div> : null}
-      {complete ? <div className={styles.notice} role="status">The server confirmed the job setup and attached every selected file after storage verification.</div> : null}
+      {complete ? <div className={styles.notice} role="status">The server confirmed the job setup and attached every selected file after checking its size and SHA-256 hash.</div> : null}
+      {(!files.drawing_pdf.file || !files.model_glb.file) && (files.native_part.file || files.native_drawing.file) ? <div className={styles.notice} role="status">Exports needed: add a PDF for drawing analysis and a GLB for the phone model. Saving native sources does not make the part ready for AI generation.</div> : null}
       {job && !complete ? <div className={styles.notice} role="status">Job {job.partNumber} exists. This form has retained its details so you can finish or retry the source uploads.</div> : null}
 
       <div className={styles.intakeSurface}>
@@ -532,7 +538,7 @@ export function NewJobIntake({
 
             <section className={styles.section} aria-labelledby="source-files-heading">
               <h2 className={styles.sectionTitle} id="source-files-heading">Source files</h2>
-              <p className={styles.hint}>Add one or more technical drawing PDFs and a GLB export of the CAD model. Native CAD files such as STEP and SLDPRT are not processed by this intake. An authored bend manifest is optional for the current example workflow.</p>
+              <p className={styles.hint}>Add a drawing (PDF or SLDDRW) and model (GLB or SLDPRT) for one part. You can save the native SolidWorks pair now, then add drawing PDF and GLB model exports. Native files are retained privately; they are not converted, read by AI, or shown in the phone viewer. An authored bend manifest is optional for the current example workflow.</p>
               {fieldErrors.drawingSet ? <p className={styles.fileError} role="alert">{fieldErrors.drawingSet}</p> : null}
               <div className={styles.fileGrid}>
                 {FILES.map((definition) => {
@@ -563,7 +569,7 @@ export function NewJobIntake({
                       ) : null}
                       {slot.state === "ready" && slot.asset?.sha256 ? (
                         <div className={`${styles.fileStatus} ${styles.fileReady}`} role="status">
-                          <StatusBadge label="Server verified" tone="complete" />
+                          <StatusBadge label={definition.kind.startsWith("native_") ? "Source retained" : "Server verified"} tone="complete" />
                           <span>Ready · SHA-256 {slot.asset.sha256.slice(0, 12)}…</span>
                         </div>
                       ) : null}
@@ -575,7 +581,7 @@ export function NewJobIntake({
                       ) : null}
                       {!definition.required && slot.file ? (
                         <Button type="button" tone="quiet" small disabled={submitting} onClick={() => removeOptionalFile(definition.kind)}>
-                          Remove optional manifest
+                          Remove {definition.label}
                         </Button>
                       ) : null}
                     </div>

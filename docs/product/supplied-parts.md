@@ -1,0 +1,28 @@
+# Supplied SolidWorks source pairs
+
+Henry supplied two distinct products on 26 September 2026. Pairing below is based on his statement and matching base filenames; the native model/drawing references have not been verified by a CAD application. Keep each product in its own job. Original binaries stay outside the public repository.
+
+| Product | Source filename | Bytes | SHA-256 |
+|---|---|---:|---|
+| Engineering test block | Engineering test block.SLDPRT | 72,862 | `84caba2a1fdd765b6c2c9367e63beaf4843c5f4a5eedd4fa5ad80ee211f0b365` |
+| Engineering test block | Engineering test block.SLDDRW | 257,362 | `0dd4575ceaefbdbd341f4a40b5e97c8584c9edba257229322d69ebae5547ac35` |
+| manufacturing test sheet | manufacturing test sheet.SLDPRT | 78,565 | `6fe3c8f55b65d726b3d4da0c87a9c4a166db740198f3cdd4da54d089690294ca` |
+| manufacturing test sheet | manufacturing test sheet.SLDDRW | 257,310 | `f563f964b0168f83160a0c57c5751e92c6611d06d214d47a39a31b0ded57f367` |
+
+## Intake and readiness
+
+The authenticated intake accepts `native_part` (`.SLDPRT`) and `native_drawing` (`.SLDDRW`) as private, opaque sources, up to 50 MiB each. A native pair can be saved before viewable exports exist. Upload completion verifies byte count and records a SHA-256 hash; this is not CAD validation. Download responses use `attachment` and `nosniff`. No native bytes are sent as AI text or treated as a PDF/GLB.
+
+Drawing PDF exports are needed for the implemented drawing extraction and AI path; GLB exports are needed for the browser model. An authored bend manifest remains an additional requirement of the existing bend-guide generation path. Do not substitute the prepared Sensor Mount assets or invent dimensions/features for either supplied product. A cached native thumbnail, if recoverable, is only a source preview, not a legible technical drawing or interactive 3D model.
+
+At initial inspection, all four files were readable but macOS `file` identified them as opaque data. None contained literal OLE, ZIP, PNG, JPEG, or PDF signatures. Their header version bytes are `00 00 00 04`, consistent with the compressed block envelope described by the [cadmpeg format research](https://github.com/cadmpeg/cadmpeg/blob/main/docs/formats/sldprt.md), attributed to the cadmpeg project (CC BY 4.0). This suggests compressed previews may exist; it does not establish conversion support.
+
+## Conversion options to evaluate
+
+Henry only has these originals. Do not assume he can supply exports. [CAD Exchanger documents SolidWorks-to-GLB conversion](https://cadexchanger.com/solidworks-to-glb/) for parts/assemblies; that does not establish native drawing conversion or successful processing of these exact files. [eDrawings documents native SolidWorks drawing and part viewing](https://help.solidworks.com/2022/english/eDrawings/t_Opening_Files.htm?id=2.0.2.1). A compatible local viewer/converter should be tested before adding a conversion claim. No third-party service has received these files and no converter is configured by this change.
+
+## Local source-preview recovery
+
+A bounded local scanner successfully inflated and CRC-checked genuine `PreviewPNG` sections in all four files and `Images/Sheet_0` sections in both drawings. The extracted model thumbnails visibly differ and match the two supplied file groups; they are cached views, not reconstructed geometry. Images remain private local outputs. Drawing preview legibility is limited; small notes and tolerances cannot be reliably verified from these cached images alone. The deployed intake does not automatically extract these previews.
+
+Intake UI verification reused the existing task form, `Button`/`StatusBadge`, and `jobs.module.css` tokens without adding a new visual pattern. A local-only preview with mocked workshop responses was inspected at 1440, 390, and 320 px, with no horizontal overflow. Native-pair saving, retained-only labels, and export-needed copy have component coverage. The authenticated service and migration still require deployment verification.

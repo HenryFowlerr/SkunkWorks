@@ -181,7 +181,7 @@ export const UpdateJobInputsSchema = z.object({
 }).strict();
 export type UpdateJobInputs = z.infer<typeof UpdateJobInputsSchema>;
 
-export const UploadAssetKindSchema = z.enum(["drawing_pdf", "model_glb", "bend_manifest"]);
+export const UploadAssetKindSchema = z.enum(["drawing_pdf", "model_glb", "bend_manifest", "native_part", "native_drawing"]);
 export type UploadAssetKind = z.infer<typeof UploadAssetKindSchema>;
 
 /** Provisional source-file limits shared by the browser and API boundary. */
@@ -189,6 +189,8 @@ export const SOURCE_UPLOAD_LIMIT_BYTES = {
   drawing_pdf: 25 * 1024 * 1024,
   model_glb: 50 * 1024 * 1024,
   bend_manifest: 2 * 1024 * 1024,
+  native_part: 50 * 1024 * 1024,
+  native_drawing: 50 * 1024 * 1024,
 } as const satisfies Record<UploadAssetKind, number>;
 
 export const UploadPreparationSchema = z.object({
@@ -223,7 +225,15 @@ export const UploadAssetPreparationBodySchema = z.object({
     ? mimeType === "application/pdf"
     : input.kind === "model_glb"
       ? mimeType === "model/gltf-binary" || mimeType === "application/octet-stream"
-      : mimeType === "application/json";
+      : input.kind === "bend_manifest"
+        ? mimeType === "application/json"
+        : mimeType === "application/octet-stream";
+  if (input.kind === "native_part" || input.kind === "native_drawing") {
+    const extension = input.kind === "native_part" ? ".sldprt" : ".slddrw";
+    if (!input.filename.toLowerCase().endsWith(extension)) {
+      ctx.addIssue({ code: "custom", path: ["filename"], message: `Choose a ${extension} native source file.` });
+    }
+  }
   if (!validMimeType) {
     ctx.addIssue({ code: "custom", path: ["mimeType"], message: "Choose a file with the supported content type for this asset." });
   }

@@ -258,7 +258,7 @@ export function createPrivateStorageAdapter(
       const headers = new Headers();
       headers.set("Content-Type", asset.asset.mimeType);
       headers.set("Content-Length", String(asset.asset.byteSize));
-      headers.set("Content-Disposition", `inline; filename="${safeFilename(asset.asset.filename)}"`);
+      headers.set("Content-Disposition", `${isNativeSource(asset.asset.kind) ? "attachment" : "inline"}; filename="${safeFilename(asset.asset.filename)}"`);
       headers.set("Cache-Control", "private, no-store");
       headers.set("X-Content-Type-Options", "nosniff");
       return new Response(blob.stream(), { status: 200, headers });
@@ -335,7 +335,11 @@ async function finalizePendingAsset(
 
   const sha256 = digest.digest("hex");
   const contentType = blob.type.split(";")[0]?.trim().toLowerCase();
-  const signatureType = inspectAssetSignature(row.kind, prefix);
+  // Native sources are opaque retention only: size and hash verification does
+  // not certify a valid SolidWorks document or make its bytes AI evidence.
+  const signatureType = isNativeSource(row.kind)
+    ? "application/octet-stream"
+    : inspectAssetSignature(row.kind, prefix);
   const typeMatches =
     signatureType !== null &&
     (row.kind === "model_glb"
@@ -483,6 +487,10 @@ function mapAsset(row: StoredAssetRow): Asset {
 
 function authorizedAsset(row: StoredAssetRow): AuthorizedPrivateAsset {
   return { bucketId: PRIVATE_ASSET_BUCKET, objectKey: row.storage_key, asset: mapAsset(row) };
+}
+
+function isNativeSource(kind: Asset["kind"]) {
+  return kind === "native_part" || kind === "native_drawing";
 }
 
 function inspectAssetSignature(kind: Asset["kind"], bytes: number[]): string | null {
