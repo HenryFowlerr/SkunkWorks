@@ -21,7 +21,7 @@ Calm, exact, useful. A Chappe page should feel as if a skilled engineer arranged
 |---|---|---|
 | Purpose | Explain the handoff and motivate a demo or sign-in | Help a person resolve an actual job or operation |
 | Layout | Large editorial sections, occasional full-width image, deliberate quiet space | Toolbar, navigation, main work area, contextual inspector where room permits |
-| Imagery | Original, realistic factory/phone photography and selective product close-ups | Actual drawing/model evidence, compact thumbnails, no decorative photo behind task content |
+| Imagery | Product-first part/drawing visuals with clear evidence scope | Actual drawing/model evidence, compact thumbnails, no decorative photo behind task content |
 | Motion | One optional semaphore reveal or subtle image transition | Only state/selection feedback; never animate away a conflict or unknown |
 | Density | Few statements and strong visual sequence | Dense enough for comparison, readable and scannable |
 
@@ -58,11 +58,11 @@ Use the 4/8/12/16/24/32/48/64px spacing tokens. A marketing section can use 80â€
 
 ### Imagery
 
-Public photography should be original and visibly relevant: one clean, believable workshop environment; an operator using a phone beside a machine; a close view of a phone pointing to a selected area of a lightweight part model. Keep ample clear area for nearby type, believable hands/phone scale, realistic safety context, controlled highlights and restrained background detail. Use wide frames for hero or chapter transitions, not a collage of small stock photos. Do not fake live product screens on a phone or imply the depicted factory is a customer. Product UI imagery should be true to the implemented state and marked as illustration when conceptual. Provide descriptive alt text. Crops must keep the person, machine, and phone readable on mobile.
+The public landing uses the prepared part and drawing as its main visual. Do not place a person photograph on the front screen. Product imagery must be true to the implemented state and marked as an illustration when conceptual. Do not fake live product screens, imply a factory is a customer, or treat an illustrative part as forming validation. Provide descriptive alt text and keep the chosen operation legible on mobile.
 
 ### Original visual references
 
-These generated concept photographs show the approved *direction*, not a real Chappe deployment or a verified product UI. They are available to future agents as composition references and may be reused with truthful context. Inspect the phone screen carefully before public use; replace it with an accurate Chappe capture when that screen exists.
+These earlier generated concept photographs are historical composition references, not current landing assets or a real Chappe deployment. The current front screen is product-first by Henry's direct request.
 
 | Scene | Reference | What to carry forward |
 |---|---|---|
