@@ -103,7 +103,7 @@ describe('release-bound factory floor', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save flag to release' }));
 
-    expect(await screen.findByText('Flag saved to the published release. Hold this operation while engineering reviews it.')).toBeVisible();
+    expect(await screen.findByText(/Flag saved to the published release\. Engineering will receive a concise Luna draft report/)).toBeVisible();
     const request = requests.find((item) => item.method === 'POST' && item.path === '/api/flags');
     const body = request?.body as { context: Flag['context']; question: string; photoAssetIds: string[] };
     expect(body.context).toEqual(releaseContext);

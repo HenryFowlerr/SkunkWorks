@@ -11,6 +11,7 @@ import {
   prepareQuestionEvidence,
 } from "./grounding";
 import { retrieveQuestionKnowledge } from "./knowledge-base";
+import { floorAssistantModel } from "./model-routing";
 import { parseGenerationOutput, parseQuestionOutput } from "./validate-output";
 import { AiProviderError, type AskResult, type DraftProposal, type GenerationInput, type QuestionInput } from "./types";
 
@@ -43,7 +44,7 @@ export class OpenAiResponsesAdapter implements AiAdapter {
   }
 
   async generateDraft(input: GenerationInput): Promise<DraftProposal> {
-    const model = this.configuredModel();
+    const model = floorAssistantModel(this.environment);
     const evidence = prepareGenerationEvidence(input);
     const response = await this.request({
       model,
@@ -84,7 +85,7 @@ export class OpenAiResponsesAdapter implements AiAdapter {
         model: "retrieval-only",
       };
     }
-    const model = this.configuredModel();
+    const model = floorAssistantModel(this.environment);
     const response = await this.request({
       model,
       instructions: purpose === "engineer_reply" ? ENGINEER_REPLY_INSTRUCTIONS : QUESTION_INSTRUCTIONS,
@@ -98,12 +99,6 @@ export class OpenAiResponsesAdapter implements AiAdapter {
     });
     const parsed = parseStructuredOutput(response, QuestionOutputSchema);
     return parseQuestionOutput(parsed, checkedInput, knowledge.evidence, model);
-  }
-
-  private configuredModel(): string {
-    const model = this.environment.OPENAI_MODEL?.trim();
-    if (!model) throw new AiProviderError("MISSING_MODEL_CONFIGURATION");
-    return model;
   }
 
   private configuredClient(): OpenAI {
@@ -173,8 +168,14 @@ function parseStructuredOutput<T>(
     item.content.some((part) => part.type === "refusal"));
   if (refusal) throw new AiProviderError("PROVIDER_REFUSAL");
   if (response.status !== "completed") {
-    if (response.status === "failed") throw new AiProviderError("PROVIDER_UNAVAILABLE", { retryable: true });
-    throw new AiProviderError("MALFORMED_OUTPUT");
+    if (response.status === "failed" || response.status === "cancelled") {
+      throw new AiProviderError("PROVIDER_UNAVAILABLE", { retryable: true });
+    }
+    // An incomplete provider response is not invalid user input. It may have
+    // consumed its bounded request, so surface a non-retryable provider state
+    // instead of encouraging an automatic repeat.
+    if (response.status === "incomplete") throw new AiProviderError("PROVIDER_UNAVAILABLE");
+    throw new AiProviderError("PROVIDER_UNAVAILABLE", { retryable: true });
   }
   const outputText = response.output_text;
   if (typeof outputText !== "string" || outputText.length === 0) throw new AiProviderError("MALFORMED_OUTPUT");

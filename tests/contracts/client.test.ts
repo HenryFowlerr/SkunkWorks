@@ -50,6 +50,13 @@ const pitchTriage = {
   suggestedReply: "Keep the affected work pending while engineering reviews it.",
   citations: [pitchCitation],
 };
+const pitchPreviewAnswer = {
+  approvalState: "draft" as const,
+  evidenceState: "supported" as const,
+  text: "Check the supplied drawing before setup.",
+  citations: [pitchCitation],
+  suggestedEngineerReview: null,
+};
 
 function recordingTransport(responses: unknown[]): {
   transport: ApiTransport;
@@ -209,6 +216,19 @@ describe("typed browser API client", () => {
       code: "VERSION_CONFLICT",
       retryable: false,
     });
+
+    const rateLimited = recordingTransport([{
+      error: { code: "RATE_LIMITED", message: "Wait before trying the pitch check again.", retryable: true },
+      meta,
+    }]);
+    await expect(createApiClient(rateLimited.transport).jobs.pitch({
+      jobId: ids.job,
+      expectedJobVersion: 1,
+      action: "capability",
+    })).rejects.toMatchObject({
+      code: "RATE_LIMITED",
+      retryable: true,
+    });
   });
 
   it("exposes the shared floor methods with release and asset-scoped routes", async () => {
@@ -261,24 +281,32 @@ describe("typed browser API client", () => {
     expect(recording.requests[4].body).not.toHaveProperty("idempotencyKey");
   });
 
-  it("uses the typed non-persistent pitch route for capability, knowledge-base, and triage drafts", async () => {
+  it("uses the typed non-persistent pitch route for capability, knowledge-base, Luna phone preview, and triage drafts", async () => {
     const recording = recordingTransport([
       success({ action: "capability", capability: pitchCapability }),
       success({ action: "knowledge_base", capability: pitchCapability, knowledgeBase: pitchKnowledgeBase }),
+      success({ action: "preview_question", answer: pitchPreviewAnswer }),
       success({ action: "triage", triage: pitchTriage }),
     ]);
     const client = createApiClient(recording.transport);
 
     await expect(client.jobs.pitch({ jobId: ids.job, expectedJobVersion: 1, action: "capability" })).resolves.toMatchObject({ action: "capability", capability: { decision: "clear_for_engineer_review" } });
     await expect(client.jobs.pitch({ jobId: ids.job, expectedJobVersion: 1, action: "knowledge_base" })).resolves.toMatchObject({ action: "knowledge_base", knowledgeBase: { recommendedPhoneStartStepId: "inspect" } });
+    await expect(client.jobs.pitch({ jobId: ids.job, expectedJobVersion: 1, action: "preview_question", preview: { question: "What should I check first?" } })).resolves.toMatchObject({ action: "preview_question", answer: { approvalState: "draft" } });
     await expect(client.jobs.pitch({ jobId: ids.job, expectedJobVersion: 1, action: "triage", issue: { operation: "Hole drilling", text: "The hole position is unclear." } })).resolves.toMatchObject({ action: "triage", triage: { severity: "hold" } });
 
     expect(recording.requests.map(({ method, path }) => [method, path])).toEqual([
       ["POST", `/api/jobs/${ids.job}/pitch`],
       ["POST", `/api/jobs/${ids.job}/pitch`],
       ["POST", `/api/jobs/${ids.job}/pitch`],
+      ["POST", `/api/jobs/${ids.job}/pitch`],
     ]);
     expect(recording.requests[2]?.body).toEqual({
+      expectedJobVersion: 1,
+      action: "preview_question",
+      preview: { question: "What should I check first?" },
+    });
+    expect(recording.requests[3]?.body).toEqual({
       expectedJobVersion: 1,
       action: "triage",
       issue: { operation: "Hole drilling", text: "The hole position is unclear." },

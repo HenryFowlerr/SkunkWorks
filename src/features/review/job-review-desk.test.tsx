@@ -89,6 +89,13 @@ const pitchTriage = {
   suggestedReply: 'Keep the affected work pending while engineering reviews it.',
   citations: [pitchCitation],
 };
+const pitchPreview = {
+  approvalState: 'draft' as const,
+  evidenceState: 'supported' as const,
+  text: 'Read the supplied drawing before setup.',
+  citations: [pitchCitation],
+  suggestedEngineerReview: null,
+};
 
 function twoStepDraft(): Draft {
   const first = { ...draft.content.steps[0], instruction: 'First pass for Bend B1.' };
@@ -143,9 +150,10 @@ function apiHarness(options: { forbiddenReview?: boolean; flags?: Flag[]; releas
         return { data: { generation: completed, draft: serverDraft }, meta };
       }
       if (options.pitch && request.method === 'POST' && request.path === `/api/jobs/${ids.job}/pitch`) {
-        const body = request.body as { action: 'capability' | 'knowledge_base' | 'triage' };
+        const body = request.body as { action: 'capability' | 'knowledge_base' | 'preview_question' | 'triage' };
         if (body.action === 'capability') return { data: { action: 'capability', capability: pitchCapability }, meta };
         if (body.action === 'knowledge_base') return { data: { action: 'knowledge_base', capability: pitchCapability, knowledgeBase: pitchKnowledgeBase }, meta };
+        if (body.action === 'preview_question') return { data: { action: 'preview_question', answer: pitchPreview }, meta };
         return { data: { action: 'triage', triage: pitchTriage }, meta };
       }
       if (request.method === 'POST' && request.path === `/api/jobs/${ids.job}/draft/proposals/${ids.proposal}/decision`) {
@@ -329,6 +337,28 @@ describe('designer review desk', () => {
     expect(pitchRequests.map((request) => (request.body as { action: string }).action)).toEqual(['capability', 'knowledge_base', 'triage']);
     expect(pitchRequests[2]?.body).toMatchObject({ issue: { operation: 'Hole drilling', text: 'The hole position is unclear.' } });
     expect(screen.getByText(/cannot publish a QR guide/i)).toBeVisible();
+  });
+
+  it('keeps the Luna phone chat preview inside the engineer draft flow', async () => {
+    const { client, requests } = apiHarness({ noDraft: true, pitch: true });
+    render(<JobReviewDesk jobId={ids.job} role="designer" client={client} />);
+
+    expect(await screen.findByRole('heading', { name: 'Pitch analysis for readable drawings' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Run supplier capability check' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Create knowledge-base draft' }));
+    expect(await screen.findByLabelText('Luna phone Q&A preview')).toBeVisible();
+    expect(screen.getByText(/cannot publish a release, create a QR destination/i)).toBeVisible();
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Preview floor question' }), { target: { value: 'What should I check first?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ask draft phone chat' }));
+
+    expect(await screen.findByLabelText('Draft phone answer')).toHaveTextContent(pitchPreview.text);
+    const previewRequest = requests.find((request) => (request.body as { action?: string } | undefined)?.action === 'preview_question');
+    expect(previewRequest?.body).toEqual({
+      expectedJobVersion: job.version,
+      action: 'preview_question',
+      preview: { question: 'What should I check first?' },
+    });
   });
 
   it('sends a process review request for the current role and shows the API authorization error unchanged', async () => {

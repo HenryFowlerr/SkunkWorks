@@ -5,6 +5,12 @@ import type { Asset, Job, Machine, WorkshopSnapshot } from "@/contracts";
 import { ApiFault } from "@/server/http/api";
 import { extractPdfEvidence, MAX_PDF_BYTES, PdfTextError } from "./pdf-text";
 import {
+  MAX_STL_VISUAL_BYTES,
+  tryCreateStlVisualEvidence,
+  type StlVisualEvidence,
+} from "./stl-visual-evidence";
+import type { PdfEvidenceFile } from "./types";
+import {
   PitchSourceSchema,
   PitchSupplierSchema,
   type PitchCapabilityInput,
@@ -16,12 +22,19 @@ const MAX_DISPLAY_TEXT = 1_000;
 const MAX_PACKET_SOURCE_COUNT = 120;
 const MAX_PACKET_TEXT_CHARS = 180_000;
 const MAX_SELECTED_TOOLS = 24;
+// Capability is the only pitch action that attaches a visual PDF. These bounds
+// prevent a high-detail local demo request from turning a document archive into
+// one model call. The extracted citation packet remains separately bounded.
+export const MAX_CAPABILITY_PDF_BYTES = 5_000_000;
+export const MAX_CAPABILITY_PDF_PAGES = 20;
 const TRUNCATION_NOTICE = "\n[Source text is truncated for this draft prompt. Do not infer omitted content.]";
 
 export type PitchSourceReader = (asset: Asset) => Promise<Uint8Array>;
 
 export type PitchPacket = {
   job: Job;
+  drawingPdfs: PdfEvidenceFile[];
+  stlVisual: StlVisualEvidence | null;
   partSources: PitchSource[];
   supplierNoteSources: PitchSource[];
   workshop: WorkshopSnapshot;
@@ -30,17 +43,20 @@ export type PitchPacket = {
 
 /**
  * Reads the minimum prompt packet for the five-minute pitch. It deliberately
- * accepts a readable drawing PDF without a bend manifest or model asset.
- * Native CAD and any retained 3D view asset remain outside semantic evidence
- * until an explicit converter/export exists.
+ * accepts a readable drawing PDF without a bend manifest. A selected STL may
+ * contribute one deterministic raster orientation preview, but never semantic
+ * evidence. Native CAD and any retained 3D view asset remain outside semantic
+ * evidence until an explicit converter/export exists.
  */
 export async function preparePitchPacket(input: {
   job: Job;
   assets: Asset[];
   workshop: WorkshopSnapshot;
   readSource: PitchSourceReader;
+  /** Only the initial capability assessment needs a derived mesh preview. */
+  includeStlVisual?: boolean;
 }): Promise<PitchPacket> {
-  const { job, assets, workshop, readSource } = input;
+  const { job, assets, workshop, readSource, includeStlVisual = true } = input;
   if (!job.workshopSnapshotId || job.workshopSnapshotId !== workshop.id || !job.machineId ||
       workshop.workspaceId !== job.workspaceId) {
     throw new ApiFault("REVIEW_REQUIRED", "Select a valid facility and machine before preparing the pitch analysis.");
@@ -68,6 +84,9 @@ export async function preparePitchPacket(input: {
   if (drawings.reduce((total, asset) => total + asset.byteSize, 0) >= MAX_PDF_BYTES) {
     throw new ApiFault("UNSUPPORTED_ASSET", "Combined drawing PDFs exceed the 50 MB pitch-analysis limit.");
   }
+  if (drawings.reduce((total, asset) => total + asset.byteSize, 0) > MAX_CAPABILITY_PDF_BYTES) {
+    throw new ApiFault("UNSUPPORTED_ASSET", "Combined drawing PDFs exceed the 5 MB high-detail capability-review limit. Split the pitch drawing packet before analysis.");
+  }
   for (const drawing of drawings) {
     if (drawing.mimeType.toLowerCase() !== "application/pdf" || !drawing.filename.toLowerCase().endsWith(".pdf")) {
       throw new ApiFault("UNSUPPORTED_ASSET", "Pitch analysis accepts only verified drawing PDF exports as readable evidence.");
@@ -83,6 +102,8 @@ export async function preparePitchPacket(input: {
       throw cause;
     }
   }));
+  assertHighDetailPitchPdfBounds(pdfs);
+  const stlVisual = includeStlVisual ? await prepareOptionalStlVisual(selected, readSource) : null;
   const partSources = pdfs.flatMap((pdf) => pdf.pages
     .filter((page) => page.text.trim())
     .map((page) => documentSource(pdf.assetId, pdf.filename, page.page, page.text)));
@@ -100,11 +121,39 @@ export async function preparePitchPacket(input: {
 
   return {
     job,
+    drawingPdfs: pdfs,
+    stlVisual,
     partSources,
     supplierNoteSources,
     workshop,
     machineId: selectedMachine.id,
   };
+}
+
+/** Keeps visual PDF review deliberately small before it reaches the provider. */
+export function assertHighDetailPitchPdfBounds(pdfs: Array<Pick<PdfEvidenceFile, "bytes" | "pageCount">>): void {
+  if (pdfs.reduce((total, pdf) => total + pdf.bytes.byteLength, 0) > MAX_CAPABILITY_PDF_BYTES) {
+    throw new ApiFault("UNSUPPORTED_ASSET", "Combined drawing PDFs exceed the 5 MB high-detail capability-review limit. Split the pitch drawing packet before analysis.");
+  }
+  if (pdfs.reduce((total, pdf) => total + pdf.pageCount, 0) > MAX_CAPABILITY_PDF_PAGES) {
+    throw new ApiFault("UNSUPPORTED_ASSET", "Drawing PDFs exceed the 20-page high-detail capability-review limit. Split the pitch drawing packet before analysis.");
+  }
+}
+
+/**
+ * Reads at most the first selected STL through the same hash check as drawing
+ * evidence, then turns it into an optional derived PNG. Its bytes/text never
+ * become a prompt source or citation target; unreadable mesh data just omits
+ * the visual context rather than blocking a PDF-grounded assessment.
+ */
+async function prepareOptionalStlVisual(selected: Asset[], readSource: PitchSourceReader): Promise<StlVisualEvidence | null> {
+  const stl = selected.find((asset) => asset.kind === "model_stl");
+  if (!stl) return null;
+  // The upload limit is intentionally larger for browser viewing. Do not pull a
+  // too-large optional mesh from private storage just to omit it afterward.
+  if (stl.byteSize > MAX_STL_VISUAL_BYTES) return null;
+  const bytes = await readCheckedBytes(stl, readSource);
+  return tryCreateStlVisualEvidence(bytes);
 }
 
 /** Converts a prepared pitch packet into a strictly bounded model input. */
@@ -116,14 +165,20 @@ export function buildPitchCapabilityInput(packet: PitchPacket): PitchCapabilityI
   if (!packet.workshop.confirmedBy || !packet.workshop.confirmedAt) {
     throw new TypeError("The supplier profile must be confirmed before creating a pitch prompt.");
   }
+  const profileSource = selectedMachineProfileSource(packet.workshop, selectedMachine);
+  const capabilitySource = selectedMachineCapabilitySource(packet.workshop, selectedMachine);
+  const capabilityNoteSources = packet.supplierNoteSources.filter(isAffirmativeMachineCapabilityNote);
   const supplierSources = [
-    selectedMachineProfileSource(packet.workshop, selectedMachine),
+    profileSource,
+    ...(capabilitySource ? [capabilitySource] : []),
     ...packet.supplierNoteSources,
   ];
   assertPacketBounds([...packet.partSources, ...supplierSources]);
   return {
     partName: clip(packet.job.title, 180),
     partNumber: packet.job.partNumber ? clip(packet.job.partNumber, 180) : null,
+    pdfs: packet.drawingPdfs,
+    stlVisual: packet.stlVisual,
     sources: packet.partSources,
     supplier: PitchSupplierSchema.parse({
       supplierName: clip(packet.workshop.name, 200),
@@ -136,6 +191,10 @@ export function buildPitchCapabilityInput(packet: PitchPacket): PitchCapabilityI
         capabilities: selectedMachineCapabilities(selectedMachine),
       }],
       sources: supplierSources,
+      capabilitySourceKeys: [
+        ...(capabilitySource ? [capabilitySource.sourceKey] : []),
+        ...capabilityNoteSources.map((source) => source.sourceKey),
+      ],
     }),
   };
 }
@@ -190,6 +249,36 @@ function selectedMachineProfileSource(workshop: WorkshopSnapshot, machine: Machi
     label: `Confirmed supplier profile: ${workshop.name} / ${machine.name}`,
     text: fields.join("\n"),
   });
+}
+
+/**
+ * Keeps an affirmative supplier machine limit separate from the profile
+ * identity. A clear pitch assessment must cite one of these records. Listed
+ * tools stay available as contextual profile data, but a tool name/spec alone
+ * never proves that a part is feasible on a machine.
+ */
+function selectedMachineCapabilitySource(workshop: WorkshopSnapshot, machine: Machine): PitchSource | null {
+  const fields: string[] = [];
+  if (/bend|brake/i.test(machine.process) &&
+      machine.usableBendLengthMm.evidenceState === "supported" &&
+      machine.usableBendLengthMm.value !== null) {
+    fields.push(`Usable bend length: ${clip(machine.usableBendLengthMm.originalText ?? String(machine.usableBendLengthMm.value), MAX_DISPLAY_TEXT)}.`);
+  }
+  if (fields.length === 0) return null;
+  return boundedSource({
+    sourceKey: `supplier_capability:${workshop.id}:${machine.id}`,
+    label: `Confirmed supplier capability record: ${workshop.name} / ${machine.name}`,
+    text: fields.join("\n"),
+  });
+}
+
+function isAffirmativeMachineCapabilityNote(source: PitchSource): boolean {
+  // A note such as "tooling unknown" or "capacity to be confirmed" must
+  // never be eligible to clear a part. Require a concrete, numeric machine
+  // limit/equipment fact and reject common absence/uncertainty wording.
+  const uncertainty = /\b(?:unknown|not\s+(?:known|provided|recorded|available|confirmed)|unconfirmed|tbd|n\/?a|none|to\s+be\s+confirmed|pending)\b/i;
+  const machineLimit = /\b(?:capacity|envelope|travel|work(?:ing)?\s*(?:area|envelope)|axis|spindle|tonnage|thickness|stroke|clearance|reach)\b/i;
+  return machineLimit.test(source.text) && /\d/.test(source.text) && !uncertainty.test(source.text);
 }
 
 function selectedMachineCapabilities(machine: Machine): string[] {

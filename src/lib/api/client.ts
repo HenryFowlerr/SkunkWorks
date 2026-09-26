@@ -455,7 +455,9 @@ export function createApiClient(transport: ApiTransport = unavailableApiTranspor
         const jobId = IdSchema.parse(input.jobId);
         const parsed = PitchRequestBodySchema.parse(input.action === "triage"
           ? { expectedJobVersion: input.expectedJobVersion, action: input.action, issue: input.issue }
-          : { expectedJobVersion: input.expectedJobVersion, action: input.action });
+          : input.action === "preview_question"
+            ? { expectedJobVersion: input.expectedJobVersion, action: input.action, preview: input.preview }
+            : { expectedJobVersion: input.expectedJobVersion, action: input.action });
         return call({ method: "POST", path: `/api/jobs/${encodeURIComponent(jobId)}/pitch`, body: parsed }, PitchAnalysisResultSchema);
       },
     },

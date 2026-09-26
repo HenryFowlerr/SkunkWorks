@@ -387,7 +387,10 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
   useEffect(() => {
     if (!jobLoad) return undefined;
     let active = true;
+    let inFlight = false;
     const loadFlags = async () => {
+      if (inFlight) return;
+      inFlight = true;
       setFlagsLoading(true);
       setFlagsError(null);
       try {
@@ -396,11 +399,16 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
       } catch (error) {
         if (active) setFlagsError(explainError(error));
       } finally {
+        inFlight = false;
         if (active) setFlagsLoading(false);
       }
     };
     void loadFlags();
-    return () => { active = false; };
+    const timer = window.setInterval(() => { void loadFlags(); }, 10_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
   }, [client, jobId, jobLoad]);
 
   const sourceAssets = jobLoad?.assets ?? NO_ASSETS;

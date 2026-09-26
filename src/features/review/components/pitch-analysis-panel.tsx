@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Id, PitchAnalysisResult, PitchCapabilityCheck, PitchCitation, PitchIssueTriage, PitchKnowledgeBase } from '@/contracts';
+import type { Id, PitchAnalysisResult, PitchCapabilityCheck, PitchCitation, PitchIssueTriage, PitchKnowledgeBase, PitchMobilePreviewAnswer } from '@/contracts';
 import { Button, Field, Panel, PanelBody, StatusBadge } from '@/components/ui';
 import type { ApiClient } from '@/lib/api/client';
 import { ApiClientError } from '@/lib/api/client';
@@ -59,6 +59,16 @@ function TriageResult({ value }: { value: PitchIssueTriage }) {
   </article>;
 }
 
+function MobilePreviewResult({ value }: { value: PitchMobilePreviewAnswer }) {
+  const tone = value.evidenceState === 'supported' ? 'complete' : value.evidenceState === 'conflict' ? 'blocked' : 'review';
+  return <article className={styles.phoneAnswer} aria-label="Draft phone answer">
+    <header><strong>Draft answer</strong><StatusBadge label={value.evidenceState.replaceAll('_', ' ')} tone={tone} /></header>
+    <p>{value.text}</p>
+    {value.suggestedEngineerReview ? <div className={styles.phoneReview}><strong>Engineer review prompt</strong><p>{value.suggestedEngineerReview}</p></div> : null}
+    <CitationList citations={value.citations} />
+  </article>;
+}
+
 /** A non-persistent, readable-PDF workflow kept separate from bend-guide generation. */
 export function PitchAnalysisPanel({
   jobId,
@@ -76,19 +86,25 @@ export function PitchAnalysisPanel({
   const [capability, setCapability] = useState<PitchCapabilityCheck | null>(null);
   const [knowledgeBase, setKnowledgeBase] = useState<PitchKnowledgeBase | null>(null);
   const [triage, setTriage] = useState<PitchIssueTriage | null>(null);
+  const [previewAnswer, setPreviewAnswer] = useState<PitchMobilePreviewAnswer | null>(null);
   const [issueText, setIssueText] = useState('');
   const [operation, setOperation] = useState('');
-  const [busy, setBusy] = useState<'capability' | 'knowledge_base' | 'triage' | null>(null);
+  const [previewQuestion, setPreviewQuestion] = useState('');
+  const [busy, setBusy] = useState<'capability' | 'knowledge_base' | 'triage' | 'preview_question' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const blockers = [
     ...(hasDrawing ? [] : ['Attach a ready, verified drawing PDF.']),
     ...(hasSupplierSelection ? [] : ['Select a supplier snapshot and machine on the job.']),
   ];
 
-  async function request(action: 'capability' | 'knowledge_base' | 'triage') {
+  async function request(action: 'capability' | 'knowledge_base' | 'triage' | 'preview_question') {
     if (busy || blockers.length) return;
     if (action === 'triage' && issueText.trim().length < 4) {
       setError('Describe the floor issue in at least four characters before creating a triage draft.');
+      return;
+    }
+    if (action === 'preview_question' && previewQuestion.trim().length < 4) {
+      setError('Ask a preview question using at least four characters.');
       return;
     }
     setBusy(action);
@@ -96,16 +112,22 @@ export function PitchAnalysisPanel({
     try {
       const input = action === 'triage'
         ? { jobId, expectedJobVersion: jobVersion, action, issue: { operation: operation.trim() || null, text: issueText.trim() } }
+        : action === 'preview_question'
+          ? { jobId, expectedJobVersion: jobVersion, action, preview: { question: previewQuestion.trim() } }
         : { jobId, expectedJobVersion: jobVersion, action };
       const result: PitchAnalysisResult = await client.jobs.pitch(input);
       if (result.action === 'capability') {
         setCapability(result.capability);
         setKnowledgeBase(null);
         setTriage(null);
+        setPreviewAnswer(null);
       } else if (result.action === 'knowledge_base') {
         setCapability(result.capability);
         setKnowledgeBase(result.knowledgeBase);
         setTriage(null);
+        setPreviewAnswer(null);
+      } else if (result.action === 'preview_question') {
+        setPreviewAnswer(result.answer);
       } else {
         setTriage(result.triage);
       }
@@ -130,6 +152,14 @@ export function PitchAnalysisPanel({
         {capability ? <CapabilityResult value={capability} /> : null}
         {capability && !canCreateKnowledgeBase ? <p className={styles.subtle}>A knowledge-base draft stays unavailable until the capability result is clear for engineer review.</p> : null}
         {knowledgeBase ? <KnowledgeBaseResult value={knowledgeBase} /> : null}
+        {knowledgeBase ? <section className={styles.pitchPhonePreview} aria-label="Luna phone Q&A preview">
+          <header><div><p className={styles.eyebrow}>Luna phone Q&A preview</p><h3>Ask the draft knowledge base</h3></div><StatusBadge label="Draft only" tone="review" /></header>
+          <p className={styles.subtle}>This is an engineer-controlled preview of the mobile chat. Luna receives only this server-held draft knowledge base. It cannot publish a release, create a QR destination, or send floor guidance.</p>
+          {knowledgeBase.recommendedPhoneStartStepId ? <p className={styles.phoneStart}>Phone would start at <strong>{knowledgeBase.operatorSteps.find((step) => step.id === knowledgeBase.recommendedPhoneStartStepId)?.title ?? 'the recommended draft step'}</strong>.</p> : null}
+          <Field id="pitch-phone-question" label="Preview floor question"><textarea id="pitch-phone-question" className="field__control" rows={3} maxLength={1000} value={previewQuestion} onChange={(event) => setPreviewQuestion(event.target.value)} placeholder="e.g. What should I check before this operation?" /></Field>
+          <Button type="button" tone="secondary" disabled={Boolean(busy) || previewQuestion.trim().length < 4} onClick={() => void request('preview_question')}>{busy === 'preview_question' ? 'Asking draft…' : 'Ask draft phone chat'}</Button>
+          {previewAnswer ? <MobilePreviewResult value={previewAnswer} /> : null}
+        </section> : null}
         {knowledgeBase ? <section className={styles.pitchFlagForm} aria-label="Floor issue triage preview">
           <h3>Floor issue to triage</h3><p className={styles.subtle}>This creates an engineer-facing draft only. Use the controlled release flag workflow to record and approve any actual reply.</p>
           <Field id="pitch-affected-operation" label="Affected operation (optional)"><input id="pitch-affected-operation" className="field__control" maxLength={180} value={operation} onChange={(event) => setOperation(event.target.value)} placeholder="e.g. drilling pattern" /></Field>

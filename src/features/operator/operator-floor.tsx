@@ -333,7 +333,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
       setPhotoAsset(null);
       flagIdempotencyKey.current = null;
       photoIdempotencyKey.current = null;
-      setLastAction('Flag saved to the published release. Hold this operation while engineering reviews it.');
+      setLastAction('Flag saved to the published release. Engineering will receive a concise Luna draft report with this exact operation context. Hold this operation while they review it.');
     } catch (error) {
       setFlagError(explainError(error));
     } finally {
@@ -495,7 +495,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
       <div className={styles.narrowColumn}>
         <Panel title="Ask about this operation" eyebrow="Release-bound question">
           <PanelBody>
-            <p className={styles.muted}>Your question includes this release and the selected operation. Check any cited evidence before acting; an uncertain answer should go to the designer.</p>
+            <p className={styles.muted}>This chat uses the approved part knowledge for this release and selected operation. Check any cited evidence before acting; an uncertain answer should go to the designer.</p>
             <p className={styles.contextLine}>Context: {view.job.partNumber} · release R{view.release.revisionNumber} · {currentStep ? `operation ${currentStep.bendId}` : 'general release'}</p>
             {view.permissions.canAsk ? (
               <form className={styles.form} onSubmit={(event) => void askQuestion(event)}>
@@ -533,7 +533,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
         <div className={styles.narrowColumn}>
           <Panel title="Raise a floor flag" eyebrow={currentStep ? 'Operation ' + currentStep.bendId : 'Published release'}>
             <PanelBody>
-              <p className={styles.muted}>This note is stored against the current release and step. Attach a photo only if it helps the designer understand the issue.</p>
+              <p className={styles.muted}>This note is stored against the current release and step. Engineering receives a concise Luna draft report from that context; an engineer still reviews it before any reply is sent.</p>
               <p className={styles.contextLine}>Context: {view.job.partNumber} · release R{view.release.revisionNumber} · {currentStep ? `operation ${currentStep.bendId}` : 'general release'}</p>
               {view.permissions.canFlag ? (
                 <form className={styles.form} onSubmit={(event) => void submitFlag(event)}>

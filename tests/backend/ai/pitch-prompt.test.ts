@@ -2,6 +2,7 @@ import type OpenAI from "openai";
 import { describe, expect, it, vi } from "vitest";
 import {
   PITCH_PROMPT_VERSIONS,
+  PITCH_CAPABILITY_INSTRUCTIONS,
   assertPitchCitations,
   capabilityPrompt,
   issueTriagePrompt,
@@ -12,6 +13,7 @@ import {
   type PitchKnowledgeBaseInput,
 } from "@/server/ai/pitch";
 import { OpenAiPitchAdapter } from "@/server/ai/pitch-openai";
+import type { StlVisualEvidence } from "@/server/ai/stl-visual-evidence";
 
 const sources = [{ sourceKey: "drawing:1", label: "Prepared drawing, page 1", text: "Material thickness 2.0 mm. Return orientation must be confirmed." }];
 const supplier = {
@@ -20,9 +22,10 @@ const supplier = {
   confirmed: true,
   machines: [{ id: "brake-02", name: "Brake 02", process: "press brake", capabilities: ["Sheet capacity 3.0 mm"] }],
   sources: [{ sourceKey: "supplier:brake-02", label: "Confirmed supplier profile", text: "Brake 02 sheet capacity 3.0 mm." }],
+  capabilitySourceKeys: ["supplier:brake-02"],
 };
 
-const capabilityInput: PitchCapabilityInput = { partName: "Prepared Sensor Mount", partNumber: "SKW-SM-104", sources, supplier };
+const capabilityInput: PitchCapabilityInput = { partName: "Prepared Sensor Mount", partNumber: "SKW-SM-104", pdfs: [], stlVisual: null, sources, supplier };
 
 function adapter(output: object) {
   const create = vi.fn().mockResolvedValue({ status: "completed", output: [], output_text: JSON.stringify(output) });
@@ -30,7 +33,11 @@ function adapter(output: object) {
     create,
     ai: new OpenAiPitchAdapter({
       client: { responses: { create } } as unknown as OpenAI,
-      environment: { OPENAI_API_KEY: "test-key", OPENAI_MODEL: "test-model" },
+      environment: {
+        OPENAI_API_KEY: "test-key",
+        OPENAI_INITIAL_MODEL: "configured-astra-model",
+        OPENAI_FLOOR_MODEL: "configured-luna-model",
+      },
     }),
   };
 }
@@ -55,8 +62,9 @@ describe("pitch prompt contracts", () => {
     expect(prompt.promptVersion).toBe(PITCH_PROMPT_VERSIONS.capability);
     expect(prompt.partSources).toEqual(sources);
     expect(prompt.supplier.evidenceSources).toEqual(supplier.sources);
+    expect(prompt.supplier.capabilityEvidenceSourceKeys).toEqual(supplier.capabilitySourceKeys);
     expect(prompt.rules.join(" ")).toMatch(/error code/i);
-    expect(prompt.rules.join(" ")).toMatch(/both partSources and supplier\.evidenceSources/i);
+    expect(prompt.rules.join(" ")).toMatch(/both partSources and supplier\.capabilityEvidenceSourceKeys/i);
   });
 
   it("uses strict structured output and accepts only exact source citations", async () => {
@@ -64,9 +72,81 @@ describe("pitch prompt contracts", () => {
     await expect(ai.assessCapability(capabilityInput)).resolves.toMatchObject({ code: "SETUP_REVIEW_REQUIRED", approvalState: "draft" });
     const request = create.mock.calls[0][0];
     expect(request.store).toBe(false);
+    expect(request.model).toBe("configured-astra-model");
     expect(request.text.format.strict).toBe(true);
+    expect(request.max_output_tokens).toBe(1_200);
     expect(request.instructions).toMatch(/not production authorization/i);
     expect(JSON.parse(request.input[0].content[0].text).promptVersion).toBe(PITCH_PROMPT_VERSIONS.capability);
+  });
+
+  it("attaches only the server-authorized drawing PDF at high detail for the initial capability call", async () => {
+    const drawingBytes = new TextEncoder().encode("%PDF-1.4");
+    const { ai, create } = adapter(capabilityOutput);
+    await expect(ai.assessCapability({
+      ...capabilityInput,
+      pdfs: [{
+        assetId: "drawing-asset",
+        filename: "engineering-test-block.pdf",
+        mimeType: "application/pdf",
+        bytes: drawingBytes,
+        pageCount: 1,
+        pages: [{ page: 1, text: "60.0 mm" }],
+      }],
+    })).resolves.toMatchObject({ approvalState: "draft" });
+
+    const content = create.mock.calls[0][0].input[0].content;
+    expect(content).toHaveLength(2);
+    expect(content[0]).toEqual({
+      type: "input_file",
+      filename: "engineering-test-block.pdf",
+      file_data: "data:application/pdf;base64,JVBERi0xLjQ=",
+      detail: "high",
+    });
+    expect(content[1]).toMatchObject({ type: "input_text" });
+  });
+
+  it("attaches a derived STL raster only as visual orientation context, never as citable prompt data", async () => {
+    const visual: StlVisualEvidence = {
+      mimeType: "image/png",
+      imageDataUrl: "data:image/png;base64,cGl0Y2gtdmlzdWFs",
+      detail: "low",
+      label: "Deterministic visual reference derived from the supplied STL. It has no declared units, scale, dimensions, tolerances, material, process, or approval state.",
+    };
+    const { ai, create } = adapter(capabilityOutput);
+    await expect(ai.assessCapability({ ...capabilityInput, stlVisual: visual })).resolves.toMatchObject({ approvalState: "draft" });
+
+    const request = create.mock.calls[0][0];
+    const content = request.input[0].content;
+    expect(content).toEqual([
+      { type: "input_image", image_url: visual.imageDataUrl, detail: "low" },
+      expect.objectContaining({ type: "input_text" }),
+    ]);
+    const prompt = JSON.parse(content[1].text);
+    expect(prompt.visualReference).toEqual({ kind: "STL-derived raster", label: visual.label });
+    expect(JSON.stringify(prompt)).not.toContain(visual.imageDataUrl);
+    expect(PITCH_CAPABILITY_INSTRUCTIONS).toMatch(/visual-only orientation context/i);
+    expect(PITCH_CAPABILITY_INSTRUCTIONS).toMatch(/never cite it or derive a numeric dimension.*material.*capability/i);
+  });
+
+  it.each([
+    ["failed", true],
+    ["cancelled", true],
+    ["incomplete", false],
+  ] as const)("maps a %s provider response to a provider failure instead of client validation", async (status, retryable) => {
+    const create = vi.fn().mockResolvedValue({ status, output: [], output_text: "" });
+    const ai = new OpenAiPitchAdapter({
+      client: { responses: { create } } as unknown as OpenAI,
+      environment: {
+        OPENAI_API_KEY: "test-key",
+        OPENAI_INITIAL_MODEL: "configured-astra-model",
+        OPENAI_FLOOR_MODEL: "configured-luna-model",
+      },
+    });
+
+    await expect(ai.assessCapability(capabilityInput)).rejects.toMatchObject({
+      code: "PROVIDER_UNAVAILABLE",
+      retryable,
+    });
   });
 
   it("rejects a capability result that cites a made-up excerpt", async () => {
@@ -89,6 +169,14 @@ describe("pitch prompt contracts", () => {
   it("rejects a clear result for an unconfirmed supplier profile", async () => {
     const { ai } = adapter(capabilityOutput);
     await expect(ai.assessCapability({ ...capabilityInput, supplier: { ...supplier, confirmed: false } })).rejects.toMatchObject({ code: "UNSUPPORTED_CLAIM" });
+  });
+
+  it("rejects a clear result without a confirmed machine-limit or tooling source", async () => {
+    const { ai } = adapter(capabilityOutput);
+    await expect(ai.assessCapability({
+      ...capabilityInput,
+      supplier: { ...supplier, capabilitySourceKeys: [] },
+    })).rejects.toMatchObject({ code: "UNSUPPORTED_CLAIM" });
   });
 
   it.each([
@@ -150,6 +238,9 @@ describe("pitch prompt contracts", () => {
     const knowledge = adapter(knowledgeOutput);
     await expect(knowledge.ai.createKnowledgeBase(knowledgeInput)).resolves.toMatchObject({ approvalState: "draft", recommendedPhoneStartStepId: "orient" });
     expect(knowledge.create.mock.calls[0][0].instructions).toMatch(/must edit and explicitly approve/i);
+    expect(knowledge.create.mock.calls[0][0].model).toBe("configured-astra-model");
+    expect(knowledge.create.mock.calls[0][0].max_output_tokens).toBe(1_800);
+    expect(knowledge.create.mock.calls[0][0].input[0].content).toHaveLength(1);
     expect(JSON.parse(knowledge.create.mock.calls[0][0].input[0].content[0].text).promptVersion).toBe(PITCH_PROMPT_VERSIONS.knowledgeBase);
 
     const uncitedKnowledge = structuredClone(knowledgeOutput);
@@ -189,6 +280,9 @@ describe("pitch prompt contracts", () => {
     const triage = adapter(triageOutput);
     await expect(triage.ai.triageIssue(triageInput)).resolves.toMatchObject({ approvalState: "draft", severity: "hold" });
     expect(triage.create.mock.calls[0][0].instructions).toMatch(/Never resolve the issue/i);
+    expect(triage.create.mock.calls[0][0].model).toBe("configured-luna-model");
+    expect(triage.create.mock.calls[0][0].max_output_tokens).toBe(900);
+    expect(triage.create.mock.calls[0][0].input[0].content).toHaveLength(1);
     expect(JSON.parse(triage.create.mock.calls[0][0].input[0].content[0].text).promptVersion).toBe(PITCH_PROMPT_VERSIONS.issueTriage);
     expect(triage.create.mock.calls[0][0].text.format.schema.properties.severity.enum).toEqual(["hold"]);
     expect(JSON.parse(issueTriagePrompt(triageInput)).rules.join(" ")).toMatch(/severity must be hold/i);

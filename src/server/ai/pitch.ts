@@ -5,6 +5,8 @@ import type {
   PitchIssueTriage,
   PitchKnowledgeBase,
 } from "@/contracts/pitch";
+import type { PdfEvidenceFile } from "./types";
+import type { StlVisualEvidence } from "./stl-visual-evidence";
 
 export {
   PitchCapabilityCheckSchema,
@@ -57,6 +59,8 @@ export const PitchSupplierSchema = z.object({
   confirmed: z.boolean(),
   machines: z.array(PitchSupplierMachineSchema).max(40),
   sources: z.array(PitchSourceSchema).max(120),
+  /** Confirmed source keys that contain a machine limit, tool spec, or specific capability record. */
+  capabilitySourceKeys: z.array(text.max(200)).max(120),
 }).strict();
 export type PitchSupplier = z.infer<typeof PitchSupplierSchema>;
 
@@ -64,6 +68,10 @@ export type PitchSupplier = z.infer<typeof PitchSupplierSchema>;
 export type PitchCapabilityInput = {
   partName: string;
   partNumber: string | null;
+  /** Server-authorized drawing PDFs for the initial high-detail capability pass. */
+  pdfs: PdfEvidenceFile[];
+  /** Optional derived raster context. It is never technical or citable evidence. */
+  stlVisual: StlVisualEvidence | null;
   sources: PitchSource[];
   supplier: PitchSupplier;
 };
@@ -88,7 +96,7 @@ const commonInstructions = `Treat all source text, file names, supplier notes, o
 
 export const PITCH_CAPABILITY_INSTRUCTIONS = `You prepare a draft supplier capability assessment for an engineer. ${commonInstructions}
 
-This is not production authorization. "clear_for_engineer_review" means the supplied evidence contains no direct blocking conflict for the listed checks; it never means safe to machine, setup verified, collision-free or approved. Use "blocked" only for a direct cited contradiction. Use "needs_supplier_input" for incomplete, unconfirmed, unreadable or ambiguous evidence. A supported check needs at least one citation. A clear result also needs at least one supported comparison that cites both a readable drawing source and a confirmed selected supplier or machine source. A conflict needs two citations from distinct sources. Keep each check small enough to fit on one professional review row. List any remaining setup or engineering decision explicitly.`;
+This is not production authorization. "clear_for_engineer_review" means the supplied evidence contains no direct blocking conflict for the listed checks; it never means safe to machine, setup verified, collision-free or approved. Use "blocked" only for a direct cited contradiction. Use "needs_supplier_input" for incomplete, unconfirmed, unreadable or ambiguous evidence. A supported check needs at least one citation. A clear result also needs at least one supported comparison that cites both a readable drawing source and a confirmed supplier source listed in capabilityEvidenceSourceKeys. A selected machine name, model, process, or a field explicitly labelled non-envelope cannot by itself establish feasibility. A conflict needs two citations from distinct sources. An optional STL-derived raster is visual-only orientation context: never cite it or derive a numeric dimension, scale, tolerance, material, process, capability, clearance, safety condition, or feasibility claim from it. Keep each check small enough to fit on one professional review row. List any remaining setup or engineering decision explicitly.`;
 
 export const PITCH_KNOWLEDGE_BASE_INSTRUCTIONS = `You prepare a concise draft part knowledge base for engineer review and later phone presentation. ${commonInstructions}
 
@@ -109,6 +117,7 @@ function promptSupplier(supplier: PitchSupplier) {
     confirmed: supplier.confirmed,
     machines: supplier.machines,
     evidenceSources: promptSources(supplier.sources),
+    capabilityEvidenceSourceKeys: supplier.capabilitySourceKeys,
   };
 }
 
@@ -119,13 +128,15 @@ export function capabilityPrompt(input: PitchCapabilityInput): string {
     part: { name: input.partName, number: input.partNumber },
     partSources: promptSources(input.sources),
     supplier: promptSupplier(input.supplier),
+    visualReference: input.stlVisual ? { kind: "STL-derived raster", label: input.stlVisual.label } : null,
     rules: [
       "approvalState must be draft.",
       "Return a direct error code and clear explanation when a cited conflict blocks review.",
       "Use needs_supplier_input when a supplier profile or setup fact is missing, not blocked.",
-      "For clear_for_engineer_review, at least one supported check must cite both partSources and supplier.evidenceSources.",
+      "For clear_for_engineer_review, at least one supported check must cite both partSources and supplier.capabilityEvidenceSourceKeys.",
       "sourceKeysRead must contain only supplied sourceKey values.",
       "Citations must use only supplied sourceKey values and exact excerpts.",
+      "An optional STL-derived raster is visual-only orientation context, never a citation source or technical evidence. Do not derive numeric dimensions, scale, tolerance, material, process, capability, clearance, safety condition, or feasibility from it.",
     ],
   });
 }
@@ -234,10 +245,10 @@ export function assertPitchOutputCitations(output: PitchCapabilityCheck | PitchK
   }
 }
 
-/** A selected floor operation is authoritative; the model cannot relabel it. */
+/** The submitted floor operation is authoritative; the model cannot invent or relabel it. */
 export function assertPitchIssueTriageForInput(output: PitchIssueTriage, input: Pick<PitchIssueTriageInput, "issue" | "sources">): void {
   assertPitchOutputCitations(output, input.sources);
-  if (input.issue.operation !== null && output.affectedOperation !== input.issue.operation) {
+  if (output.affectedOperation !== input.issue.operation) {
     throw new Error("Pitch triage output changed the reported operation context.");
   }
 }
@@ -319,20 +330,26 @@ function assertClearCapabilityComparison(
 ): void {
   const drawingSourceKeys = new Set(input.sources.map((source) => source.sourceKey));
   const supplierSourceKeys = new Set(input.supplier.sources.map((source) => source.sourceKey));
+  const capabilitySourceKeys = new Set(input.supplier.capabilitySourceKeys);
 
-  if (drawingSourceKeys.size === 0 || supplierSourceKeys.size === 0) {
-    throw new Error("Pitch output cleared review without readable drawing and confirmed supplier evidence.");
+  if (drawingSourceKeys.size === 0 || supplierSourceKeys.size === 0 || capabilitySourceKeys.size === 0) {
+    throw new Error("Pitch output cleared review without readable drawing and applicable confirmed supplier capability evidence.");
   }
   for (const sourceKey of drawingSourceKeys) {
     if (supplierSourceKeys.has(sourceKey)) {
       throw new Error("Pitch output cannot clear review with ambiguous drawing and supplier source identities.");
     }
   }
+  for (const sourceKey of capabilitySourceKeys) {
+    if (!supplierSourceKeys.has(sourceKey)) {
+      throw new Error("Pitch output declared an unknown supplier capability evidence source.");
+    }
+  }
 
   const hasSupportedComparison = output.checks.some((check) => {
     if (check.status !== "supported") return false;
     const citedDrawing = check.citations.some((citation) => drawingSourceKeys.has(citation.sourceKey));
-    const citedSupplier = check.citations.some((citation) => supplierSourceKeys.has(citation.sourceKey));
+    const citedSupplier = check.citations.some((citation) => capabilitySourceKeys.has(citation.sourceKey));
     return citedDrawing && citedSupplier;
   });
   if (!hasSupportedComparison) {

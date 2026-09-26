@@ -27,6 +27,8 @@ import {
   type PitchKnowledgeBaseInput,
 } from "./pitch";
 import { AiProviderError } from "./types";
+import { floorAssistantModel, initialAnalysisModel } from "./model-routing";
+import { pitchOutputTokenLimit } from "./pitch-guardrails";
 
 const DEFAULT_TIMEOUT_MS = 25_000;
 const MAX_TIMEOUT_MS = 50_000;
@@ -56,12 +58,15 @@ export class OpenAiPitchAdapter implements PitchAiAdapter {
 
   async assessCapability(input: PitchCapabilityInput): Promise<PitchCapabilityCheck> {
     const output = await this.request({
+      model: initialAnalysisModel(this.environment),
       instructions: PITCH_CAPABILITY_INSTRUCTIONS,
       userText: capabilityPrompt(input),
+      pdfs: input.pdfs,
+      stlVisual: input.stlVisual,
       formatName: "chappe_capability_scan_v1",
       schema: PitchCapabilityJsonSchema,
       outputSchema: PitchCapabilityCheckSchema,
-      maxOutputTokens: 2_500,
+      maxOutputTokens: pitchOutputTokenLimit("capability", this.environment),
     });
     try {
       assertPitchCapabilityForInput(output, input);
@@ -79,12 +84,15 @@ export class OpenAiPitchAdapter implements PitchAiAdapter {
     }
     const sources = [...input.sources, ...input.supplier.sources];
     const output = await this.request({
+      model: initialAnalysisModel(this.environment),
       instructions: PITCH_KNOWLEDGE_BASE_INSTRUCTIONS,
       userText: knowledgeBasePrompt(input),
+      pdfs: [],
+      stlVisual: null,
       formatName: "chappe_part_knowledge_base_v1",
       schema: PitchKnowledgeBaseJsonSchema,
       outputSchema: PitchKnowledgeBaseSchema,
-      maxOutputTokens: 4_000,
+      maxOutputTokens: pitchOutputTokenLimit("knowledge_base", this.environment),
     });
     try {
       assertPitchOutputCitations(output, sources);
@@ -96,12 +104,15 @@ export class OpenAiPitchAdapter implements PitchAiAdapter {
 
   async triageIssue(input: PitchIssueTriageInput): Promise<PitchIssueTriage> {
     const output = await this.request({
+      model: floorAssistantModel(this.environment),
       instructions: PITCH_ISSUE_TRIAGE_INSTRUCTIONS,
       userText: issueTriagePrompt(input),
+      pdfs: [],
+      stlVisual: null,
       formatName: "chappe_floor_issue_triage_v1",
       schema: PitchIssueTriageJsonSchema,
       outputSchema: PitchIssueTriageSchema,
-      maxOutputTokens: 2_000,
+      maxOutputTokens: pitchOutputTokenLimit("triage", this.environment),
     });
     try {
       assertPitchIssueTriageForInput(output, input);
@@ -109,12 +120,6 @@ export class OpenAiPitchAdapter implements PitchAiAdapter {
       throw new AiProviderError("UNSUPPORTED_CLAIM");
     }
     return output;
-  }
-
-  private configuredModel(): string {
-    const model = this.environment.OPENAI_MODEL?.trim();
-    if (!model) throw new AiProviderError("MISSING_MODEL_CONFIGURATION");
-    return model;
   }
 
   private configuredClient(): OpenAI {
@@ -130,8 +135,11 @@ export class OpenAiPitchAdapter implements PitchAiAdapter {
   }
 
   private async request<T>(input: {
+    model: string;
     instructions: string;
     userText: string;
+    pdfs: PitchCapabilityInput["pdfs"];
+    stlVisual: PitchCapabilityInput["stlVisual"];
     formatName: string;
     schema: object;
     outputSchema: z.ZodType<T>;
@@ -140,9 +148,27 @@ export class OpenAiPitchAdapter implements PitchAiAdapter {
     let response: OpenAI.Responses.Response;
     try {
       response = await this.configuredClient().responses.create({
-        model: this.configuredModel(),
+        model: input.model,
         instructions: input.instructions,
-        input: [{ role: "user", content: [{ type: "input_text", text: input.userText }] }],
+        input: [{
+          role: "user",
+          content: [
+            ...input.pdfs.map((pdf) => ({
+              type: "input_file" as const,
+              filename: pdf.filename,
+              file_data: `data:application/pdf;base64,${Buffer.from(pdf.bytes.buffer, pdf.bytes.byteOffset, pdf.bytes.byteLength).toString("base64")}`,
+              // The first capability pass must inspect the authorised drawing
+              // visually as well as use its server-extracted text/citations.
+              detail: "high" as const,
+            })),
+            ...(input.stlVisual ? [{
+              type: "input_image" as const,
+              image_url: input.stlVisual.imageDataUrl,
+              detail: input.stlVisual.detail,
+            }] : []),
+            { type: "input_text" as const, text: input.userText },
+          ],
+        }],
         text: { format: { type: "json_schema", name: input.formatName, strict: true, schema: input.schema as never } },
         max_output_tokens: input.maxOutputTokens,
         store: false,
@@ -152,7 +178,19 @@ export class OpenAiPitchAdapter implements PitchAiAdapter {
     }
     const refused = response.output.some((item) => item.type === "message" && item.content.some((part) => part.type === "refusal"));
     if (refused) throw new AiProviderError("PROVIDER_REFUSAL");
-    if (response.status !== "completed" || !response.output_text) throw new AiProviderError("MALFORMED_OUTPUT");
+    if (response.status !== "completed") {
+      if (response.status === "failed" || response.status === "cancelled") {
+        throw new AiProviderError("PROVIDER_UNAVAILABLE", { retryable: true });
+      }
+      // An incomplete response may have consumed the bounded request but does
+      // not represent malformed browser input. Do not invite an automatic
+      // retry; the engineer can decide whether another bounded attempt helps.
+      if (response.status === "incomplete") {
+        throw new AiProviderError("PROVIDER_UNAVAILABLE");
+      }
+      throw new AiProviderError("PROVIDER_UNAVAILABLE", { retryable: true });
+    }
+    if (!response.output_text) throw new AiProviderError("MALFORMED_OUTPUT");
     let decoded: unknown;
     try { decoded = JSON.parse(response.output_text); } catch { throw new AiProviderError("MALFORMED_OUTPUT"); }
     const parsed = input.outputSchema.safeParse(decoded);

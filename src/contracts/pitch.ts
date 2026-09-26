@@ -106,6 +106,35 @@ export const PitchIssueInputSchema = z.object({
 }).strict();
 export type PitchIssueInput = z.infer<typeof PitchIssueInputSchema>;
 
+/**
+ * A designer may ask a question against the exact server-held pitch draft to
+ * inspect the phone experience before publishing. It is deliberately not the
+ * floor `/api/questions` request, which remains release-bound.
+ */
+export const PitchPreviewQuestionInputSchema = z.object({
+  question: text.min(4).max(1_000),
+}).strict();
+export type PitchPreviewQuestionInput = z.infer<typeof PitchPreviewQuestionInputSchema>;
+
+export const PitchMobilePreviewAnswerSchema = z.object({
+  approvalState: z.literal("draft"),
+  evidenceState: z.enum(["supported", "conflict", "not_found", "unreadable"]),
+  text: text.max(1_200),
+  citations: CitationListSchema,
+  suggestedEngineerReview: z.string().trim().max(600).nullable(),
+}).strict().superRefine((answer, ctx) => {
+  if ((answer.evidenceState === "supported" || answer.evidenceState === "conflict") && answer.citations.length === 0) {
+    ctx.addIssue({ code: "custom", path: ["citations"], message: "Supported draft answers require citations." });
+  }
+  if ((answer.evidenceState === "not_found" || answer.evidenceState === "unreadable") && answer.citations.length !== 0) {
+    ctx.addIssue({ code: "custom", path: ["citations"], message: "Unknown draft answers must not cite unrelated evidence." });
+  }
+  if ((answer.evidenceState === "not_found" || answer.evidenceState === "unreadable") && answer.suggestedEngineerReview === null) {
+    ctx.addIssue({ code: "custom", path: ["suggestedEngineerReview"], message: "Unknown draft answers need a concise engineer-review prompt." });
+  }
+});
+export type PitchMobilePreviewAnswer = z.infer<typeof PitchMobilePreviewAnswerSchema>;
+
 const PitchRequestBaseSchema = z.object({
   expectedJobVersion: z.number().int().positive(),
 });
@@ -114,6 +143,7 @@ export const PitchRequestBodySchema = z.discriminatedUnion("action", [
   PitchRequestBaseSchema.extend({ action: z.literal("capability") }).strict(),
   PitchRequestBaseSchema.extend({ action: z.literal("knowledge_base") }).strict(),
   PitchRequestBaseSchema.extend({ action: z.literal("triage"), issue: PitchIssueInputSchema }).strict(),
+  PitchRequestBaseSchema.extend({ action: z.literal("preview_question"), preview: PitchPreviewQuestionInputSchema }).strict(),
 ]);
 export type PitchRequestBody = z.infer<typeof PitchRequestBodySchema>;
 
@@ -121,6 +151,7 @@ export const PitchAnalysisResultSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("capability"), capability: PitchCapabilityCheckSchema }).strict(),
   z.object({ action: z.literal("knowledge_base"), capability: PitchCapabilityCheckSchema, knowledgeBase: PitchKnowledgeBaseSchema.nullable() }).strict(),
   z.object({ action: z.literal("triage"), triage: PitchIssueTriageSchema }).strict(),
+  z.object({ action: z.literal("preview_question"), answer: PitchMobilePreviewAnswerSchema }).strict(),
 ]);
 export type PitchAnalysisResult = z.infer<typeof PitchAnalysisResultSchema>;
 
@@ -216,5 +247,18 @@ export const PitchIssueTriageJsonSchema = {
     knownEvidenceCitations: { type: "array", maxItems: 12, items: requiredCitationListJsonSchema },
     unknowns: { type: "array", maxItems: 12, items: { type: "string" } },
     engineerDecisionNeeded: { type: "string" }, suggestedReply: { type: "string" }, citations: citationListJsonSchema,
+  },
+} as const;
+
+export const PitchMobilePreviewAnswerJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["approvalState", "evidenceState", "text", "citations", "suggestedEngineerReview"],
+  properties: {
+    approvalState: { type: "string", enum: ["draft"] },
+    evidenceState: { type: "string", enum: ["supported", "conflict", "not_found", "unreadable"] },
+    text: { type: "string" },
+    citations: citationListJsonSchema,
+    suggestedEngineerReview: { type: ["string", "null"] },
   },
 } as const;
