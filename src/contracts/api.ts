@@ -324,6 +324,13 @@ export const CreateShareLinkResultSchema = z.object({
 }).strict();
 export type CreateShareLinkResult = z.infer<typeof CreateShareLinkResultSchema>;
 
+export const ShareLinkSummarySchema = z.object({
+  linkId: IdSchema,
+  createdAt: z.string().datetime({ offset: true }),
+  revokedAt: z.string().datetime({ offset: true }).nullable(),
+}).strict();
+export type ShareLinkSummary = z.infer<typeof ShareLinkSummarySchema>;
+
 export const RevokeShareLinkInputSchema = z.object({
   releaseId: IdSchema,
   linkId: IdSchema,

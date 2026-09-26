@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import QRCode from 'qrcode';
 
-import type { Asset, Id, ReleaseView } from '@/contracts';
+import type { Asset, Id, ReleaseView, ShareLinkSummary } from '@/contracts';
 import { Button } from '@/components/ui';
 import { ApiClientError, api } from '@/lib/api/client';
 import type { ApiClient } from '@/lib/api/client';
@@ -42,6 +42,8 @@ function ReleasePrintSession({ releaseId, client }: { releaseId: string; client:
   const [shareBusy, setShareBusy] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [accessUrl, setAccessUrl] = useState<string | null>(null);
+  const [linkId, setLinkId] = useState<Id | null>(null);
+  const [links, setLinks] = useState<ShareLinkSummary[]>([]);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [drawingUrl, setDrawingUrl] = useState<string | null>(null);
   const [drawingError, setDrawingError] = useState<string | null>(null);
@@ -52,12 +54,38 @@ function ReleasePrintSession({ releaseId, client }: { releaseId: string; client:
     setShareBusy(true);
     setShareError(null);
     setAccessUrl(null);
+    setLinkId(null);
     setQrDataUrl(null);
     try {
       const issued = await client.releases.createShareLink({ releaseId: forReleaseId as Id, idempotencyKey: idempotencyKey() });
-      const qr = await QRCode.toDataURL(issued.accessUrl, { errorCorrectionLevel: 'M', margin: 1, width: 256 });
       setAccessUrl(issued.accessUrl);
-      setQrDataUrl(qr);
+      setLinkId(issued.linkId);
+      setLinks((current) => [{ linkId: issued.linkId, createdAt: new Date().toISOString(), revokedAt: null }, ...current]);
+      try {
+        const qr = await QRCode.toDataURL(issued.accessUrl, { errorCorrectionLevel: 'M', margin: 1, width: 256 });
+        setQrDataUrl(qr);
+      } catch {
+        setShareError('The access link was issued, but its QR image could not be rendered. Revoke it or copy its address.');
+      }
+    } catch (error) {
+      setShareError(explainError(error));
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const revokeShareLink = async (targetLinkId: Id) => {
+    if (!view) return;
+    setShareBusy(true);
+    setShareError(null);
+    try {
+      await client.releases.revokeShareLink({ releaseId: view.release.id, linkId: targetLinkId });
+      setLinks((current) => current.map((link) => link.linkId === targetLinkId ? { ...link, revokedAt: new Date().toISOString() } : link));
+      if (targetLinkId === linkId) {
+        setLinkId(null);
+        setAccessUrl(null);
+        setQrDataUrl(null);
+      }
     } catch (error) {
       setShareError(explainError(error));
     } finally {
@@ -77,6 +105,12 @@ function ReleasePrintSession({ releaseId, client }: { releaseId: string; client:
         if (next.release.id !== releaseId) throw new Error('The API returned a different release than the requested label context.');
         if (!active) return;
         setView(next);
+        try {
+          const existingLinks = await client.releases.listShareLinks({ releaseId: next.release.id });
+          if (active) setLinks(existingLinks);
+        } catch (error) {
+          if (active) setShareError(explainError(error));
+        }
         const sourceDrawing = next.sourceAssets.find((asset) => asset.kind === 'drawing_pdf' && asset.status === 'ready' && asset.sha256 !== null);
         if (sourceDrawing) {
           try {
@@ -88,7 +122,6 @@ function ReleasePrintSession({ releaseId, client }: { releaseId: string; client:
         } else if (active) {
           setDrawingError('The released source pack does not contain a ready drawing PDF.');
         }
-        if (active) void issueShareLink(next.release.id);
       } catch (error) {
         if (active) setLoadError(explainError(error));
       } finally {
@@ -97,8 +130,6 @@ function ReleasePrintSession({ releaseId, client }: { releaseId: string; client:
     };
     void load();
     return () => { active = false; };
-    // issueShareLink intentionally runs once for each verified release load.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, releaseId]);
 
   return (
@@ -106,7 +137,7 @@ function ReleasePrintSession({ releaseId, client }: { releaseId: string; client:
       <header className={styles.printControls}>
         <div><p className={styles.eyebrow}>Chappe · release label</p><h1>Print release QR label</h1></div>
         <div className={styles.controls}>
-          {view ? <Button type="button" tone="secondary" small disabled={shareBusy} onClick={() => void issueShareLink(view.release.id)}>{shareBusy ? 'Issuing link…' : 'Issue a new QR link'}</Button> : null}
+          {view ? <Button type="button" tone="secondary" small disabled={shareBusy} onClick={() => void issueShareLink(view.release.id)}>{shareBusy ? 'Issuing link…' : 'Issue a QR link'}</Button> : null}
           <Button type="button" disabled={!view || !qrDataUrl || shareBusy} onClick={() => window.print()}>Print label</Button>
         </div>
       </header>
@@ -145,8 +176,17 @@ function ReleasePrintSession({ releaseId, client }: { releaseId: string; client:
             </div>
             <span className={styles.accessStatus}>{accessUrl ? 'Factory access link issued' : shareBusy ? 'Issuing factory link…' : 'Factory link not issued'}</span>
           </div>
-          {accessUrl ? <details className={styles.urlDetails}><summary>Show issued access address</summary><code>{accessUrl}</code></details> : null}
+          {accessUrl ? <details className={styles.urlDetails}><summary>Show issued access address</summary><code>{accessUrl}</code><button type="button" onClick={() => void navigator.clipboard.writeText(accessUrl)}>Copy access address</button></details> : null}
           <footer className={styles.labelFooter}><span>Part {view.job.partNumber}</span><span>Release #{view.release.revisionNumber}</span><span>Scan the QR code before setup</span></footer>
+        </section>
+      ) : null}
+      {view && links.some((link) => !link.revokedAt) ? (
+        <section className={styles.linkManagement} aria-label="Active release links">
+          <h2>Active QR links</h2>
+          <p>Previously printed labels stay active until you revoke their link. Their access address is shown only when issued.</p>
+          <ul>{links.filter((link) => !link.revokedAt).map((link) => (
+            <li key={link.linkId}><span>Issued {new Date(link.createdAt).toLocaleString()}</span><Button type="button" tone="secondary" small disabled={shareBusy} onClick={() => void revokeShareLink(link.linkId)}>Revoke QR link</Button></li>
+          ))}</ul>
         </section>
       ) : null}
     </main>

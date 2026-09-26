@@ -45,6 +45,7 @@ import {
   ReviewDraftInputSchema,
   SaveDraftInputSchema,
   SaveWorkshopVersionInputSchema,
+  ShareLinkSummarySchema,
   SignInInputSchema,
   SignUpInputSchema,
   SignUpResultSchema,
@@ -99,6 +100,7 @@ import type {
   ReviewDraftInput,
   SaveDraftInput,
   SaveWorkshopVersionInput,
+  ShareLinkSummary,
   SignInInput,
   SignUpInput,
   SignUpResult,
@@ -558,6 +560,10 @@ export function createApiClient(transport: ApiTransport = unavailableApiTranspor
       createShareLink(input: CreateShareLinkInput): Promise<CreateShareLinkResult> {
         const { releaseId, idempotencyKey } = CreateShareLinkInputSchema.parse(input);
         return call({ method: "POST", path: `/api/releases/${encodeURIComponent(releaseId)}/share-links`, headers: idempotencyHeaders(idempotencyKey) }, CreateShareLinkResultSchema);
+      },
+      listShareLinks(input: { releaseId: Id }): Promise<ShareLinkSummary[]> {
+        const { releaseId } = z.object({ releaseId: IdSchema }).strict().parse(input);
+        return call({ method: "GET", path: `/api/releases/${encodeURIComponent(releaseId)}/share-links` }, z.array(ShareLinkSummarySchema));
       },
       revokeShareLink(input: RevokeShareLinkInput): Promise<RevokeShareLinkResult> {
         const { releaseId, linkId } = RevokeShareLinkInputSchema.parse(input);
