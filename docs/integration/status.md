@@ -15,6 +15,8 @@ The repo's `main` contains the foundation, phone reader, engineer guide approval
 
 All paused agent code is represented in these GitHub locations. The WIP branches are preservation snapshots, not reviewed implementation or instructions to apply their SQL. The final guide artwork/report plan and example product are still pending from Henry's team.
 
+A [canonical design system](../design-system/README.md), sourced Apple research, screen patterns, and shared CSS tokens are proposed in the current design-system PR; they are not on `main` until that PR merges.
+
 ## What exists
 
 - Repository: `HenryFowlerr/SkunkWorks`, Next.js 16 / React 19 / TypeScript, Supabase auth, typed same-origin API client, OpenAI adapter, Three.js bend example.
@@ -44,6 +46,8 @@ All paused agent code is represented in these GitHub locations. The WIP branches
 - The operator phone/read slice passed `npm run check` on its merged branch (170 Vitest tests and a production build). Tests cover member read scoping and inclusion/exclusion of approved phone guidance. The Chappe database has zero releases and zero flags, so no live QR or release read was exercised.
 - After integrating the operator, generation, and invitation slices on one branch, `npm run check` passed on 26 September 2026: TypeScript, ESLint, 184 Vitest tests, and Next production build. The nested agent worktree is excluded from the parent checkout's lint and typecheck scope.
 - After integrating authored-manifest verification and the UI/UX handoff, `npm run check` passed on 26 September 2026: TypeScript, ESLint, 185 Vitest tests, and Next production build. This remains local verification; no authenticated live release has been created.
+
+- Design-system branch verification on 26 September 2026: `npm run check` passed (TypeScript, ESLint, 185 Vitest tests, Next production build). The source guide and token integration do not mean all existing routes have been visually redesigned; future UI work should migrate remaining hardcoded feature styles.
 
 ## What remains real work
 
