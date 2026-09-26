@@ -110,14 +110,9 @@
     const colors={B1:'var(--ch-schematic-line)',B2:active==='B2'?'var(--ch-action)':'var(--ch-schematic-line)',B3:'var(--ch-schematic-line)',B4:'var(--ch-schematic-line)',B5:'var(--ch-schematic-line)'};
     return `<div class="model-frame"><svg viewBox="0 0 540 310" role="img" aria-label="Illustrative flat layout of the prepared Sensor Mount SKW-SM-104; selected bend ${esc(active)}. This is an authored panel diagram, not a physical forming simulation."><defs><pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="var(--ch-border)"/></pattern></defs><rect width="540" height="310" fill="url(#dots)"/><g fill="var(--ch-schematic-fill)" stroke="var(--ch-schematic-stroke)" stroke-width="1.7"><rect x="165" y="70" width="245" height="164"/><rect x="114" y="70" width="51" height="164"/><rect x="78" y="70" width="36" height="164"/><rect x="410" y="70" width="53" height="164"/><rect x="250" y="30" width="80" height="40"/><rect x="255" y="234" width="70" height="37"/></g><g stroke-width="5" stroke-linecap="round"><path d="M165 72v160" stroke="${colors.B1}"/><path d="M114 72v160" stroke="${colors.B2}"/><path d="M410 72v160" stroke="${colors.B3}"/><path d="M251 70h79" stroke="${colors.B4}"/><path d="M255 234h70" stroke="${colors.B5}"/></g><g fill="var(--ch-text)" font-family="-apple-system,Arial,sans-serif" font-size="13" font-weight="700"><text x="216" y="156">BASE · 120 × 80</text><text x="126" y="58">B1</text><text x="75" y="58">B2</text><text x="414" y="58">B3</text><text x="340" y="48">B4</text><text x="332" y="262">B5</text></g></svg></div><div class="model-caption">Prepared authored flat layout from SKW-SM-104 manifest · not a press-brake sequence or safety validation.</div>`
   }
-  function brandMorphScene(){return `<section class="brand-morph" aria-label="Chappe signal forms resolve into the Chappe wordmark as the page scrolls"><div class="brand-morph-sticky"><canvas id="brand-morph-canvas" class="brand-morph-canvas" width="1440" height="810" role="img" aria-label="Six Chappe signal forms continuously transform into the Chappe wordmark"><span class="sr-only">Six Chappe signal forms resolve into the Chappe wordmark.</span></canvas></div></section>`}
-  function landing(){return `${topbar('/')}<main class="landing">
+  function brandMorphScene(){return `<section class="brand-morph" aria-label="Chappe signal forms resolve into the Chappe wordmark as the page scrolls"><div class="brand-morph-sticky"><canvas id="brand-morph-canvas" class="brand-morph-canvas" width="1440" height="810" role="img" aria-label="Six Chappe signal forms continuously transform into the Chappe wordmark"><span class="sr-only">Six Chappe signal forms resolve into the Chappe wordmark.</span></canvas><div class="morph-hero hero" aria-labelledby="hero-title"><h1 id="hero-title">Less back-and-forth.<br> <em>Work moves faster.</em></h1><p class="intro">Chappe uses AI to keep engineering and manufacturing aligned, with sources, approvals and unknowns visible.</p><div class="hero-actions"><a class="button pill" href="#/engineer">Explore the demo <span aria-hidden="true">↗</span></a><a class="text-link" href="#/phone-preview">See the phone view <span aria-hidden="true">↗</span></a></div></div></div></section>`}
+  function landing(){return `${topbar('/')}<main class="landing landing-intro">
     ${brandMorphScene()}
-    <section class="hero shell" aria-labelledby="hero-title">
-      <h1 id="hero-title">Make the handoff<br> <em>make sense.</em></h1>
-      <p class="intro">Give the workshop the right context for the difficult parts. Keep the engineer in control of what gets released.</p>
-      <div class="hero-actions"><a class="button pill" href="#/engineer">Explore the demo <span aria-hidden="true">↗</span></a><a class="text-link" href="#/phone-preview">See the phone view <span aria-hidden="true">↗</span></a></div>
-    </section>
     <figure class="hero-figure reveal"><div class="hero-product" role="img" aria-label="Concept Chappe workspace: an engineer compares documented facility support, conflict, and unknown evidence beside a prepared part diagram."><div class="hero-product-bar"><span class="hero-product-brand">Chappe <span>/</span> Sensor Mount</span><span>Job 1042 <span class="hero-product-sep">·</span> Drawing A <span class="hero-product-sep">·</span> Draft</span></div><div class="hero-product-body"><div class="hero-product-left"><span class="hero-product-kicker">Receiving facility / Ridgeway Fabrication</span><strong>Know what the workshop can support.</strong><div class="hero-product-line"><span>2.0 mm sheet thickness</span><b class="hp-support">Documented support</b></div><div class="hero-product-line"><span>80 mm bend line</span><b class="hp-support">Documented support</b></div><div class="hero-product-line"><span>B2 return flange access</span><b class="hp-unknown">Unknown · confirm setup</b></div><span class="hero-product-foot">Prepared example · evidence stays visible</span></div><div class="hero-product-right">${model('B2')}<span class="hero-product-marker">B2 / Selected operation</span></div></div></div></figure>
     <section class="chapter shell" aria-labelledby="journey-title"><div class="chapter-lead reveal"><h2 id="journey-title">The detail matters<br>after the drawing leaves.</h2><p class="lead">Follow the prepared Sensor Mount example from facility selection to the exact operation on the floor. Every claim keeps its source and scope.</p></div>
       <div class="sequence" aria-label="The Chappe handoff"><article class="reveal"><div class="num">01</div><h3>Check the facility.</h3><p>Compare drawing requirements with recorded facts. Show documented support, conflict, and unknown separately.</p></article><article class="reveal"><div class="num">02</div><h3>Review the difficult work.</h3><p>Give B2 extra guidance; let routine operations stay routine. An engineer corrects the wording before release.</p></article><article class="reveal"><div class="num">03</div><h3>Release to the floor.</h3><p>Put a QR beside the drawing. The phone opens the approved operation and its release context.</p></article><article class="reveal"><div class="num">04</div><h3>Resolve it together.</h3><p>An operator flags B2. Engineering sees the issue in context and approves the answer.</p></article></div>
@@ -195,10 +190,10 @@ This is a demo link; account creation and profile sharing are not active on GitH
   function setupBrandMorph(){
     brandMorph=null;
     if(currentRoute()!=='/')return;
-    const scene=$('.brand-morph');const canvas=$('#brand-morph-canvas');const context=canvas?.getContext('2d',{alpha:true});
-    if(!scene||!canvas||!context)return;
+    const scene=$('.brand-morph');const stage=$('.brand-morph-sticky');const canvas=$('#brand-morph-canvas');const context=canvas?.getContext('2d',{alpha:true});
+    if(!scene||!stage||!canvas||!context)return;
     const sources=Array.from({length:96},(_,index)=>`assets/chappe-morph/frames/frame-${String(index).padStart(3,'0')}.webp`);
-    const morph={scene,canvas,context,sources,frames:[],current:-1};
+    const morph={scene,stage,canvas,context,sources,frames:[],current:-1};
     const draw=index=>{
       const image=morph.frames[index];if(!image||!image.complete||!image.naturalWidth)return;
       context.clearRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);
@@ -214,12 +209,18 @@ This is a demo link; account creation and profile sharing are not active on GitH
   }
   function updateBrandMorph(){
     const morph=brandMorph;if(!morph)return;
-    const start=morph.scene.offsetTop-Math.min(40,morph.scene.offsetHeight*.25);
-    const travel=Math.max(1,morph.scene.offsetHeight);
+    const start=morph.scene.offsetTop;
+    const travel=Math.max(1,morph.scene.offsetHeight-morph.stage.offsetHeight);
     const progress=reduceMotion.matches?1:Math.max(0,Math.min(1,(scrollY-start)/travel));
     const next=Math.round(progress*95);
-    if(next===morph.current)return;
-    morph.current=next;morph.draw(next);
+    if(next!==morph.current){morph.current=next;morph.draw(next);}
+    const hero=$('.morph-hero');if(!hero)return;
+    const rawCopy=Math.max(0,Math.min(1,(progress-.62)/.38));
+    const copy=reduceMotion.matches?1:1-Math.pow(1-rawCopy,3);
+    morph.canvas.style.setProperty('--morph-y',`${Math.round(-copy*innerHeight*.26)}px`);
+    morph.canvas.style.setProperty('--morph-scale',(1-copy*.19).toFixed(3));
+    hero.style.setProperty('--morph-copy',copy.toFixed(3));
+    hero.style.setProperty('--morph-copy-shift',`${Math.round((1-copy)*Math.min(innerHeight*.11,86))}px`);
   }
   function setupMotion(){
     revealObserver?.disconnect();document.body.classList.remove('motion-ready');setupBrandMorph();
@@ -246,7 +247,7 @@ This is a demo link; account creation and profile sharing are not active on GitH
   let floorModelReadyHandler=null;
   function teardownFloorModel(){if(floorModelReadyHandler)window.removeEventListener('chappe-floor-model-ready',floorModelReadyHandler);floorModelReadyHandler=null;floorModelHandle?.destroy?.();floorModelHandle=null;}
   function setupFloorModel(){teardownFloorModel();if(currentRoute()!=='/operator')return;const host=$('#qr-floor-model');if(!host)return;const attach=()=>{if(currentRoute()!=='/operator'||!host.isConnected)return;const viewer=window.ChappeFloorModel;if(!viewer?.mount)return;floorModelHandle=viewer.mount(host,{source:host.dataset.modelSource,drawingHref:host.dataset.drawingHref});floorModelReadyHandler=null;};if(window.ChappeFloorModel?.mount)attach();else{floorModelReadyHandler=attach;window.addEventListener('chappe-floor-model-ready',floorModelReadyHandler,{once:true});}}
-  function render(){const r=currentRoute();const page={'/':landing,'/engineer':engineer,'/engineer/job':engineerJob,'/engineer/new':engineerNew,'/review':review,'/manufacturer':manufacturer,'/issues':issues,'/qr':qr,'/operator':operator,'/phone-preview':phonePreview}[r]||landing;app.innerHTML=page();document.body.classList.toggle('qr-floor-active',r==='/operator');const title={'/':'Make the handoff make sense','/engineer':'Engineering jobs','/engineer/job':'Sensor Mount','/engineer/new':'New job draft','/operator':floorPart.title,'/phone-preview':'Phone preview'}[r]||r.slice(1)[0].toUpperCase()+r.slice(2);document.title=`${title} · Chappe`;if(r==='/qr')drawQR();setupMotion();setupFloorModel();updateTopbar();}
+  function render(){const r=currentRoute();const page={'/':landing,'/engineer':engineer,'/engineer/job':engineerJob,'/engineer/new':engineerNew,'/review':review,'/manufacturer':manufacturer,'/issues':issues,'/qr':qr,'/operator':operator,'/phone-preview':phonePreview}[r]||landing;app.innerHTML=page();document.body.classList.toggle('qr-floor-active',r==='/operator');const title={'/':'Less back-and-forth','/engineer':'Engineering jobs','/engineer/job':'Sensor Mount','/engineer/new':'New job draft','/operator':floorPart.title,'/phone-preview':'Phone preview'}[r]||r.slice(1)[0].toUpperCase()+r.slice(2);document.title=`${title} · Chappe`;if(r==='/qr')drawQR();setupMotion();setupFloorModel();updateTopbar();}
   document.addEventListener('click',async e=>{
     const modelReset=e.target.closest('[data-floor-model-reset]');if(modelReset){floorModelHandle?.reset?.();return}
     const closeFlag=e.target.closest('[data-floor-close-flag]');if(closeFlag){state.floorMode='chat';state.flagText='';state.speechError='';render();return}
