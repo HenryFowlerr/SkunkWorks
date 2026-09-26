@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Job, Role } from "@/contracts";
-import { Button, Panel, PanelBody, StatusBadge, buttonClassName } from "@/components/ui";
+import { Button, StatusBadge, buttonClassName } from "@/components/ui";
 import { api } from "@/lib/api/client";
 import styles from "./jobs.module.css";
 
@@ -74,8 +74,7 @@ export function JobsDashboard({
 
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
       {error && visibleJobs.length > 0 ? <p className={styles.muted} role="status">Showing the last loaded jobs; refresh did not complete.</p> : null}
-      <Panel title="Workspace jobs" eyebrow="Live records">
-        <PanelBody>
+      <section className={styles.jobSection} aria-label="Workspace jobs">
           {isLoading && visibleJobs.length === 0 ? <p className={styles.muted} role="status">Loading jobs from this workspace…</p> : null}
           {!isLoading && !error && visibleJobs.length === 0 ? (
             <div>
@@ -113,8 +112,7 @@ export function JobsDashboard({
               })}
             </ul>
           ) : null}
-        </PanelBody>
-      </Panel>
+      </section>
     </div>
   );
 }

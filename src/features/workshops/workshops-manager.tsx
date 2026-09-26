@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 
@@ -696,18 +697,19 @@ export function WorkshopsManager({ workspaceId, role }: WorkshopsManagerProps) {
     setEditors((current) => [...current, blankMachine(createId())]);
     if (creationBase) setCreationVersionKey(null);
   };
-  const showingCreateForm = creating || !selectedSnapshot;
-  const canConfirm = role === "fabricator" || role === "admin";
+  const canManage = role === "fabricator";
+  const showingCreateForm = canManage && (creating || !selectedSnapshot);
 
   return (
     <div className={styles.manager}>
       <header className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>Workshop setup</p>
-          <h1>Workshop profiles</h1>
-          <p className={styles.lede}>Keep each machine, tool and process constraint tied to an immutable profile version.</p>
+          <p className={styles.eyebrow}>Manufacturer workspace</p>
+          <h1>Manufacturers</h1>
+          <p className={styles.lede}>Record the equipment and process facts a manufacturer confirms. Each change creates a version that engineering can use as evidence.</p>
+          {role === "admin" ? <p className={styles.accessLine}>Need someone at the facility to join? <Link href={`/studio/invites?workspace=${encodeURIComponent(workspaceId)}`}>Create an access link</Link> for their verified email. You send the link yourself.</p> : null}
         </div>
-        {!showingCreateForm ? <Button type="button" tone="secondary" disabled={busy || editorDirty} onClick={() => {
+        {canManage && !showingCreateForm ? <Button type="button" tone="secondary" disabled={busy || editorDirty} onClick={() => {
           setCreating(true);
           setError(null);
           setNotice(null);
@@ -717,7 +719,7 @@ export function WorkshopsManager({ workspaceId, role }: WorkshopsManagerProps) {
           setCreationBase(null);
           setCreationKey(null);
           setCreationVersionKey(null);
-        }}>New workshop</Button> : null}
+        }}>New manufacturer</Button> : null}
       </header>
 
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
@@ -726,7 +728,7 @@ export function WorkshopsManager({ workspaceId, role }: WorkshopsManagerProps) {
       <div className={styles.layout}>
         {snapshots.length > 0 ? (
           <aside className={styles.sidebar} aria-label="Workshop profiles">
-            <h2>Profiles</h2>
+            <h2>Facilities</h2>
             <ul className={styles.profileList}>
               {snapshots.map((snapshot) => (
                 <li key={snapshot.workshopId}>
@@ -811,7 +813,7 @@ export function WorkshopsManager({ workspaceId, role }: WorkshopsManagerProps) {
                 </div>
               }>
                 <PanelBody>
-                  <p className={styles.sectionHint}>Saving edits creates a new version. The displayed confirmation is taken from the server response for this version.</p>
+                  <p className={styles.sectionHint}>{canManage ? "Saving edits creates a new version. The displayed confirmation is taken from the server response for this version." : "This profile is read only for your workspace role. A manufacturer member records and confirms equipment facts."}</p>
                   <TextInput
                     id="workshop-name"
                     label="Workshop name"
@@ -822,7 +824,7 @@ export function WorkshopsManager({ workspaceId, role }: WorkshopsManagerProps) {
                     }}
                     autoComplete="off"
                     required
-                    disabled={busy}
+                    disabled={busy || !canManage}
                   />
                   {editorDirty ? <p className={styles.sectionHint}>Unsaved edits belong to this draft version. Save them before confirming.</p> : null}
                   <p className={styles.countLine}>{selectedSnapshot.machines.length} machine{selectedSnapshot.machines.length === 1 ? "" : "s"} in saved version {selectedSnapshot.version}</p>
@@ -838,26 +840,26 @@ export function WorkshopsManager({ workspaceId, role }: WorkshopsManagerProps) {
                           setEditors((current) => current.filter((item) => item.clientKey !== machine.clientKey));
                           setEditorDirty(true);
                         }}
-                        disabled={busy}
+                        disabled={busy || !canManage}
                       />
                     ))}
                   </div>
-                  <div className={styles.formActions}>
+                  {canManage ? <div className={styles.formActions}>
                     <Button tone="secondary" type="button" disabled={busy} onClick={addMachine}>Add another machine</Button>
                     <div className={styles.formActionsEnd}>
-                      {canConfirm && !snapshotIsConfirmed(selectedSnapshot) ? (
+                      {!snapshotIsConfirmed(selectedSnapshot) ? (
                       <Button tone="secondary" type="button" disabled={busy || editorDirty} onClick={confirmVersion}>Confirm this version</Button>
                       ) : null}
                       <Button type="button" disabled={busy} onClick={saveVersion}>{busy ? "Saving…" : "Save new version"}</Button>
                     </div>
-                  </div>
+                  </div> : null}
                 </PanelBody>
               </Panel>
             </>
           ) : null}
 
           {!loading && snapshots.length === 0 && !showingCreateForm ? (
-            <p className={styles.emptyState}>No workshop profiles are available in this workspace.</p>
+            <p className={styles.emptyState}>No manufacturer profile is available in this workspace. {canManage ? "Create one to record equipment and process facts." : "A manufacturer member needs to create and confirm one before this facility can be selected for a job."}</p>
           ) : null}
         </main>
       </div>

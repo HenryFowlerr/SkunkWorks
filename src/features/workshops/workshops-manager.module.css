@@ -1,8 +1,14 @@
 .manager {
   display: grid;
-  gap: 1.5rem;
+  gap: var(--ch-space-8);
   color: var(--ch-text);
+  width: min(100%, 1160px);
+  margin-inline: auto;
 }
+
+.manager :global(.panel) { border: 0; border-radius: 0; background: transparent; }
+.manager :global(.panel__header) { padding: 0 0 var(--ch-space-4); border-bottom: 1px solid var(--ch-border); }
+.manager :global(.panel__body) { padding: var(--ch-space-6) 0; }
 
 .heading {
   display: flex;
@@ -13,7 +19,7 @@
 
 .heading h1 {
   margin: 0.2rem 0 0;
-  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-size: var(--ch-type-title);
   letter-spacing: -0.04em;
 }
 
@@ -33,6 +39,10 @@
   line-height: 1.55;
 }
 
+.accessLine { margin: var(--ch-space-3) 0 0; color: var(--ch-text-secondary); font-size: var(--ch-type-small); line-height: 1.5; }
+.accessLine a { color: var(--ch-blue); font-weight: 650; text-decoration: none; }
+.accessLine a:hover { text-decoration: underline; }
+
 .layout {
   display: grid;
   grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
@@ -47,10 +57,9 @@
 .sidebar {
   position: sticky;
   top: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--ch-border);
-  border-radius: 0.8rem;
-  background: var(--ch-surface);
+  padding: 0 var(--ch-space-4) 0 0;
+  border-right: 1px solid var(--ch-border);
+  background: transparent;
 }
 
 .sidebar h2 {
@@ -60,7 +69,7 @@
 
 .profileList {
   display: grid;
-  gap: 0.4rem;
+  gap: 0;
   padding: 0;
   margin: 0;
   list-style: none;
@@ -70,9 +79,10 @@
   display: grid;
   width: 100%;
   gap: 0.3rem;
-  padding: 0.75rem;
-  border: 1px solid transparent;
-  border-radius: 0.55rem;
+  padding: var(--ch-space-3) var(--ch-space-2);
+  border: 0;
+  border-bottom: 1px solid var(--ch-border);
+  border-radius: 0;
   background: transparent;
   color: inherit;
   text-align: left;
@@ -81,12 +91,11 @@
 
 .profileButton:hover,
 .profileButton:focus-visible {
-  border-color: var(--ch-border);
   background: var(--ch-canvas-subtle);
 }
 
 .profileButtonActive {
-  border-color: var(--ch-blue);
+  box-shadow: inset 3px 0 0 var(--ch-blue);
   background: var(--ch-blue-tint);
 }
 
@@ -134,9 +143,9 @@
 
 .machine {
   min-width: 0;
-  padding: 1rem;
-  border: 1px solid var(--ch-border);
-  border-radius: 0.7rem;
+  padding: var(--ch-space-6) 0;
+  border: 0;
+  border-top: 1px solid var(--ch-border);
 }
 
 .machine legend {
@@ -268,10 +277,11 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: end;
   gap: 0.8rem;
-  padding: 0.85rem;
-  border: 1px solid var(--ch-border);
-  border-radius: 0.6rem;
-  background: var(--ch-canvas-subtle);
+  padding: var(--ch-space-3) 0;
+  border: 0;
+  border-bottom: 1px solid var(--ch-border);
+  border-radius: 0;
+  background: transparent;
 }
 
 .noteRow {
@@ -354,6 +364,9 @@
 
   .sidebar {
     position: static;
+    padding: 0 0 var(--ch-space-4);
+    border-right: 0;
+    border-bottom: 1px solid var(--ch-border);
   }
 
   .profileList {
