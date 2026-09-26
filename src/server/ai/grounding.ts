@@ -56,6 +56,22 @@ export function prepareQuestionEvidence(input: QuestionInput): PreparedEvidence[
       throw new TypeError("Question context refers to an unknown or mismatched step ID.");
     }
   }
+  if (input.approvedContext) {
+    const approved = input.approvedContext;
+    if (context.releaseId === null || approved.releaseId !== context.releaseId) {
+      throw new TypeError("Approved question context must match the selected immutable release.");
+    }
+    if (approved.selectedStep) {
+      const step = stepById.get(approved.selectedStep.id);
+      if (!step || step.bendId !== approved.selectedStep.bendId ||
+        approved.selectedStep.id !== context.stepId || approved.selectedStep.bendId !== context.bendId) {
+        throw new TypeError("Approved question step must match the selected release step and bend.");
+      }
+    }
+    if (approved.machineId && !input.workshopSnapshot?.machines.some((machine) => machine.id === approved.machineId)) {
+      throw new TypeError("Approved question machine must belong to the selected workshop snapshot.");
+    }
+  }
   if (input.workshopSnapshot) WorkshopSnapshotSchema.parse(input.workshopSnapshot);
   return prepareEvidence(input.pdfs, input.sources, input.workshopSnapshot ?? undefined);
 }
