@@ -96,12 +96,12 @@
   }
   function brandMorphScene(){return `<section class="brand-morph" aria-label="Chappe signal forms resolve into the Chappe wordmark as the page scrolls"><div class="brand-morph-sticky"><canvas id="brand-morph-canvas" class="brand-morph-canvas" width="1440" height="810" role="img" aria-label="Six Chappe signal forms continuously transform into the Chappe wordmark"><span class="sr-only">Six Chappe signal forms resolve into the Chappe wordmark.</span></canvas></div></section>`}
   function landing(){return `${topbar('/')}<main class="landing">
+    ${brandMorphScene()}
     <section class="hero shell" aria-labelledby="hero-title">
       <h1 id="hero-title">Make the handoff<br> <em>make sense.</em></h1>
       <p class="intro">Give the workshop the right context for the difficult parts. Keep the engineer in control of what gets released.</p>
       <div class="hero-actions"><a class="button pill" href="#/engineer">Explore the demo <span aria-hidden="true">↗</span></a><a class="text-link" href="#/phone-preview">See the phone view <span aria-hidden="true">↗</span></a></div>
     </section>
-    ${brandMorphScene()}
     <figure class="hero-figure reveal"><div class="hero-product" role="img" aria-label="Concept Chappe workspace: an engineer compares documented facility support, conflict, and unknown evidence beside a prepared part diagram."><div class="hero-product-bar"><span class="hero-product-brand">Chappe <span>/</span> Sensor Mount</span><span>Job 1042 <span class="hero-product-sep">·</span> Drawing A <span class="hero-product-sep">·</span> Draft</span></div><div class="hero-product-body"><div class="hero-product-left"><span class="hero-product-kicker">Receiving facility / Ridgeway Fabrication</span><strong>Know what the workshop can support.</strong><div class="hero-product-line"><span>2.0 mm sheet thickness</span><b class="hp-support">Documented support</b></div><div class="hero-product-line"><span>80 mm bend line</span><b class="hp-support">Documented support</b></div><div class="hero-product-line"><span>B2 return flange access</span><b class="hp-unknown">Unknown · confirm setup</b></div><span class="hero-product-foot">Prepared example · evidence stays visible</span></div><div class="hero-product-right">${model('B2')}<span class="hero-product-marker">B2 / Selected operation</span></div></div></div></figure>
     <section class="chapter shell" aria-labelledby="journey-title"><div class="chapter-lead reveal"><h2 id="journey-title">The detail matters<br>after the drawing leaves.</h2><p class="lead">Follow the prepared Sensor Mount example from facility selection to the exact operation on the floor. Every claim keeps its source and scope.</p></div>
       <div class="sequence" aria-label="The Chappe handoff"><article class="reveal"><div class="num">01</div><h3>Check the facility.</h3><p>Compare drawing requirements with recorded facts. Show documented support, conflict, and unknown separately.</p></article><article class="reveal"><div class="num">02</div><h3>Review the difficult work.</h3><p>Give B2 extra guidance; let routine operations stay routine. An engineer corrects the wording before release.</p></article><article class="reveal"><div class="num">03</div><h3>Release to the floor.</h3><p>Put a QR beside the drawing. The phone opens the approved operation and its release context.</p></article><article class="reveal"><div class="num">04</div><h3>Resolve it together.</h3><p>An operator flags B2. Engineering sees the issue in context and approves the answer.</p></article></div>
@@ -170,9 +170,10 @@ This is a demo link; account creation and profile sharing are not active on GitH
   }
   function updateBrandMorph(){
     const morph=brandMorph;if(!morph)return;
-    const travel=Math.max(1,morph.scene.offsetHeight-innerHeight);
-    const progress=reduceMotion.matches?1:Math.max(0,Math.min(1,(scrollY-morph.scene.offsetTop)/travel));
-    const next=Math.round(Math.min(1,progress/.84)*95);
+    const start=morph.scene.offsetTop-Math.min(40,morph.scene.offsetHeight*.25);
+    const travel=Math.max(1,morph.scene.offsetHeight);
+    const progress=reduceMotion.matches?1:Math.max(0,Math.min(1,(scrollY-start)/travel));
+    const next=Math.round(progress*95);
     if(next===morph.current)return;
     morph.current=next;morph.draw(next);
   }
