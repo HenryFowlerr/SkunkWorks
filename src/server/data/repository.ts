@@ -1,7 +1,10 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import {
   AssetSchema,
+  AnswerSchema,
   DraftContentInputSchema,
   DraftContentSchema,
   DraftSchema,
@@ -14,6 +17,8 @@ import {
   WorkshopSnapshotSchema,
   IdSchema,
   type Asset,
+  type Answer,
+  type ContextRef,
   type Draft,
   type DraftContentInput,
   type Flag,
@@ -28,6 +33,7 @@ import {
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { computeInputFingerprint } from "./fingerprint";
+import { validateContext } from "@/server/domain/contexts";
 import { DataAdapterError, throwDatabaseError } from "./errors";
 
 type MemberRow = { role: Role; status: "active" | "revoked" };
@@ -439,6 +445,81 @@ export class WorkspaceDataRepository {
     throwDatabaseError(error, "read release");
     if (!data) throw new DataAdapterError("NOT_FOUND", "Release not found.");
     return this.mapRelease(data as ReleaseRow);
+  }
+
+  async assertReleaseFeedbackContext(context: ContextRef): Promise<Release> {
+    if (!context.releaseId) throw new DataAdapterError("VALIDATION_FAILED", "A released guide is required for floor feedback.");
+    const release = await this.getRelease(context.releaseId);
+    validateContext(context, { kind: "release", release }, "floor");
+    return release;
+  }
+
+  /** An honest fallback until released-source answering is configured. */
+  async recordReleaseQuestion(input: {
+    context: ContextRef;
+    question: string;
+    idempotencyRecordId: Id;
+    idempotencyClaimToken: Id;
+  }): Promise<Answer> {
+    const release = await this.assertReleaseFeedbackContext(input.context);
+    const answer = AnswerSchema.parse({
+      id: randomUUID(),
+      context: input.context,
+      evidenceState: "not_found",
+      text: "Chappe has not verified an answer to this question from the approved release. Ask the designer to clarify before relying on an answer.",
+      evidence: [],
+      suggestedFlag: input.question.trim(),
+    });
+    const { data, error } = await this.client.rpc("record_release_question_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_job_id: input.context.jobId,
+      p_release_id: release.id,
+      p_step_id: input.context.stepId,
+      p_bend_id: input.context.bendId,
+      p_actor_id: this.scope.actorId,
+      p_question_id: answer.id,
+      p_question: input.question.trim(),
+      p_answer: answer,
+      p_idempotency_record_id: input.idempotencyRecordId,
+      p_idempotency_claim_token: input.idempotencyClaimToken,
+    });
+    throwDatabaseError(error, "record release question");
+    return AnswerSchema.parse(data);
+  }
+
+  async createMemberReleaseFlag(input: {
+    context: ContextRef;
+    question: string;
+    displayName: string;
+    idempotencyRecordId: Id;
+    idempotencyClaimToken: Id;
+  }): Promise<Flag> {
+    const release = await this.assertReleaseFeedbackContext(input.context);
+    const flagId = randomUUID();
+    const { data, error } = await this.client.rpc("create_release_flag_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_job_id: input.context.jobId,
+      p_release_id: release.id,
+      p_step_id: input.context.stepId,
+      p_bend_id: input.context.bendId,
+      p_actor_id: this.scope.actorId,
+      p_flag_id: flagId,
+      p_question: input.question.trim(),
+      p_display_name: input.displayName,
+      p_idempotency_record_id: input.idempotencyRecordId,
+      p_idempotency_claim_token: input.idempotencyClaimToken,
+    });
+    throwDatabaseError(error, "create release flag");
+    const result = data as { flagId?: Id } | null;
+    if (result?.flagId !== flagId) throw new DataAdapterError("INTERNAL_ERROR", "The created flag identity is inconsistent.");
+    return this.getFlagForRelease(flagId, release.id);
+  }
+
+  async getFlagForRelease(flagId: Id, releaseId: Id): Promise<Flag> {
+    const flags = await this.listFlags({ releaseId });
+    const flag = flags.find((item) => item.id === flagId);
+    if (!flag) throw new DataAdapterError("NOT_FOUND", "Release flag not found.");
+    return flag;
   }
 
   async listFlags(input: { jobId?: Id; releaseId?: Id }): Promise<Flag[]> {

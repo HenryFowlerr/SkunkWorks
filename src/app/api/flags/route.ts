@@ -1,7 +1,8 @@
-import { ListFlagsInputSchema } from "@/contracts";
+import { CreateFlagBodySchema, FlagSchema, IdSchema, ListFlagsInputSchema } from "@/contracts";
 import { getJobApiContext, parseRouteId } from "@/server/api/context";
 import { getVerifiedRequestIdentity } from "@/lib/auth/request-identity";
-import { ApiFault, handleApiOperation } from "@/server/http/api";
+import { stablePayloadHash } from "@/server/domain/idempotency";
+import { ApiFault, handleApiOperation, parseApiBody, readIdempotencyKey } from "@/server/http/api";
 
 export async function GET(request: Request): Promise<Response> {
   return handleApiOperation(async () => {
@@ -22,4 +23,41 @@ export async function GET(request: Request): Promise<Response> {
     const { repository } = await getJobApiContext(jobId);
     return repository.listFlags(parsed.data);
   });
+}
+
+export async function POST(request: Request): Promise<Response> {
+  return handleApiOperation(async () => {
+    const input = await parseApiBody(request, CreateFlagBodySchema);
+    const key = readIdempotencyKey(request);
+    if (!input.context.releaseId) throw new ApiFault("VALIDATION_FAILED", "Floor flags require a published release.");
+    if (input.photoAssetIds.length > 0) {
+      throw new ApiFault("UNSUPPORTED_ASSET", "Release photo upload is not available yet. Remove the photo and retry.");
+    }
+    const { repository, actor } = await getJobApiContext(input.context.jobId);
+    await repository.assertReleaseFeedbackContext(input.context);
+    const claim = await repository.claimIdempotency({
+      operation: "flag.create",
+      key,
+      payloadHash: stablePayloadHash(input),
+    });
+    if (claim.state === "completed") {
+      const result = claim.response as { flagId?: unknown } | null;
+      const parsed = IdSchema.safeParse(result?.flagId);
+      if (!parsed.success || parsed.data !== claim.resourceId) {
+        throw new ApiFault("INTERNAL_ERROR", "The prior flag identity is inconsistent.");
+      }
+      return FlagSchema.parse(await repository.getFlagForRelease(parsed.data, input.context.releaseId));
+    }
+    if (claim.state === "running") {
+      throw new ApiFault("VERSION_CONFLICT", "This flag is already being recorded. Retry shortly.", { retryable: true });
+    }
+    if (claim.state === "failed") throw new ApiFault("INTERNAL_ERROR", "The earlier flag attempt failed.");
+    return FlagSchema.parse(await repository.createMemberReleaseFlag({
+      context: input.context,
+      question: input.question,
+      displayName: actor.displayName,
+      idempotencyRecordId: claim.recordId,
+      idempotencyClaimToken: claim.claimToken,
+    }));
+  }, { status: 201 });
 }

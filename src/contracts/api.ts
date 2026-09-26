@@ -337,7 +337,8 @@ export type RevokeShareLinkResult = z.infer<typeof RevokeShareLinkResultSchema>;
 
 export const AskQuestionInputSchema = z.object({
   context: ContextRefSchema,
-  question: nonEmptyString,
+  question: nonEmptyString.min(3).max(2000),
+  idempotencyKey: IdempotencyKeySchema,
 }).strict();
 export type AskQuestionInput = z.infer<typeof AskQuestionInputSchema>;
 
@@ -351,10 +352,20 @@ export const ListFlagsInputSchema = z.object({
 });
 export type ListFlagsInput = z.infer<typeof ListFlagsInputSchema>;
 
-export const CreateFlagInputSchema = z.object({
+const createFlagFields = {
   context: ContextRefSchema,
-  question: nonEmptyString,
+  question: nonEmptyString.min(3).max(2000),
   photoAssetIds: z.array(IdSchema),
+};
+
+export const CreateFlagBodySchema = z.object(createFlagFields).strict().superRefine((input, ctx) => {
+  if (input.context.releaseId === null) {
+    ctx.addIssue({ code: "custom", path: ["context", "releaseId"], message: "Flag creation is release-scoped." });
+  }
+});
+
+export const CreateFlagInputSchema = z.object({
+  ...createFlagFields,
   idempotencyKey: IdempotencyKeySchema,
 }).strict().superRefine((input, ctx) => {
   if (input.context.releaseId === null) {

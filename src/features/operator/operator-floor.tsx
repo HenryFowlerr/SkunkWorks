@@ -139,6 +139,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
   const [documentError, setDocumentError] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const flagIdempotencyKey = useRef<string | null>(null);
+  const questionIdempotencyKey = useRef<string | null>(null);
   const photoIdempotencyKey = useRef<string | null>(null);
   const speechRecognition = useRef<{ stop: () => void } | null>(null);
   const [listening, setListening] = useState(false);
@@ -232,7 +233,10 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
     recognition.interimResults = false;
     recognition.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript?.trim();
-      if (transcript) setQuestion((existing) => [existing.trim(), transcript].filter(Boolean).join(' '));
+      if (transcript) {
+        setQuestion((existing) => [existing.trim(), transcript].filter(Boolean).join(' '));
+        questionIdempotencyKey.current = null;
+      }
     };
     recognition.onerror = (event) => setSpeechError(event.error === 'not-allowed'
       ? 'Microphone access was denied. Type your question instead.'
@@ -282,9 +286,11 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
     setAskError(null);
     setAnswer(null);
     try {
-      const result = await client.questions.ask({ context, question: question.trim() });
+      questionIdempotencyKey.current ??= crypto.randomUUID();
+      const result = await client.questions.ask({ context, question: question.trim(), idempotencyKey: questionIdempotencyKey.current });
       setAnswer(result);
       setQuestion('');
+      questionIdempotencyKey.current = null;
     } catch (error) {
       setAskError(explainError(error));
     } finally {
@@ -487,7 +493,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
             {view.permissions.canAsk ? (
               <form className={styles.form} onSubmit={(event) => void askQuestion(event)}>
                 <TextInput id="floor-question" label="Question for the designer&apos;s released information" value={question}
-                  onChange={(event) => setQuestion(event.currentTarget.value)} disabled={asking} placeholder="For example, which face is the reference side?" />
+                  onChange={(event) => { setQuestion(event.currentTarget.value); questionIdempotencyKey.current = null; }} disabled={asking} placeholder="For example, which face is the reference side?" />
                 <Button type="button" tone="secondary" onClick={startVoiceInput} disabled={asking} aria-pressed={listening}>
                   {listening ? 'Stop listening' : 'Speak question'}
                 </Button>

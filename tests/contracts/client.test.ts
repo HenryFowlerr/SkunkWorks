@@ -197,7 +197,7 @@ describe("typed browser API client", () => {
 
     await client.releases.get({ releaseId: ids.release });
     await client.assets.getLink({ assetId: ids.asset });
-    await client.questions.ask({ context: openFlag.context, question: "What does B1 mean?" });
+    await client.questions.ask({ context: openFlag.context, question: "What does B1 mean?", idempotencyKey: "floor-question-test-key-0001" });
     await client.flags.list({ releaseId: ids.release });
     await client.flags.create({
       context: openFlag.context,

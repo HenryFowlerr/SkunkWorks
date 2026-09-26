@@ -566,8 +566,8 @@ export function createApiClient(transport: ApiTransport = unavailableApiTranspor
     },
     questions: {
       ask(input: AskQuestionInput): Promise<Answer> {
-        const body = AskQuestionInputSchema.parse(input);
-        return call({ method: "POST", path: "/api/questions", body }, AnswerSchema);
+        const { idempotencyKey, ...body } = AskQuestionInputSchema.parse(input);
+        return call({ method: "POST", path: "/api/questions", headers: idempotencyHeaders(idempotencyKey), body }, AnswerSchema);
       },
     },
     flags: {

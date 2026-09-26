@@ -81,6 +81,7 @@ describe('release-bound factory floor', () => {
       context: releaseContext,
       question: 'Which face is the reference side?',
     });
+    expect(request?.headers?.['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/i);
   });
 
   it('creates a release and bend scoped flag through the real typed client boundary', async () => {
