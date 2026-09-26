@@ -15,12 +15,12 @@ The repo's `main` contains the foundation, phone reader, engineer guide approval
 
 All paused agent code is represented in these GitHub locations. The WIP branches are preservation snapshots, not reviewed implementation or instructions to apply their SQL. The final guide artwork/report plan and example product are still pending from Henry's team.
 
-A [canonical design system](../design-system/README.md), sourced Apple research, screen patterns, and shared CSS tokens are proposed in the current design-system PR; they are not on `main` until that PR merges.
+The [canonical design system](../design-system/README.md) now records the light neutral/blue direction, sourced Apple research, desktop/phone patterns, original concept photography, and shared CSS tokens. Existing routes still need full visual migration.
 
 ## What exists
 
 - Repository: `HenryFowlerr/SkunkWorks`, Next.js 16 / React 19 / TypeScript, Supabase auth, typed same-origin API client, OpenAI adapter, Three.js bend example.
-- Public landing page now presents the broader Chappe manufacturing handoff, including review, selective guidance, QR/feedback, and sign-in/sign-up. Detailed branding remains a separate design task.
+- Public landing page now presents the broader Chappe manufacturing handoff, including review, selective guidance, QR/feedback, and sign-in/sign-up. The exact logo artwork and full route redesign remain future design tasks.
 - Engineer studio, manufacturer equipment/profile view, review desk, print label, and operator phone screens exist. They do not all have live backing routes yet.
 - Dedicated Supabase organization: `SkunkWorks` (free). Project: `Chappe`, ID `lzomgexzwxipbgdkgzbd`, region `ap-southeast-2` (Sydney), project URL `https://lzomgexzwxipbgdkgzbd.supabase.co`. Do not use the unrelated SipSaver project. The local checkout has ignored `.env.local` with project URL, publishable key, and server secret key; never commit or echo secrets.
 - Initial schema and workspace/job RPC migrations were applied to Chappe on 26 September 2026. The repo contains matching files in `supabase/migrations/`. All public application tables have RLS enabled. Supabase's INFO notices for six server-only tables without policies are intentional; check after any schema change.
@@ -47,7 +47,7 @@ A [canonical design system](../design-system/README.md), sourced Apple research,
 - After integrating the operator, generation, and invitation slices on one branch, `npm run check` passed on 26 September 2026: TypeScript, ESLint, 184 Vitest tests, and Next production build. The nested agent worktree is excluded from the parent checkout's lint and typecheck scope.
 - After integrating authored-manifest verification and the UI/UX handoff, `npm run check` passed on 26 September 2026: TypeScript, ESLint, 185 Vitest tests, and Next production build. This remains local verification; no authenticated live release has been created.
 
-- Design-system branch verification on 26 September 2026: `npm run check` passed (TypeScript, ESLint, 185 Vitest tests, Next production build). The source guide and token integration do not mean all existing routes have been visually redesigned; future UI work should migrate remaining hardcoded feature styles.
+- Design-system verification on 26 September 2026: `npm run check` passed (TypeScript, ESLint, 185 Vitest tests, Next production build). The source guide and token integration do not mean all existing routes have been visually redesigned; future UI work should migrate remaining hardcoded feature styles.
 
 ## What remains real work
 
