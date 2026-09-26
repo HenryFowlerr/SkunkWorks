@@ -1,6 +1,6 @@
 # Current build status
 
-Updated 26 September 2026. This file is the concise handoff for any new SkunkWorks/Chappe coding or design chat. Read [the product brief](../product/overview.md) first. Older `AGENT_HANDOFF.md` and `docs/coordination/team-*.md` record stopped workstreams and should not be mistaken for current instructions.
+Updated 27 September 2026. This file is the concise handoff for any new SkunkWorks/Chappe coding or design chat. Read [the product brief](../product/overview.md) first. Older `AGENT_HANDOFF.md` and `docs/coordination/team-*.md` record stopped workstreams and should not be mistaken for current instructions.
 
 ## Public demo and deployment
 
@@ -8,6 +8,7 @@ Updated 26 September 2026. This file is the concise handoff for any new SkunkWor
 - **Five-minute path:** prepared Sensor Mount `SKW-SM-104` → engineer facility comparison (documented support, conflict, unknown) → selective B2 guide edit/approval → QR/session link → operator phone flag/question → engineer response. A real Chappe Supabase Edge Function `chappe-demo` stores short-lived demo sessions, guide approval, issues, hold decisions, and answers in `demo_sessions`/`demo_issues`. Only the browser with the engineer token can approve or respond; the QR contains only the session ID. These tables are isolated from real jobs, have RLS enabled, and grant no browser table access.
 - **Prepared evidence:** the drawing PDF, authored bend manifest, final GLB, facility profiles, comparison values, and proposed guide are synthetic examples. The comparison uses only those prepared values and does not certify manufacturing feasibility. The public demo uses no OpenAI call. The model panel is an authored schematic, not physical forming simulation.
 - **Permanent phone scan:** the landing page offers a QR for `#/phone-preview`, a read-only fixed-height Engineering test block visual reference that works before an engineer creates a session. Its real 3D view can orbit, zoom, and reset but is not manufacturing authority; the chat bar is visibly disabled until a released project QR supplies its product context. The interactive issue and reply path still uses a distinct session-specific QR.
+- **27 September deployment update:** the formerly pending industrial UI/QR-floor branch was fast-forwarded to `main` as `1c0ea67`, and GitHub Pages deployment #12 completed successfully. The live permanent preview was opened at 390 × 844 to verify its model, fixed no-scroll screen, and context-disabled chat. This supersedes the earlier pending-branch wording retained below as contemporaneous test evidence.
 - **Hosting boundary:** Pages serves static files; the Next.js 16 app, its email sign-up/sign-in, real workspaces/jobs, server API routes, and member-only releases are **not deployed on Pages**. They remain in this repo and require a server-capable host for a live authenticated run. Do not describe the Pages demo as the production Next app.
 
 ## Current integration slice
