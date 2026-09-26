@@ -239,6 +239,44 @@ export class WorkspaceDataRepository {
     return GetJobResultSchema.parse({ job, assets, draft, releases });
   }
 
+  async listJobs(): Promise<Job[]> {
+    const { data, error } = await this.client
+      .from("jobs")
+      .select("*")
+      .eq("workspace_id", this.scope.workspaceId)
+      .order("created_at", { ascending: false });
+    throwDatabaseError(error, "list jobs");
+    const rows = (data ?? []) as JobRow[];
+    return Promise.all(rows.map(async (row) => this.mapJob(row, await this.listSourceAssetIds(row.id))));
+  }
+
+  async createJob(input: {
+    jobId: Id;
+    title: string;
+    partNumber: string;
+    partFamily: string;
+    workshopSnapshotId: Id | null;
+    machineId: Id | null;
+    idempotencyRecordId: Id;
+    idempotencyClaimToken: Id;
+  }): Promise<Job> {
+    this.requireRole("designer");
+    const { data, error } = await this.client.rpc("create_job_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_actor_id: this.scope.actorId,
+      p_job_id: input.jobId,
+      p_title: input.title,
+      p_part_number: input.partNumber,
+      p_part_family: input.partFamily,
+      p_workshop_snapshot_id: input.workshopSnapshotId,
+      p_machine_id: input.machineId,
+      p_idempotency_record_id: input.idempotencyRecordId,
+      p_idempotency_claim_token: input.idempotencyClaimToken,
+    });
+    throwDatabaseError(error, "create job");
+    return JobSchema.parse(data);
+  }
+
   async getWorkshopSnapshot(snapshotId: Id): Promise<WorkshopSnapshot> {
     const { data, error } = await this.client
       .from("workshop_versions")

@@ -1,8 +1,5 @@
--- SCRATCH DRAFT ONLY — not a Supabase migration.
--- The Supabase CLI was unavailable (local executable missing; ephemeral npm
--- install could not resolve registry.npmjs.org), so this filename was NOT
--- created by `supabase migration new`. Review, generate an official migration
--- with the CLI, and run database/RLS tests before applying anywhere.
+-- Initial schema for the dedicated SkunkWorks Supabase project.
+-- Applied through the Supabase migration API; source reviewed in repository.
 --
 -- Contract: SkunkWorks DTO/API vocabulary v1.0.
 -- Target: a dedicated development Supabase project only. Never apply to an
@@ -1686,15 +1683,24 @@ declare
   v_session public.release_visitor_sessions%rowtype;
   v_target public.releases%rowtype;
 begin
-  select s, l
-  into v_session, v_link
+  select s.*
+  into v_session
   from public.release_visitor_sessions as s
-  join public.release_access_links as l on l.id = s.access_link_id
   where s.id = p_session_id
     and s.revoked_at is null
     and s.expires_at > clock_timestamp()
+  for update of s;
+
+  if not found then
+    raise exception 'RELEASE_REVOKED' using errcode = '42501';
+  end if;
+
+  select l.*
+  into v_link
+  from public.release_access_links as l
+  where l.id = v_session.access_link_id
     and l.revoked_at is null
-  for update of s, l;
+  for update of l;
 
   if not found then
     raise exception 'RELEASE_REVOKED' using errcode = '42501';

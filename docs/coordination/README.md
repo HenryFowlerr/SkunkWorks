@@ -1,4 +1,6 @@
-# Cross-team coordination
+# Historical cross-team coordination
+
+These team status files are records from the stopped agents. New chats should begin with [the current product brief](../product/overview.md) and [build status](../integration/status.md).
 
 The authoritative workstream and verification rules are in [the protocol](../integration/protocol.md). Each primary owns its own `team-N.md` status and request directory; no one edits another team's status file.
 

@@ -56,7 +56,7 @@ export function WorkspaceInvites({ workspaceId, role }: { workspaceId: string; r
       </header>
       <Panel title="Create an invitation link" eyebrow="Role-bound and expiring">
         <PanelBody>
-          <p className={styles.copy}>Create a link for a designer or fabricator. The service sets its expiry and records the selected role. Copy it yourself; SkunkWorks does not send email.</p>
+          <p className={styles.copy}>Create a link for a designer or fabricator. The service sets its expiry and records the selected role. Copy it yourself; Chappe does not send email.</p>
           {!canInvite ? <p className={styles.notice}>Your workspace role cannot issue invitations. Ask a workspace admin to create one.</p> : (
             <form className={styles.form} onSubmit={createInvite}>
               <label className={styles.label} htmlFor="invite-role">Workspace role</label>

@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-test("entry page explains the bend handoff and links to the designer desk", async ({ page }) => {
+test("entry page explains the reviewed handoff and links to account entry", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page).toHaveTitle("SkunkWorks · Prototype handoff");
-  await expect(page.getByRole("heading", { name: "Keep every bend in view." })).toBeVisible();
-  await expect(page.getByRole("link", { name: /sign in/i })).toHaveAttribute("href", "/login");
-  await expect(page.getByRole("link", { name: /open designer desk/i })).toHaveAttribute("href", "/studio");
-  await expect(page.getByText("B4 · clarification linked")).toBeVisible();
+  await expect(page).toHaveTitle("Chappe · Engineering to workshop");
+  await expect(page.getByRole("heading", { name: "Make complex work clear before it reaches the floor." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute("href", "/login");
+  await expect(page.getByRole("link", { name: "Create account", exact: true })).toHaveAttribute("href", "/signup");
+  await expect(page.getByRole("heading", { name: "Guide the difficult work" })).toBeVisible();
 });
 
 test("entry page fits its desktop and phone viewport", async ({ page }) => {
@@ -17,7 +17,7 @@ test("entry page fits its desktop and phone viewport", async ({ page }) => {
   expect(viewportWidth).toBeTruthy();
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(scrollWidth).toBeLessThanOrEqual(viewportWidth! + 1);
-  await expect(page.getByRole("heading", { name: "Keep every bend in view." })).toBeInViewport();
+  await expect(page.getByRole("heading", { name: "Make complex work clear before it reaches the floor." })).toBeInViewport();
 });
 
 test("sign-in and account creation remain usable on desktop and phone", async ({ page }) => {

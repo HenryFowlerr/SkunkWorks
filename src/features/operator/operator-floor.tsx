@@ -499,7 +499,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
   return (
     <main className={styles.floorShell}>
       <header className={styles.floorHeader}>
-        <Link className={styles.brand} href="/" aria-label="SkunkWorks home"><span className={styles.brandMark}>S</span> SkunkWorks <span className={styles.brandDivider}>/</span> Factory floor</Link>
+        <Link className={styles.brand} href="/" aria-label="Chappe home"><span className={styles.brandMark}>C</span> Chappe <span className={styles.brandDivider}>/</span> Factory floor</Link>
         {view ? <span className={styles.headerPart}>{view.job.partNumber} · R{view.release.revisionNumber}</span> : null}
       </header>
       {loading ? <div className={styles.loading} role="status">Loading this authorised release…</div> : null}
