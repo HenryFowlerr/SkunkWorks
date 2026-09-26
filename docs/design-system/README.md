@@ -71,7 +71,7 @@ These earlier generated concept photographs are historical composition reference
 
 ### Motion
 
-Use opacity and small position changes only to clarify a state transition. A semaphore symbol may briefly resolve to the Chappe wordmark on the public page; text must remain readable without motion. Do not use automatic 3D turns, perspective effects, glow pulses, parallax, or long scroll-jacking to manufacture visual interest. Keep core actions available immediately. Honour `prefers-reduced-motion`. An animation cannot be the sole indication of a state change.
+Use opacity and small position changes only to clarify a state transition. A semaphore symbol may briefly resolve to the Chappe wordmark on the public page; text must remain readable without motion. The user-supplied Chappe signal-form sequence is the one landing exception: it may resolve to the wordmark as the visitor scrolls, but must leave text and core actions available, never trap scroll, and resolve statically for reduced-motion users. Do not use any other automatic 3D turns, perspective effects, glow pulses, parallax, or long scroll-jacking to manufacture visual interest. Honour `prefers-reduced-motion`. An animation cannot be the sole indication of a state change.
 
 ## The product's interaction rules
 

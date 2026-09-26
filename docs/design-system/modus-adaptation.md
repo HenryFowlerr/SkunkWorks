@@ -74,7 +74,7 @@ Use a single hairline to separate adjacent work. A background or shadow must com
 4. **Keep the public landing direct.** Retain the concise product story and prepared part/drawing; reduce retail-like oversized colour treatment, deep rounded hero trays, perspective product renders, and decorative scrolling effects. A restrained hero visual is enough.
 5. **Make selection quiet but obvious.** Use petrol text/indicator and the action tint for an active row. Preserve keyboard focus and do not rely on colour for state.
 6. **Treat status as evidence, not decoration.** Every support/conflict/unknown state has readable text and nearby source context. Do not turn an unknown into a green pass or make a blue/petrol visual imply manufacturability.
-7. **Keep motion functional.** Short state/selection feedback is allowed; automatic 3D turns, glow pulses, decorative parallax, and scroll-jacking are not.
+7. **Keep motion functional.** Short state/selection feedback is allowed; automatic 3D turns, glow pulses, decorative parallax, and scroll-jacking are not. The existing user-supplied Chappe signal-form wordmark sequence is the single brand-specific exception, only when it follows the landing pattern, keeps core content available, and has a resolved static reduced-motion state.
 
 ## How it maps to the existing screen patterns
 
