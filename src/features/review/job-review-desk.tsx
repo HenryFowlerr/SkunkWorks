@@ -73,6 +73,10 @@ function evidenceForDraft(draft: Draft): EvidenceRef[] {
 }
 
 function sourceLabel(evidence: EvidenceRef, assets: Asset[]): { label: string; detail: string } {
+  if (evidence.kind === 'authored_manifest') {
+    const asset = assets.find((item) => item.id === evidence.assetId);
+    return { label: asset?.filename ?? 'Authored bend manifest', detail: `Bend ${evidence.bendId} mapping · uploaded proposal; engineer approval required` };
+  }
   if (evidence.kind === 'document') {
     const asset = assets.find((assetItem) => assetItem.id === evidence.assetId);
     return {
@@ -273,6 +277,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
   const [flagDrafts, setFlagDrafts] = useState<Record<string, FlagResponseDraft>>({});
   const [flagErrors, setFlagErrors] = useState<Record<string, string>>({});
   const [allowPredecessorVisitors, setAllowPredecessorVisitors] = useState(false);
+  const [confirmedMappingVersion, setConfirmedMappingVersion] = useState<string | null>(null);
   const [modelError, setModelError] = useState<string | null>(null);
   const publishKey = useRef<{ fingerprint: string; key: string } | null>(null);
   const clarificationKeys = useRef<Record<string, { text: string; key: string }>>({});
@@ -396,11 +401,13 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
   const sourceAssetIds = new Set(jobLoad?.job.sourceAssetIds ?? []);
   const drawing = sourceAssets.find((asset) => sourceAssetIds.has(asset.id) && asset.kind === 'drawing_pdf' && asset.status === 'ready' && asset.sha256 !== null) ?? null;
   const glb = sourceAssets.find((asset) => sourceAssetIds.has(asset.id) && asset.kind === 'model_glb' && asset.status === 'ready' && asset.sha256 !== null) ?? null;
+  const manifest = sourceAssets.find((asset) => sourceAssetIds.has(asset.id) && asset.kind === 'bend_manifest' && asset.status === 'ready' && asset.sha256 !== null) ?? null;
   const generationBlockers = [
     ...(jobLoad?.job.workshopSnapshotId ? [] : ['Select a workshop snapshot on the job first.']),
     ...(jobLoad?.job.machineId ? [] : ['Select the machine for this job first.']),
     ...(drawing && sourceAssetIds.has(drawing.id) ? [] : ['Attach a ready, verified drawing PDF.']),
     ...(glb && sourceAssetIds.has(glb.id) ? [] : ['Attach a ready, verified GLB model.']),
+    ...(manifest ? [] : ['Attach one ready, verified authored bend manifest.']),
   ];
 
   useEffect(() => {
@@ -518,6 +525,10 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
 
   const reviewDraft = async (kind: 'design' | 'process') => {
     if (!draft || draftDirty || busyAction) return;
+    if (kind === 'design' && confirmedMappingVersion !== `${draft.id}:${draft.version}`) {
+      setOperationError('Inspect the authored mapping and confirm the signed rotations for this draft version before submitting design review.');
+      return;
+    }
     setBusyAction(`review-${kind}`); setOperationError(null); setActionMessage(null);
     try {
       const next = await client.drafts.review({ jobId: jobId as Id, expectedVersion: draft.version, kind });
@@ -742,6 +753,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
                         setDraft((current) => current ? { ...current, content: { ...current.content, panelModel, bends } } : current);
                         setDraftDirty(true); setOperationError(null); setActionMessage(null);
                       }} />
+                      <p className={styles.subtle}>Compare each numbered bend, hinge arrow, reference face and signed rotation with the drawing and linked authored manifest. The manifest is a source proposal, not an approval. If a cited hinge or rotation is wrong, upload a corrected manifest and regenerate before signing off. Save any guide edits, then confirm this exact draft version below.</p>
                       <div className={styles.saveRow}>
                         <p className={styles.subtle}>{draftDirty ? 'Unsaved draft changes. Reviews will apply only after saving.' : draft.content.panelModel?.reviewed ? 'Mapping review status is confirmed by the service.' : 'Mapping review has not been confirmed by the service.'}</p>
                         <Button type="button" disabled={!draftDirty || busyAction !== null} onClick={() => void saveDraftChanges()}>{busyAction === 'save' ? 'Saving…' : 'Save draft changes'}</Button>
@@ -807,8 +819,9 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
               <PanelBody>
                 {draft ? <>
                   <p className={styles.subtle}>Review actions are sent to the API with your current session and role. API authorization and validation errors are shown above.</p>
+                  <label className={styles.checkboxRow}><input type="checkbox" checked={confirmedMappingVersion === `${draft.id}:${draft.version}`} disabled={draftDirty || busyAction !== null || (role !== 'admin' && role !== 'designer')} onChange={(event) => setConfirmedMappingVersion(event.target.checked ? `${draft.id}:${draft.version}` : null)} /> I checked this version’s bend IDs, hinge mapping, reference face, signed rotations and guide decisions against the cited sources.</label>
                   <div className={styles.reviewActions}>
-                    <div><strong>Design review</strong><span>{draft.reviews.some((review) => review.kind === 'design') ? `Recorded for version ${draft.version}` : 'Not recorded'}</span><Button type="button" tone="secondary" small disabled={draftDirty || busyAction !== null} onClick={() => void reviewDraft('design')}>{busyAction === 'review-design' ? 'Submitting…' : 'Submit design review'}</Button></div>
+                    <div><strong>Design review</strong><span>{draft.reviews.some((review) => review.kind === 'design') ? `Recorded for version ${draft.version}` : 'Not recorded'}</span><Button type="button" tone="secondary" small disabled={draftDirty || busyAction !== null || confirmedMappingVersion !== `${draft.id}:${draft.version}`} onClick={() => void reviewDraft('design')}>{busyAction === 'review-design' ? 'Submitting…' : 'Submit design review'}</Button></div>
                     <div><strong>Process review</strong><span>{draft.reviews.some((review) => review.kind === 'process') ? `Recorded for version ${draft.version}` : 'Not recorded'}</span><Button type="button" tone="secondary" small disabled={draftDirty || busyAction !== null} onClick={() => void reviewDraft('process')}>{busyAction === 'review-process' ? 'Submitting…' : 'Submit process review'}</Button></div>
                   </div>
                   <label className={styles.checkboxRow}><input type="checkbox" checked={allowPredecessorVisitors} onChange={(event) => setAllowPredecessorVisitors(event.target.checked)} /> Allow visitors with a predecessor release link to continue after replacement</label>
