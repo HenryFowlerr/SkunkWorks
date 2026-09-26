@@ -20,4 +20,11 @@
 .tableWrap { overflow-x: auto; }
 .nav { display:flex; flex-wrap:wrap; gap:var(--ch-space-4); }
 .nav a { min-height:44px; display:inline-flex; align-items:center; }
+.sourcePacket { display:grid; gap:var(--ch-space-4); margin-top:var(--ch-space-6); }
+.sourcePacketHeader { display:flex; gap:var(--ch-space-4); align-items:flex-start; justify-content:space-between; flex-wrap:wrap; }
+.sourcePacketHeader h3,.sourcePreview h4 { margin:0; }
+.sourcePreview { display:grid; gap:var(--ch-space-3); padding:var(--ch-space-4); border:1px solid var(--ch-border); border-radius:var(--ch-radius-sm, 8px); background:var(--ch-surface); }
+.sourcePdf { display:block; width:100%; height:min(62vh,650px); min-height:300px; border:1px solid var(--ch-border); border-radius:var(--ch-radius-sm, 8px); background:var(--ch-surface-muted); }
+.sourceActions { margin:0; }
+.sourceActions a { min-height:44px; display:inline-flex; align-items:center; }
 @media(max-width:760px) { .grid { grid-template-columns:1fr; } .specs { grid-template-columns:1fr; gap:var(--ch-space-2); } .specs dd { margin-bottom:var(--ch-space-3); } }

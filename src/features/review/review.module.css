@@ -75,6 +75,22 @@
 .checkboxRow { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0; font-size: .75rem; line-height: 1.45; }
 .checkboxRow input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--blue); }
 .blockerList { display: grid; gap: 5px; margin: 10px 0; padding-left: 19px; color: #80500c; font-size: .75rem; line-height: 1.4; }
+.pitchPanel, .pitchResult, .pitchRows, .pitchRow, .pitchDecisionList, .pitchTextClaim, .pitchFlagForm { display:grid; gap:10px; min-width:0; }
+.pitchActions { display:flex; flex-wrap:wrap; gap:8px; }
+.pitchResult { border-top:1px solid var(--line); padding-top:14px; }
+.pitchResult > p, .pitchTextClaim > p, .pitchRow > p { margin:0; font-size:.82rem; line-height:1.55; white-space:pre-wrap; }
+.pitchRows { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pitchRow, .pitchTextClaim, .pitchDecisionList, .pitchFlagForm { border:1px solid var(--line); border-radius:var(--radius-sm); padding:11px; background:var(--surface); }
+.pitchRow header { display:flex; gap:8px; justify-content:space-between; align-items:flex-start; }
+.pitchRow header strong, .pitchTextClaim strong, .pitchDecisionList strong, .pitchFlagForm h3 { font-size:.78rem; }
+.pitchFlagForm h3 { margin:0; }
+.pitchFlagForm :global(textarea) { resize:vertical; min-height:88px; }
+.pitchDecisionList ul, .pitchDecisionList ol { display:grid; gap:8px; margin:0; padding-left:20px; font-size:.8rem; line-height:1.5; }
+.pitchDecisionList li { display:grid; gap:6px; }
+.pitchCitations { display:grid; gap:4px; margin:0; padding:0; list-style:none; color:var(--ink-muted); font-size:.68rem; line-height:1.42; }
+.pitchCitations li { display:grid; gap:3px; min-width:0; }
+.pitchCitations code { overflow-wrap:anywhere; color:var(--ink-muted); font-family:ui-monospace,monospace; }
+.pitchCitations span { overflow-wrap:anywhere; }
 
 @media (max-width: 900px) {
   .reviewGrid { grid-template-columns: 1fr; }
@@ -85,7 +101,7 @@
   .reviewHeader { align-items: flex-start; flex-direction: column; }
   .reviewHeader > button { width: 100%; }
   .reviewGrid { gap: 12px; }
-  .valueGrid, .reviewActions, .orderCompare { grid-template-columns: 1fr; }
+  .valueGrid, .reviewActions, .orderCompare, .pitchRows { grid-template-columns: 1fr; }
   .pdfFrame { min-height: 260px; height: 55vh; }
   .reviewShell :global(.button--small), .linkActions .textLink, .evidenceList :global(.source-reference) { min-height: 44px; }
   .linkActions .textLink, .evidenceList :global(.source-reference) { display: inline-flex; align-items: center; }

@@ -12,6 +12,44 @@ import { SOURCE_UPLOAD_LIMIT_BYTES, UploadAssetPreparationBodySchema } from "@/c
 
 const meta = { requestId: "contract-test", contractVersion: "1.0" as const };
 const success = (data: unknown) => ({ data, meta });
+const pitchCitation = { sourceKey: `document:${ids.asset}:1`, excerpt: "All dimensions in millimeters." };
+const pitchCapability = {
+  approvalState: "draft" as const,
+  decision: "clear_for_engineer_review" as const,
+  code: "SETUP_REVIEW_REQUIRED" as const,
+  title: "Ready for engineer review",
+  explanation: "The supplied drawing and profile need an engineer setup review.",
+  checks: [{ id: "drawing-units", label: "Drawing units", status: "supported" as const, reason: "The drawing identifies its units.", citations: [pitchCitation] }],
+  requiredEngineerDecisions: ["Confirm the setup before release."],
+  sourceKeysRead: [pitchCitation.sourceKey],
+};
+const pitchKnowledgeBase = {
+  approvalState: "draft" as const,
+  title: "Test block knowledge base",
+  titleCitations: [pitchCitation],
+  partSummary: "A source-backed draft for engineer review.",
+  partSummaryCitations: [pitchCitation],
+  sourceSummary: "One drawing source was read.",
+  sourceSummaryCitations: [pitchCitation],
+  operatorSteps: [{ id: "inspect", title: "Inspect drawing", instruction: "Read the supplied drawing before setup.", guidanceKind: "attention" as const, citations: [pitchCitation] }],
+  attentionPoints: [],
+  openQuestions: [],
+  openQuestionCitations: [],
+  recommendedPhoneStartStepId: "inspect",
+};
+const pitchTriage = {
+  approvalState: "draft" as const,
+  severity: "hold" as const,
+  title: "Review reported hole position",
+  summary: "The floor report needs engineer review.",
+  affectedOperation: "Hole drilling",
+  knownEvidence: ["The drawing establishes the unit system."],
+  knownEvidenceCitations: [[pitchCitation]],
+  unknowns: ["The report does not establish the intended fixture."],
+  engineerDecisionNeeded: "Confirm the intended drawing context before work resumes.",
+  suggestedReply: "Keep the affected work pending while engineering reviews it.",
+  citations: [pitchCitation],
+};
 
 function recordingTransport(responses: unknown[]): {
   transport: ApiTransport;
@@ -42,6 +80,7 @@ describe("typed browser API client", () => {
     const cases = [
       { kind: "drawing_pdf" as const, filename: "part.pdf", mimeType: "application/pdf" },
       { kind: "model_glb" as const, filename: "part.glb", mimeType: "model/gltf-binary" },
+      { kind: "model_stl" as const, filename: "part.stl", mimeType: "model/stl" },
       { kind: "bend_manifest" as const, filename: "part.json", mimeType: "application/json" },
     ];
 
@@ -59,6 +98,7 @@ describe("typed browser API client", () => {
     expect(SOURCE_UPLOAD_LIMIT_BYTES).toEqual({
       drawing_pdf: 25 * 1024 * 1024,
       model_glb: 50 * 1024 * 1024,
+      model_stl: 50 * 1024 * 1024,
       bend_manifest: 2 * 1024 * 1024,
       native_part: 50 * 1024 * 1024,
       native_drawing: 50 * 1024 * 1024,
@@ -219,6 +259,30 @@ describe("typed browser API client", () => {
     ]);
     expect(recording.requests[4].headers).toEqual({ "Idempotency-Key": "floor-flag-test-key-0001" });
     expect(recording.requests[4].body).not.toHaveProperty("idempotencyKey");
+  });
+
+  it("uses the typed non-persistent pitch route for capability, knowledge-base, and triage drafts", async () => {
+    const recording = recordingTransport([
+      success({ action: "capability", capability: pitchCapability }),
+      success({ action: "knowledge_base", capability: pitchCapability, knowledgeBase: pitchKnowledgeBase }),
+      success({ action: "triage", triage: pitchTriage }),
+    ]);
+    const client = createApiClient(recording.transport);
+
+    await expect(client.jobs.pitch({ jobId: ids.job, expectedJobVersion: 1, action: "capability" })).resolves.toMatchObject({ action: "capability", capability: { decision: "clear_for_engineer_review" } });
+    await expect(client.jobs.pitch({ jobId: ids.job, expectedJobVersion: 1, action: "knowledge_base" })).resolves.toMatchObject({ action: "knowledge_base", knowledgeBase: { recommendedPhoneStartStepId: "inspect" } });
+    await expect(client.jobs.pitch({ jobId: ids.job, expectedJobVersion: 1, action: "triage", issue: { operation: "Hole drilling", text: "The hole position is unclear." } })).resolves.toMatchObject({ action: "triage", triage: { severity: "hold" } });
+
+    expect(recording.requests.map(({ method, path }) => [method, path])).toEqual([
+      ["POST", `/api/jobs/${ids.job}/pitch`],
+      ["POST", `/api/jobs/${ids.job}/pitch`],
+      ["POST", `/api/jobs/${ids.job}/pitch`],
+    ]);
+    expect(recording.requests[2]?.body).toEqual({
+      expectedJobVersion: 1,
+      action: "triage",
+      issue: { operation: "Hole drilling", text: "The hole position is unclear." },
+    });
   });
 
   it("uploads privately between preparation and server verification", async () => {

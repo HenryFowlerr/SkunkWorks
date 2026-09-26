@@ -14,6 +14,7 @@ export type BendSceneProps = {
 };
 export type ModelViewerProps = {
   assetId: Id;
+  format: 'glb' | 'stl';
   resolveAssetUrl: (assetId: Id) => Promise<string>;
   onError?: (message: string) => void;
 };

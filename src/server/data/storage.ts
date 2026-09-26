@@ -14,6 +14,7 @@ import type { AuthorizedPrivateAsset } from "./repository";
 
 export const PRIVATE_ASSET_BUCKET = "skunkworks-private" as const;
 const SIGNED_UPLOAD_TTL_SECONDS = 2 * 60 * 60;
+const SIGNATURE_PREFIX_BYTES = 96;
 
 type StoredAssetRow = {
   id: Id;
@@ -323,7 +324,7 @@ async function finalizePendingAsset(
       if (done) break;
       byteSize += value.byteLength;
       digest.update(value);
-      for (let index = 0; index < value.length && prefix.length < 32; index += 1) {
+      for (let index = 0; index < value.length && prefix.length < SIGNATURE_PREFIX_BYTES; index += 1) {
         prefix.push(value[index]);
       }
     }
@@ -339,11 +340,13 @@ async function finalizePendingAsset(
   // not certify a valid SolidWorks document or make its bytes AI evidence.
   const signatureType = isNativeSource(row.kind)
     ? "application/octet-stream"
-    : inspectAssetSignature(row.kind, prefix);
+    : inspectAssetSignature(row.kind, prefix, byteSize);
   const typeMatches =
     signatureType !== null &&
     (row.kind === "model_glb"
       ? contentType === "model/gltf-binary" || contentType === "application/octet-stream"
+      : row.kind === "model_stl"
+        ? contentType === "model/stl" || contentType === "application/sla" || contentType === "application/octet-stream"
       : contentType === signatureType);
   if (byteSize !== row.byte_size || !typeMatches) {
     await failAsset(serviceClient, row, byteSize !== row.byte_size ? "BYTE_SIZE_MISMATCH" : "CONTENT_MISMATCH");
@@ -493,7 +496,7 @@ function isNativeSource(kind: Asset["kind"]) {
   return kind === "native_part" || kind === "native_drawing";
 }
 
-function inspectAssetSignature(kind: Asset["kind"], bytes: number[]): string | null {
+function inspectAssetSignature(kind: Asset["kind"], bytes: number[], byteSize: number): string | null {
   const startsWith = (...signature: number[]) =>
     signature.every((byte, index) => bytes[index] === byte);
   if (kind === "drawing_pdf") {
@@ -501,6 +504,21 @@ function inspectAssetSignature(kind: Asset["kind"], bytes: number[]): string | n
   }
   if (kind === "model_glb") {
     return startsWith(0x67, 0x6c, 0x54, 0x46) ? "model/gltf-binary" : null;
+  }
+  if (kind === "model_stl") {
+    // Binary STL stores its triangle count at byte 80. ASCII STL starts with
+    // `solid`; neither form is semantic drawing evidence, but this catches
+    // obvious mismatches before the visual-only browser viewer sees it.
+    if (bytes.length >= 84) {
+      const triangleCount = bytes[80] | (bytes[81] << 8) | (bytes[82] << 16) | (bytes[83] << 24);
+      const expectedSize = 84 + (triangleCount >>> 0) * 50;
+      if (Number.isSafeInteger(expectedSize) && expectedSize === byteSize) return "model/stl";
+    }
+    const firstIndex = bytes.findIndex((byte) => ![0x09, 0x0a, 0x0d, 0x20].includes(byte));
+    return firstIndex >= 0 && bytes.slice(firstIndex, firstIndex + 5)
+      .every((byte, index) => byte === [0x73, 0x6f, 0x6c, 0x69, 0x64][index])
+      ? "model/stl"
+      : null;
   }
   if (kind === "bend_manifest") {
     const first = bytes.find((byte) => ![0x09, 0x0a, 0x0d, 0x20].includes(byte));

@@ -1,5 +1,21 @@
 # Current build status
 
+## 26 September: Engineering Test Block pitch packet and STL intake
+
+This entry supersedes older statements that the supplied Engineering Test Block has only native SolidWorks sources or that the pitch must use the synthetic Sensor Mount packet.
+
+Implemented:
+
+- The supplied `Engineering test block (1).pdf` is now the default prepared Pages pitch packet. The static flow shows only checked drawing facts (60 × 60 × 60 mm, Ø10 mm typical holes, 15 mm / 30 mm callouts) and keeps material, finish, tolerance interpretation, fixturing and inspection as open engineer decisions.
+- A clearly labelled `Ridgeway Precision Machining` prepared CNC profile provides the scoped presentation comparison. The default flow includes the capability result, knowledge-base draft, manufacturer handoff, stable QR phone context and a local prepared flag-to-engineer-report loop. Pages does not publish, parse, download or render the supplied source files.
+- The authenticated Next intake accepts a `.stl` alongside a PDF, stores it privately after exact binary/ASCII STL signature verification, and displays it through the authorised Three.js viewer in review and phone surfaces. STL/GLB models are visual references only; AI receives readable PDF text and confirmed supplier evidence, never mesh geometry.
+- `POST /api/jobs/:id/pitch` is a server-only, authenticated generic capability, knowledge-base and floor-issue-triage endpoint for a readable PDF plus a confirmed supplier profile. Its shared browser/server contract powers a separate review-desk Pitch analysis panel without requiring a bend manifest. It uses versioned prompts, strict structured outputs, exact citation checks and `store: false`; a cleared capability result cannot contain unreadable or unknown checks and needs a supported row cited to both drawing and confirmed supplier evidence, while pitch triage stays on hold pending an engineer. Results are deliberately not persisted or published.
+- The manufacturer handoff can open the selected private drawing PDF through a short-lived authorised link and show the selected GLB/STL visual reference before approval. The PDF remains the only AI evidence source; the STL never supplies dimensions, operations or capability facts.
+
+Validation in this branch: `npm run check` passed TypeScript, ESLint, **326 Vitest tests in 57 files**, and a Next production build; `npm run test:e2e` passed **6/6** desktop/mobile browser checks. Static JavaScript syntax and diff checks also passed, as did desktop and 390 px static-pitch smoke checks. The supplied STL parsed through the app's Three.js loader at 31,284 bytes, 1,872 vertices and a 60 × 60 × 60 mm bounding box. No source file was committed, no migration was applied to a live database, and no live Supabase/OpenAI request was made.
+
+Required before calling this live: apply `20260926214500_model_stl_source.sql`, configure the server-only Supabase and OpenAI environment, upload the supplied PDF/STL under an authenticated workspace, create/confirm the actual supplier profile, and inspect the resulting citations and engineer approval flow end to end.
+
 ## 26 September: engineering and manufacturing UX
 
 `codex/workflow-ux` builds on `codex/part-knowledge-ai`. Dedicated manufacturing list, handoff and equipment routes now separate the two work areas. Engineering adds part search, progress and section navigation; manufacturing groups approved specifications, exact selected facility evidence and contextual answers. Public Pages also separates its received-work and equipment screens. See [the workflow audit](../product/workflow-ux-audit.md) for routes, source rules, verification and unresolved product gaps. No live migrations, production uploads, AI calls or deployment occurred.

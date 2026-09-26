@@ -68,7 +68,7 @@ function EvidenceList({ evidence, assets }: { evidence: EvidenceRef[]; assets: A
   );
 }
 
-function readySourceAsset(assets: Asset[], kind: 'drawing_pdf' | 'model_glb'): Asset | null {
+function readySourceAsset(assets: Asset[], kind: 'drawing_pdf' | 'model_glb' | 'model_stl'): Asset | null {
   return assets.find((asset) => asset.kind === kind && asset.status === 'ready' && asset.sha256 !== null) ?? null;
 }
 
@@ -205,7 +205,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
   const currentStep: Step | null = steps[stepIndex] ?? null;
   const currentBend = currentStep ? snapshot?.bends.find((bend) => bend.bendId === currentStep.bendId) ?? null : null;
   const drawingAsset = view ? readySourceAsset(view.sourceAssets, 'drawing_pdf') : null;
-  const modelAsset = view ? readySourceAsset(view.sourceAssets, 'model_glb') : null;
+  const modelAsset = view ? (readySourceAsset(view.sourceAssets, 'model_glb') ?? readySourceAsset(view.sourceAssets, 'model_stl')) : null;
   const sceneData: SceneData | null = snapshot?.panelModel ? {
     panelModel: snapshot.panelModel,
     bends: snapshot.bends,
@@ -481,10 +481,10 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
   const renderModel = () => {
     if (!view) return null;
     if (!modelAsset && view.sourceAssets.some(asset => asset.kind === 'native_part' || asset.kind === 'native_drawing')) return <NativePartSources assets={view.sourceAssets} client={client} />;
-    if (!modelAsset) return <Panel title="Model unavailable" eyebrow="Release asset"><PanelBody><p>No ready verified GLB is attached to this release. No substitute model is shown.</p></PanelBody></Panel>;
+    if (!modelAsset) return <Panel title="Model unavailable" eyebrow="Release asset"><PanelBody><p>No ready verified GLB or STL model is attached to this release. No substitute model is shown.</p></PanelBody></Panel>;
     return <Panel title={modelAsset.filename} eyebrow="Supplied final model"><PanelBody>
       <p className={styles.muted}>Orbit or zoom to orient yourself, then choose the relevant operation above. This model has no reviewed clickable operation markers.</p>
-      <ModelViewer assetId={modelAsset.id} resolveAssetUrl={async (assetId) => (await client.assets.getLink({ assetId })).url}
+      <ModelViewer assetId={modelAsset.id} format={modelAsset.kind === 'model_stl' ? 'stl' : 'glb'} resolveAssetUrl={async (assetId) => (await client.assets.getLink({ assetId })).url}
       />
     </PanelBody></Panel>;
   };
