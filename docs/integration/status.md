@@ -4,6 +4,7 @@ Updated 27 September 2026. This is the concise handoff for new SkunkWorks/Chappe
 
 ## Current Vercel-ready workflow
 
+- **Editorial interface refresh, 27 September:** The deployed Next landing now uses an original paper/ink/blue desktop story with an illustrative part visual, explicit evidence boundaries, and direct Engineering and Manufacturing entry points. The signed-in Engineering index presents projects as a truthful source/facility/handoff table; Manufacturing uses matching handoff and facility-evidence tables. This is presentational only: API routes, session behaviour, source privacy, and approval rules are unchanged.
 - **Part knowledge and inputs:** Native SolidWorks part/drawing pairs are retained privately and byte-verified. Readable drawing PDFs supply cited technical evidence; GLB/STL models are authorised visual references only. The supplied Engineering Test Block PDF is the pitch evidence packet and its STL is visual-only. Both source files are excluded from the active source tree and Vercel deployment.
 - **Stable QR:** A QR identifies the part, not a formal CAD revision. Current approved knowledge can evolve behind that stable part address. Internal release records remain approval/audit context. Access checks still apply; a known part ID is not an access credential.
 - **AI roles:** Astra is limited to the initial capability scan and knowledge-base draft. Luna handles floor Q&A, guide/phone drafts, floor-issue triage, and concise engineer-report drafts. All prompts are versioned server code with typed inputs, source/citation checks, and explicit engineer approval boundaries.
@@ -21,7 +22,7 @@ PR [#24](https://github.com/HenryFowlerr/SkunkWorks/pull/24) was a static protot
 
 ## Validation on this workstream
 
-`npm run check` passed TypeScript, ESLint, **377 Vitest tests in 63 files**, and a Next production build. `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/skunkworks-playwright-browsers npm run test:e2e` passed **10/10** desktop/mobile checks, including an authorised private-GLB fixture, the Quick assist request, the prefilled contextual flag, and the internal `/demo` redirect. Static JavaScript syntax and diff checks also passed.
+`npm run check` passed TypeScript, ESLint, **380 Vitest tests in 63 files**, and a Next production build. `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/skunkworks-playwright-browsers npm run test:e2e` passed **10/10** desktop/mobile checks, including an authorised private-GLB fixture, the Quick assist request, the prefilled contextual flag, and the internal `/demo` redirect. Static JavaScript syntax and diff checks also passed.
 
 These are local and fixture-backed checks. They are not a live account, provider, database, supplier, or QR visitor run.
 
