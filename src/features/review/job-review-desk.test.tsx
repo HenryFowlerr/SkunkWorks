@@ -289,7 +289,7 @@ describe('designer review desk', () => {
     expect(screen.getByRole('option', { name: 'Release #2' })).toBeInTheDocument();
     fireEvent.change(replacementSelect, { target: { value: sameJobReplacement.id } });
     fireEvent.change(screen.getByLabelText('Response to the factory-floor issue'), { target: { value: 'Use the revised bend sequence in this published release.' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Respond to this issue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Approve and send reply' }));
 
     await waitFor(() => expect(requests.some((request) => request.method === 'POST' && request.path === `/api/flags/${ids.flag}/response`)).toBe(true));
     const responseRequest = requests.find((request) => request.path === `/api/flags/${ids.flag}/response`);

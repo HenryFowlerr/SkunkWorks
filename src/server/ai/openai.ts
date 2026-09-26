@@ -5,7 +5,7 @@ import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { AnswerSchema, ContextRefSchema } from "../../contracts/domain";
 import { GenerationJsonSchema, GenerationOutputSchema, QuestionJsonSchema, QuestionOutputSchema } from "./schemas";
-import { GENERATION_INSTRUCTIONS, QUESTION_INSTRUCTIONS, generationUserPrompt, questionUserPrompt } from "./prompts";
+import { GENERATION_INSTRUCTIONS, QUESTION_INSTRUCTIONS, generationUserPrompt, questionUserPrompt, ENGINEER_REPLY_INSTRUCTIONS, engineerReplyUserPrompt } from "./prompts";
 import {
   prepareGenerationEvidence,
   prepareQuestionEvidence,
@@ -20,6 +20,7 @@ const MAX_TIMEOUT_MS = 50_000;
 export type AiAdapter = {
   generateDraft(input: GenerationInput): Promise<DraftProposal>;
   answerQuestion(input: QuestionInput): Promise<AskResult>;
+  suggestEngineerReply(input: QuestionInput): Promise<AskResult>;
 };
 
 type Environment = Record<string, string | undefined>;
@@ -58,6 +59,14 @@ export class OpenAiResponsesAdapter implements AiAdapter {
   }
 
   async answerQuestion(input: QuestionInput): Promise<AskResult> {
+    return this.answerWithEvidence(input, "question");
+  }
+
+  async suggestEngineerReply(input: QuestionInput): Promise<AskResult> {
+    return this.answerWithEvidence(input, "engineer_reply");
+  }
+
+  private async answerWithEvidence(input: QuestionInput, purpose: "question" | "engineer_reply"): Promise<AskResult> {
     const context = ContextRefSchema.parse(input.context);
     const checkedInput = { ...input, context };
     const verified = prepareQuestionEvidence(checkedInput);
@@ -78,8 +87,8 @@ export class OpenAiResponsesAdapter implements AiAdapter {
     const model = this.configuredModel();
     const response = await this.request({
       model,
-      instructions: QUESTION_INSTRUCTIONS,
-      userText: questionUserPrompt(checkedInput, knowledge),
+      instructions: purpose === "engineer_reply" ? ENGINEER_REPLY_INSTRUCTIONS : QUESTION_INSTRUCTIONS,
+      userText: purpose === "engineer_reply" ? engineerReplyUserPrompt(checkedInput, knowledge) : questionUserPrompt(checkedInput, knowledge),
       // The server-selected text snippets are the complete model-visible knowledge
       // for Q&A. Do not attach whole private PDFs and invite uncited answers.
       pdfs: [],

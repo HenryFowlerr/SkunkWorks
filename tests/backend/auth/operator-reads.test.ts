@@ -44,7 +44,7 @@ beforeEach(() => {
 });
 
 describe('member-scoped operator reads', () => {
-  it('returns only immutable release source assets with feedback controls disabled', async () => {
+  it('returns only immutable release source assets with member feedback controls enabled', async () => {
     const response = await getRelease(new Request('https://chappe.example/api/releases/' + ids.release), {
       params: Promise.resolve({ id: ids.release }),
     });
@@ -53,7 +53,7 @@ describe('member-scoped operator reads', () => {
       release: { id: ids.release },
       sourceAssets: [{ id: ids.asset }],
       actor: { kind: 'member' },
-      permissions: { canAsk: false, canFlag: false, canRespond: false },
+      permissions: { canAsk: true, canFlag: true, canRespond: false },
     } });
     expect(mocks.getJobApiContext).toHaveBeenCalledWith(ids.job);
   });

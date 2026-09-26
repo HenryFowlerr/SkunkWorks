@@ -9,6 +9,7 @@ import { ApiClientError, api } from '@/lib/api/client';
 import type { ApiClient } from '@/lib/api/client';
 import { BendMapEditor, BendScene, ModelViewer } from '@/features/visualization';
 import type { SceneData } from '@/features/visualization';
+import { FlagReplySuggestionControl } from './components/flag-reply-suggestion';
 import { BendFactEditor } from './components/bend-fact-editor';
 import { evidenceAssetId, getPublishBlockers, toDraftContentInput } from './review.logic';
 import styles from './review.module.css';
@@ -181,7 +182,7 @@ function FindingCard({
 type FlagResponseDraft = { text: string; kind: 'explanation' | 'replacement_release'; replacementReleaseId: string };
 const emptyFlagResponse: FlagResponseDraft = { text: '', kind: 'explanation', replacementReleaseId: '' };
 
-function FlagResponseCard({ flag, jobId, releases, busy, value, error, onChange, onRespond }: {
+function FlagResponseCard({ flag, jobId, releases, busy, value, error, onChange, onRespond, client }: {
   flag: Flag;
   jobId: string;
   releases: Release[];
@@ -190,6 +191,7 @@ function FlagResponseCard({ flag, jobId, releases, busy, value, error, onChange,
   error: string | null;
   onChange: (next: FlagResponseDraft) => void;
   onRespond: () => void;
+  client: Pick<ApiClient, 'flags'>;
 }) {
   const release = releases.find((item) => item.id === flag.context.releaseId && item.jobId === jobId);
   const validReplacementReleases = releases.filter((item) => item.jobId === jobId && item.id !== flag.context.releaseId);
@@ -218,6 +220,7 @@ function FlagResponseCard({ flag, jobId, releases, busy, value, error, onChange,
         <p className={styles.error}>This issue does not resolve to a release in this job, so a response cannot be safely attached.</p>
       ) : (
         <div className={styles.responseForm}>
+          <FlagReplySuggestionControl key={`${flag.id}:${flag.version}`} flag={flag} client={client} onUse={(text) => onChange({ text, kind: 'explanation', replacementReleaseId: '' })} />
           <Field id={`flag-response-${flag.id}`} label="Response to the factory-floor issue">
             <textarea id={`flag-response-${flag.id}`} className="field__control" rows={3} value={value.text} onChange={(event) => onChange({ ...value, text: event.target.value })} placeholder="Answer this exact release and bend context…" />
           </Field>
@@ -237,7 +240,7 @@ function FlagResponseCard({ flag, jobId, releases, busy, value, error, onChange,
           ) : null}
           {error ? <p className={styles.error} role="alert">{error}</p> : null}
           <Button type="button" small disabled={busy || !value.text.trim() || (value.kind === 'replacement_release' && !validReplacementReleases.some((item) => item.id === value.replacementReleaseId))} onClick={onRespond}>
-            {busy ? 'Sending response…' : 'Respond to this issue'}
+            {busy ? 'Sending response…' : 'Approve and send reply'}
           </Button>
         </div>
       )}
@@ -836,7 +839,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
                 {flagsLoading ? <p className={styles.subtle} role="status">Loading issue responses…</p> : null}
                 {flagsError ? <p className={styles.error} role="alert">{flagsError}</p> : null}
                 {flags.length === 0 && !flagsLoading && !flagsError ? <p className={styles.subtle}>No factory-floor issues are recorded for this job.</p> : null}
-                {flags.map((flag) => <FlagResponseCard key={flag.id} flag={flag} jobId={jobId} releases={releases} busy={flagBusyId === flag.id} value={flagDrafts[flag.id] ?? emptyFlagResponse} error={flagErrors[flag.id] ?? null} onChange={(next) => setFlagDrafts((items) => ({ ...items, [flag.id]: next }))} onRespond={() => void respondToFlag(flag)} />)}
+                {flags.map((flag) => <FlagResponseCard key={flag.id} client={client} flag={flag} jobId={jobId} releases={releases} busy={flagBusyId === flag.id} value={flagDrafts[flag.id] ?? emptyFlagResponse} error={flagErrors[flag.id] ?? null} onChange={(next) => setFlagDrafts((items) => ({ ...items, [flag.id]: next }))} onRespond={() => void respondToFlag(flag)} />)}
               </PanelBody>
             </Panel>
           </section>

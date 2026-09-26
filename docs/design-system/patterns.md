@@ -42,7 +42,7 @@ This is deliberately more useful than “Capability check passed.”
 
 The main list is operations, grouped by part area if needed. Each row states whether extra guidance is included, proposal/review state, and the latest change. Selecting an operation opens a detail inspector containing: model/drawing context, proposed concise step, cited source/uncertainty, editable approved wording, include/exclude control, and reviewer identity/time. A routine operation can be excluded from detailed floor guidance while remaining selectable on the model.
 
-The publish path is a deliberate review moment: show what the floor will receive, which operations have approved text, unresolved conflicts/unknowns, destination facility, and release version. The final button says “Publish release” rather than “Generate.” A release is immutable; revisions create a new version. Show the older version distinctly when a QR refers to it.
+The publish path is a deliberate review moment: show what the floor will receive, which operations have approved text, unresolved conflicts/unknowns, destination facility, and release version. The final button says “Publish release” rather than “Generate.” The part QR stays stable and opens current approved knowledge. Internal approval history may remain visible as secondary context; formal CAD revision management is outside the demo.
 
 ## 5. Manufacturer desktop
 
@@ -50,7 +50,7 @@ Start with facility name and what engineering sent. Equipment profile appears as
 
 ## 6. Operator phone
 
-After scan, show **job + release identity** and a short operation chooser. The selected operation screen has a clear heading, model or image region with labelled target, concise approved steps, and ask/flag actions. Long steps are split into a meaningful sequence, not hidden in accordions. Keep controls reachable with gloves in mind, but test actual device and environment before asserting usability. Include a text operation list beside or below a model hotspot interface. If model content fails, the approved text and operation context remain available.
+After scan, show **part identity and current approved guidance** and a short operation chooser. The selected operation screen has a clear heading, model or image region with labelled target, concise approved steps, and ask/flag actions. Long steps are split into a meaningful sequence, not hidden in accordions. Keep controls reachable with gloves in mind, but test actual device and environment before asserting usability. Include a text operation list beside or below a model hotspot interface. If model content fails, the approved text and operation context remain available.
 
 Example phone information order:
 

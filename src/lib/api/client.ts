@@ -1,3 +1,4 @@
+import { FlagReplySuggestionSchema, SuggestFlagReplyBodySchema, type FlagReplySuggestion } from "@/contracts/ai";
 import { z } from "zod";
 import {
   AcknowledgeFlagInputSchema,
@@ -571,6 +572,11 @@ export function createApiClient(transport: ApiTransport = unavailableApiTranspor
       },
     },
     flags: {
+      suggestReply(input: { jobId: Id; flagId: Id; expectedVersion: number }): Promise<FlagReplySuggestion> {
+        const jobId = IdSchema.parse(input.jobId);
+        const body = SuggestFlagReplyBodySchema.parse({ flagId: input.flagId, expectedVersion: input.expectedVersion });
+        return call({ method: "POST", path: `/api/jobs/${encodeURIComponent(jobId)}/flags/suggest`, body }, FlagReplySuggestionSchema);
+      },
       list(input: ListFlagsInput): Promise<Flag[]> {
         const parsed = ListFlagsInputSchema.parse(input);
         return call({ method: "GET", path: queryPath("/api/flags", parsed) }, z.array(FlagSchema));
