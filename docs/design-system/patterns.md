@@ -12,7 +12,7 @@ These examples make the [design system](README.md) actionable. They define infor
 4. A high-trust section: supported / conflict / unknown and proposal / approved / released, with honest explanation of scope.
 5. Final invitation to see the workflow. No wall of feature cards or fabricated customer metrics.
 
-For the current Pages demo, place the permanent phone QR immediately after the part illustration. Follow it with a separate full-width evidence section: a headline and short explanation above three status columns. Keep the navigation solid and sticky while scrolling, with the engineer and manufacturer routes in that order. Avoid small all-caps section labels when the adjacent headline already names the section; keep source and uncertainty language beside the actual evidence.
+For the Vercel-hosted landing, place the stable part QR immediately after the part illustration only once its authorised destination is available. Follow it with a separate full-width evidence section: a headline and short explanation above three status columns. Keep the navigation solid and sticky while scrolling, with the engineer and manufacturer routes in that order. Avoid small all-caps section labels when the adjacent headline already names the section; keep source and uncertainty language beside the actual evidence.
 
 **Placement:** desktop copy width around 650px; the part visual can span most of the viewport width. On phone, keep copy before the visual and keep B2 legible. Reserve 16–24px side gutters. Headline should wrap naturally without orphaned one-word lines. Prefer clean image edges; no boxed copy floating over the part. A dark chapter may be used later, once, to signal the released handoff.
 
@@ -22,7 +22,7 @@ For the current Pages demo, place the permanent phone QR immediately after the p
 
 Use a descriptive page title, one-line status summary, a top-level “New job” action, and a list/table. Priority columns: job/part, chosen facility, handoff state, latest release, updated time. Search and status filter sit immediately above the list. Select a job to reach its own view; do not make every cell a separate card. Empty state tells the engineer how to create the first job. Avoid a decorative analytics dashboard before the work list.
 
-For the Pages pitch, the jobs overview places the project list to the left of a large file drop area. Selecting Sensor Mount opens a separate prepared job view. A new local draft can record file names and a manufacturer choice, with its limited scope visible. Keep manufacturer navigation out of the engineer sidebar; the top bar switches between the two work areas. The sidebar should end at its links and scroll away instead of stretching into an empty coloured column.
+The live engineering jobs overview places the project list beside the file drop area. Keep manufacturer navigation out of the engineer sidebar; the top bar switches between the two work areas. The sidebar should end at its links and scroll away instead of stretching into an empty coloured column.
 
 A job header persistently states part/job name, facility, release version or draft, and current decision. Supporting files and history follow. If the facility has not been chosen, the next action is explicit. Version numbers use tabular numerals.
 

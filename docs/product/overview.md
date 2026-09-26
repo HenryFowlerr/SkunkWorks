@@ -36,4 +36,4 @@ Source-grounded draft guidance, floor Q&A and proposed engineer replies are dist
 
 ## Demo and real operation
 
-Demonstrate the manufacturer's phone journey first, supported by a short engineer approval-and-answer loop. Setup can be prepared. Show which content comes from actual supplied files, which has engineering approval, and which is still awaiting conversion or evidence. Do not claim a deployed or live AI flow from unit tests, fixtures, a successful build, or the static GitHub Pages site. A server-capable Next.js host, configured providers, required database migrations and a signed-in end-to-end run are separate verification steps.
+Demonstrate the manufacturer's phone journey first, supported by a short engineer approval-and-answer loop. Setup can be prepared. Show which content comes from actual supplied files, which has engineering approval, and which is still awaiting conversion or evidence. Do not claim a deployed or live AI flow from unit tests, fixtures, a successful build, or a Vercel deployment without its configured providers, migrations and signed-in end-to-end verification.

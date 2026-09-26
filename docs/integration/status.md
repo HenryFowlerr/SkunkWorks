@@ -1,12 +1,20 @@
 # Current build status
 
+## 27 September: live QR surface audit and compact assist
+
+- PR [#24](https://github.com/HenryFowlerr/SkunkWorks/pull/24) is a clean, checked static Pages prototype, not a live knowledge-base integration. Its 3D floor chat and report are browser templates backed by the separate `chappe-demo` Edge Function; they do not call `/api/questions`, `/api/flags`, the Astra pitch route, or Luna. Its public `site/assets` PDF and STL are byte-for-byte copies of the supplied Engineering Test Block inputs, so this branch does not merge or deploy those private sources.
+- The secured Next `OperatorFloor` is the live integration point. Its default guide now puts an authorised GLB/STL visual reference before the selected released step and includes a compact **Quick assist** dock. The dock sends the exact published release and selected operation to `/api/questions` (Luna); any response can become a prefilled release-scoped flag. The existing engineer desk then prepares its concise Luna report for human review. The drawing/model continues to use short-lived authorised asset links; no source asset or provider key is sent to Pages.
+- QR visitor-token exchange is still not wired. Vercel can host the required Next server routes, but this path still needs configured environment variables, database migrations and an authenticated member-session run until the visitor exchange is implemented.
+
+Validation: `npm run check` passed TypeScript, ESLint, **377 Vitest tests in 63 files**, and a Next production build. `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/skunkworks-playwright-browsers npm run test:e2e` passed **10/10** desktop/mobile checks, including an authorised private-GLB fixture, the Quick assist request, the prefilled contextual flag, and the internal `/demo` redirect. These are browser-controlled fixtures, not a live account, provider, or database run.
+
 ## 26 September: Engineering Test Block pitch packet and STL intake
 
 This entry supersedes older statements that the supplied Engineering Test Block has only native SolidWorks sources or that the pitch must use the synthetic Sensor Mount packet.
 
 Implemented:
 
-- The supplied `Engineering test block (1).pdf` is now the default prepared Pages pitch packet. The static flow shows only checked drawing facts (60 × 60 × 60 mm, Ø10 mm typical holes, 15 mm / 30 mm callouts) and keeps material, finish, tolerance interpretation, fixturing and inspection as open engineer decisions.
+- The supplied `Engineering test block (1).pdf` is now the default prepared pitch packet. The archived static flow shows only checked drawing facts (60 × 60 × 60 mm, Ø10 mm typical holes, 15 mm / 30 mm callouts) and keeps material, finish, tolerance interpretation, fixturing and inspection as open engineer decisions.
 - A clearly labelled `Ridgeway Precision Machining` prepared CNC profile provides the scoped presentation comparison. The default flow includes the capability result, knowledge-base draft, manufacturer handoff, stable QR phone context and a local prepared flag-to-engineer-report loop. Pages does not publish, parse, download or render the supplied source files.
 - The authenticated Next intake accepts a `.stl` alongside a PDF, stores it privately after exact binary/ASCII STL signature verification, and displays it through the authorised Three.js viewer in review and phone surfaces. STL/GLB models are visual references only; AI receives readable PDF text and confirmed supplier evidence, never mesh geometry.
 - `POST /api/jobs/:id/pitch` is a server-only, authenticated generic capability, knowledge-base and floor-issue-triage endpoint for a readable PDF plus a confirmed supplier profile. Its shared browser/server contract powers a separate review-desk Pitch analysis panel without requiring a bend manifest. It uses versioned prompts, strict structured outputs, exact citation checks and `store: false`; a cleared capability result cannot contain unreadable or unknown checks and needs a supported row cited to both drawing and confirmed supplier evidence, while pitch triage stays on hold pending an engineer. Results are deliberately not persisted or published.
@@ -42,17 +50,22 @@ Validation on 26 September 2026:
 
 Required before claiming live operation: apply `20260926090000_native_source_retention.sql` and `20260926110000_member_feedback.sql` to the intended Supabase project after review, configure server-only provider credentials, host Next.js server routes, and exercise real member uploads/scan/question/flag/approved-reply flow. The current guide generator still requires an authored bend manifest and readable PDF evidence; it does not infer either supplied part from native CAD. Full 3D conversion and general non-bend generation are not implemented by this slice.
 
+## Active hosting
+
+- The repository's active hosting target is Vercel. It runs the Next.js app and its same-origin API routes; configure the exact deployment URL, server-only Supabase/OpenAI environment variables and production domain settings in the connected Vercel project.
+- GitHub Pages deployment has been removed from this repository by deleting `.github/workflows/deploy-pages.yml`. The `site/` folder remains only as an archived local/static prototype; it is not the Vercel application and must not receive source files or provider keys.
+
 ## Earlier deployment and implementation history
 
-Updated 26 September 2026. This file is the concise handoff for any new SkunkWorks/Chappe coding or design chat. Read [the product brief](../product/overview.md) first. Older `AGENT_HANDOFF.md` and `docs/coordination/team-*.md` record stopped workstreams and should not be mistaken for current instructions.
+Updated 27 September 2026. This file is the concise handoff for any new SkunkWorks/Chappe coding or design chat. Read [the product brief](../product/overview.md) first. Older `AGENT_HANDOFF.md` and `docs/coordination/team-*.md` record stopped workstreams and should not be mistaken for current instructions.
 
-## Public demo and deployment
+## Archived GitHub Pages demo and deployment history
 
-- **Website:** [https://henryfowlerr.github.io/SkunkWorks/](https://henryfowlerr.github.io/SkunkWorks/). GitHub Pages publishes `site/` from `main` through `.github/workflows/deploy-pages.yml`. The repository is now public; its About → Website field points to this URL. [PR #12](https://github.com/HenryFowlerr/SkunkWorks/pull/12) delivered the first hosted increment and [PR #13](https://github.com/HenryFowlerr/SkunkWorks/pull/13) delivered the polished QR, phone, and explicit hold flow.
+- **Former website:** [https://henryfowlerr.github.io/SkunkWorks/](https://henryfowlerr.github.io/SkunkWorks/) was the GitHub Pages prototype. It is no longer the deployment target; [PR #12](https://github.com/HenryFowlerr/SkunkWorks/pull/12) delivered its first hosted increment and [PR #13](https://github.com/HenryFowlerr/SkunkWorks/pull/13) delivered the polished QR, phone, and explicit hold flow.
 - **Five-minute path:** prepared Sensor Mount `SKW-SM-104` → engineer facility comparison (documented support, conflict, unknown) → selective B2 guide edit/approval → QR/session link → operator phone flag/question → engineer response. A real Chappe Supabase Edge Function `chappe-demo` stores short-lived demo sessions, guide approval, issues, hold decisions, and answers in `demo_sessions`/`demo_issues`. Only the browser with the engineer token can approve or respond; the QR contains only the session ID. These tables are isolated from real jobs, have RLS enabled, and grant no browser table access.
 - **Prepared evidence:** the drawing PDF, authored bend manifest, final GLB, facility profiles, comparison values, and proposed guide are synthetic examples. The comparison uses only those prepared values and does not certify manufacturing feasibility. The public demo uses no OpenAI call. The model panel is an authored schematic, not physical forming simulation.
 - **Permanent phone scan:** the landing page offers a QR for `#/phone-preview`, a read-only prepared B2/B1 phone example that works before an engineer creates a session. The interactive issue and reply path still uses a distinct session-specific QR. The exact deployed preview URL was opened and checked after the latest Pages release.
-- **Hosting boundary:** Pages serves static files; the Next.js 16 app, its email sign-up/sign-in, real workspaces/jobs, server API routes, and member-only releases are **not deployed on Pages**. They remain in this repo and require a server-capable host for a live authenticated run. Do not describe the Pages demo as the production Next app.
+- **Former hosting boundary:** Pages served static files only. The Vercel-hosted Next.js app is now the active server-capable path. Do not describe the archived prototype as the live product.
 
 ## Current integration slice
 
@@ -69,7 +82,7 @@ Updated 26 September 2026. This file is the concise handoff for any new SkunkWor
 
 ## Where all current work lives
 
-The repo's `main` contains the foundation, phone reader, engineer guide approval, facility evidence preview, persisted generation and invitations, authored-manifest verification, [UI/UX handoff](../product/design-start-here.md), design system, and Pages demo. These landed in PRs #3–#6, #8, #10–#13. The separate operator task's completed phone work is in #4; its later feedback draft is preserved in #7 below.
+The repo's `main` contains the foundation, phone reader, engineer guide approval, facility evidence preview, persisted generation and invitations, authored-manifest verification, [UI/UX handoff](../product/design-start-here.md), design system, and the archived Pages prototype. These landed in PRs #3–#6, #8, #10–#13. The separate operator task's completed phone work is in #4; its later feedback draft is preserved in #7 below.
 
 | Location | What it preserves | State and resume gate |
 |---|---|---|
@@ -122,7 +135,7 @@ Seven remote branch tips already contained in `main` were deleted after ancestry
 - Verify a full authenticated generation round trip with a configured OpenAI key/model. Persist facility requirements, verify source extraction, and add a review gate for facility findings. The guide and review/publish endpoints need a real signed-in run before they can be called demo-ready. Finding clarification/resolution and machine proposal decision routes are still missing: another generated blocking finding or undecided proposal can stop publication until those routes exist.
 - Exercise invitation issuance/redemption with real users. On `main`, build floor QR exchange, release sharing, operator question/flag/response writes, and visitor asset access. Draft implementations are linked above but their SQL and live paths are not verified. Release publication exists but has not been exercised with real user/source data; release and flag reads on `main` are member-only.
 - OpenAI key/model are not configured. No live AI generation has been verified. The final demo product and output illustration design are undecided.
-- The public Pages demo is online. A full Next.js server deployment, real Supabase Auth session, signed-in job/release journey, and production QR visitor flow are still unverified. Host the Next app separately before claiming those features are available at the public URL.
+- The former public Pages demo has been retired. The Vercel deployment still needs a configured provider environment, real Supabase Auth session, signed-in job/release journey, and production QR visitor-flow verification before those features can be claimed as available at its public URL.
 
 ## Working rules
 

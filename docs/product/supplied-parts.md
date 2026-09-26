@@ -11,7 +11,7 @@ Henry supplied two distinct products on 26 September 2026. Pairing below is base
 
 ## Readable Engineering Test Block packet
 
-Henry later supplied a readable export pair for the Engineering Test Block. The originals remain outside the repository and the public Pages demo lists these files by record only; it does not publish their bytes.
+Henry later supplied a readable export pair for the Engineering Test Block. The originals remain outside the repository and the archived static prototype lists these files by record only; it does not publish their bytes.
 
 | Source filename | Bytes | SHA-256 | App role |
 |---|---:|---|---|

@@ -1,6 +1,6 @@
 # Chappe job knowledge and question context
 
-Updated 26 September 2026. This describes the implemented server path for the Next.js application. The public GitHub Pages pitch site uses prepared guide text and a human-written reply; it does not call this path or OpenAI.
+Updated 27 September 2026. This describes the implemented server path for the Vercel-hosted Next.js application. The archived static pitch prototype uses prepared guide text and a human-written reply; it does not call this path or OpenAI.
 
 ## Source of truth and scope
 

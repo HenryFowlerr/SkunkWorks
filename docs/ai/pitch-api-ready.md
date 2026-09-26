@@ -1,6 +1,6 @@
 # Five-minute pitch: AI-ready handoff
 
-The pitch is staged around a prepared part packet so the presenter never waits for an upload or model response. The public Pages demo labels those results **Prepared pitch analysis**. Its default packet is the supplied Engineering Test Block: `Engineering test block (1).pdf` and `Engineering test block (1).STL`. It does not contain an API key, call OpenAI, publish those source files, or claim that the retained native SolidWorks files were read.
+The pitch is staged around a prepared part packet so the presenter never waits for an upload or model response. The archived static prototype labels its results **Prepared pitch analysis**; the Vercel-hosted app uses the server route described below when its environment is configured. The default packet is the supplied Engineering Test Block: `Engineering test block (1).pdf` and `Engineering test block (1).STL`. No public deployment publishes those source files or claims that the retained native SolidWorks files were read.
 
 The same response shapes are available in the Next.js server for a real, authenticated run. They are drafts for an engineer to review, never a production release, a safety decision, or proof that a machine can make a part.
 
