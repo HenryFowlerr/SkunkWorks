@@ -1,5 +1,5 @@
-/* Public configuration only. The Supabase anon key is publishable; never put service-role or OpenAI secrets here. */
+/* Browser-safe project values only. No service-role or OpenAI credentials. */
 window.CHAPPE_CONFIG = {
-  endpoint: "",
-  anonKey: ""
+  "endpoint": "https://lzomgexzwxipbgdkgzbd.supabase.co/functions/v1/chappe-demo",
+  "anonKey": "sb_publishable_v4EIxnARrB0QAmu26rClMw_kNbPoz9p"
 };
