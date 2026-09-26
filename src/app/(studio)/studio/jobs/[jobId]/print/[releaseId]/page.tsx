@@ -1,9 +1,5 @@
-"use client";
-
-import { useParams } from "next/navigation";
-import { ReleasePrintLabel } from "@/features/print/release-print-label";
+import { redirect } from "next/navigation";
 
 export default function PrintReleasePage() {
-  const { jobId, releaseId } = useParams<{ jobId: string; releaseId: string }>();
-  return <ReleasePrintLabel jobId={jobId} releaseId={releaseId} />;
+  redirect("/studio");
 }

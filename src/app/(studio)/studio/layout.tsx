@@ -1,10 +1,6 @@
-import { Suspense, type ReactNode } from "react";
-import { StudioSessionProvider } from "@/features/studio/studio-session";
+import type { ReactNode } from "react";
 
+// The prepared public demo intentionally has no session or auth wrapper.
 export default function StudioLayout({ children }: { children: ReactNode }) {
-  return (
-    <Suspense fallback={<main aria-live="polite" style={{ padding: 28 }}>Loading designer workspace…</main>}>
-      <StudioSessionProvider>{children}</StudioSessionProvider>
-    </Suspense>
-  );
+  return children;
 }

@@ -1,7 +1,8 @@
-'use client';
-import { ManufacturerJobs } from '@/features/manufacturing/manufacturer-jobs';
-import { useStudioSession } from '@/features/studio/studio-session';
+import type { Metadata } from "next";
+import { ManufacturingWorkspace } from "@/features/prepared-demo/public-workspaces";
+
+export const metadata: Metadata = { title: "Manufacturing demo" };
+
 export default function ManufacturingPage() {
-  const { workspaceId } = useStudioSession();
-  return <ManufacturerJobs key={workspaceId} workspaceId={workspaceId} />;
+  return <ManufacturingWorkspace />;
 }

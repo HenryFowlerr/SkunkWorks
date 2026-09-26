@@ -4,14 +4,16 @@ import { describe, expect, it } from "vitest";
 import HomePage from "./page";
 
 describe("Chappe entry page", () => {
-  it("explains the reviewed handoff and offers account entry points", () => {
+  it("explains the engineering-to-prototype handoff and offers public demo entry points", () => {
     render(<HomePage />);
 
-    expect(screen.getByRole("heading", { name: "Make complex work clear before it reaches the floor." })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
-    expect(screen.getByRole("link", { name: "Create account" })).toHaveAttribute("href", "/signup");
-    expect(screen.getByRole("heading", { name: "Guide the difficult work" })).toBeInTheDocument();
-    expect(screen.getByText(/engineers check the interpretation, correct the steps and approve the guide/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Keep engineering intent close to the prototype." })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Explore engineering/ })).toHaveAttribute("href", "/studio");
+    expect(screen.queryByRole("link", { name: /prototype shop/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /manufacturing/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Explore Steel Bracket/ })).toHaveAttribute("href", "/parts/manufacturing-test-sheet");
+    expect(screen.getByText(/Steel Bracket source drawing, STL visual reference, and QR-enabled guide/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Review useful guidance" })).toBeInTheDocument();
     expect(screen.getByText(/they do not certify physical manufacturability/i)).toBeInTheDocument();
   });
 });

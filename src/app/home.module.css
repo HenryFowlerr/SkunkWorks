@@ -218,7 +218,7 @@ a:hover .arrow { transform: translate(2px, -2px); }
 
 .heroVisual figcaption { border-top: 1px solid var(--ch-border); font-size: 0.64rem; }
 
-.heroPart { width: 100%; min-height: 0; height: 100%; align-self: center; overflow: visible; }
+.heroDrawing { width: 100%; min-height: 0; height: 100%; align-self: center; display: block; object-fit: contain; padding: clamp(10px, 2vw, 24px) 0; }
 .partConstruction { color: var(--ch-border); opacity: 0.72; }
 .partMotionLines { color: var(--ch-action); opacity: 0.8; }
 .partDimensions { color: var(--ch-text-secondary); opacity: 0.85; }
@@ -405,8 +405,7 @@ a:hover .arrow { transform: translate(2px, -2px); }
       animation-range: entry 0% cover 46%;
     }
 
-    .heroPart {
-      transform-box: fill-box;
+    .heroDrawing {
       transform-origin: center;
       animation: partSettle 1s linear both;
       animation-timeline: view();

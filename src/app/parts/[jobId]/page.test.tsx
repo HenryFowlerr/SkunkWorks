@@ -1,33 +1,21 @@
-import '@testing-library/jest-dom/vitest';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
-import { ids } from '../../../../tests/contracts/fixtures';
-import PartPage from './page';
+import "@testing-library/jest-dom/vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import PartPage from "./page";
 
-const entry = vi.hoisted(() => ({ resolve: vi.fn(), redirect: vi.fn(() => { throw new Error('redirect'); }) }));
-vi.mock('@/server/parts/entry', () => ({ resolvePartEntry: entry.resolve }));
-vi.mock('next/navigation', () => ({ redirect: entry.redirect }));
-vi.mock('@/features/operator/operator-floor', () => ({ OperatorFloor: ({ releaseId }: { releaseId: string }) => <div data-testid="floor">{releaseId}</div> }));
+vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("not found"); } }));
+vi.mock("@/components/prepared-part-phone", () => ({
+  PreparedPartPhone: ({ part }: { part: { drawingId: string; revision: string } }) => <div data-testid="prepared-part">{part.drawingId} / {part.revision}</div>,
+}));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-describe('part QR page', () => {
-  it('keeps the part URL while showing the selected approved guide', async () => {
-    entry.resolve.mockResolvedValue({ state: 'ready', releaseId: ids.release });
-    render(await PartPage({ params: Promise.resolve({ jobId: ids.job }) }));
-    expect(screen.getByTestId('floor')).toHaveTextContent(ids.release);
-    expect(entry.redirect).not.toHaveBeenCalled();
+describe("public part QR view", () => {
+  it("resolves a supplied source packet without auth or external services", async () => {
+    render(await PartPage({ params: Promise.resolve({ jobId: "manufacturing-test-sheet" }) }));
+    expect(screen.getByTestId("prepared-part")).toHaveTextContent("Steel Bracket / Needs review");
   });
 
-  it('preserves the QR destination at the sign-in boundary', async () => {
-    entry.resolve.mockResolvedValue({ state: 'sign-in' });
-    await expect(PartPage({ params: Promise.resolve({ jobId: ids.job }) })).rejects.toThrow('redirect');
-    expect(entry.redirect).toHaveBeenCalledWith(`/login?returnTo=${encodeURIComponent(`/parts/${ids.job}`)}`);
-  });
-
-  it('shows a useful approval-pending state without rendering draft content', async () => {
-    entry.resolve.mockResolvedValue({ state: 'unpublished', title: 'Engineering test block', assets: [] });
-    render(await PartPage({ params: Promise.resolve({ jobId: ids.job }) }));
-    expect(screen.getByRole('heading', { name: 'Engineering has not approved a guide yet' })).toBeInTheDocument();
-    expect(screen.queryByTestId('floor')).not.toBeInTheDocument();
+  it("does not resolve an unknown part into private data", async () => {
+    await expect(PartPage({ params: Promise.resolve({ jobId: "unknown-part" }) })).rejects.toThrow("not found");
   });
 });

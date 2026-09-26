@@ -1,15 +1,5 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-import { NewJobIntake } from "@/features/studio/jobs/new-job-intake";
-import { useStudioSession } from "@/features/studio/studio-session";
+import { redirect } from "next/navigation";
 
 export default function NewJobPage() {
-  const { workspaceId, role } = useStudioSession();
-  const router = useRouter();
-  return <NewJobIntake
-    workspaceId={workspaceId}
-    role={role}
-    onCreated={(job) => router.push(`/studio/jobs/${encodeURIComponent(job.id)}?workspace=${encodeURIComponent(workspaceId)}`)}
-  />;
+  redirect("/studio");
 }

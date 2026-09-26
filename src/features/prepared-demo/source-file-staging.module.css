@@ -1,0 +1,211 @@
+.staging {
+  border-top: 1px solid var(--ch-border-strong);
+  padding: 20px 0 24px;
+}
+
+.heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.eyebrow,
+.count,
+.localNote {
+  font-family: var(--ch-font-mono);
+}
+
+.eyebrow {
+  margin: 0 0 7px;
+  color: var(--ch-action);
+  font-size: .61rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.heading h2 {
+  margin: 0;
+  color: var(--ch-text);
+  font-size: 1.02rem;
+  font-weight: 620;
+  letter-spacing: -.03em;
+}
+
+.count {
+  color: var(--ch-text-secondary);
+  font-size: .64rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.intro {
+  max-width: 720px;
+  margin: 12px 0 16px;
+  color: var(--ch-text-secondary);
+  font-size: .79rem;
+  line-height: 1.52;
+}
+
+.dropzone {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  min-height: 104px;
+  border: 1px dashed var(--ch-border-strong);
+  padding: 16px;
+  background: var(--ch-surface);
+}
+
+.dragging {
+  border-color: var(--ch-action);
+  box-shadow: inset 3px 0 0 var(--ch-action);
+}
+
+.dropMark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--ch-border-strong);
+  color: var(--ch-action);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.dropCopy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.dropCopy strong {
+  color: var(--ch-text);
+  font-size: .82rem;
+  font-weight: 650;
+}
+
+.dropCopy span {
+  color: var(--ch-text-secondary);
+  font-size: .72rem;
+  line-height: 1.45;
+}
+
+.chooseButton,
+.fileList button {
+  border: 1px solid var(--ch-action);
+  border-radius: var(--ch-radius-sm);
+  color: var(--ch-action);
+  background: transparent;
+  font: inherit;
+  font-size: .73rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.chooseButton {
+  min-height: 44px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.chooseButton:hover,
+.fileList button:hover {
+  color: var(--ch-action-hover);
+  border-color: var(--ch-action-hover);
+}
+
+.chooseButton:focus-visible,
+.fileList button:focus-visible {
+  outline: 3px solid var(--ch-focus);
+  outline-offset: 2px;
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.localNote,
+.notice {
+  margin: 10px 0 0;
+  color: var(--ch-text-secondary);
+  font-size: .64rem;
+  letter-spacing: .025em;
+  line-height: 1.5;
+}
+
+.localNote span {
+  color: var(--ch-action);
+  font-size: .75em;
+}
+
+.notice {
+  color: var(--ch-text);
+}
+
+.fileList {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--ch-border);
+}
+
+.fileList li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ch-border);
+}
+
+.fileList li > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.fileList strong {
+  overflow-wrap: anywhere;
+  color: var(--ch-text);
+  font-size: .77rem;
+  font-weight: 630;
+}
+
+.fileList span {
+  color: var(--ch-text-secondary);
+  font-size: .69rem;
+}
+
+.fileList button {
+  min-height: 44px;
+  padding: 0 9px;
+}
+
+@media (max-width: 640px) {
+  .heading,
+  .dropzone {
+    align-items: start;
+  }
+
+  .heading {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dropzone {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .chooseButton {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}

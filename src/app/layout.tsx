@@ -4,11 +4,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Chappe · Engineering to workshop",
+    default: "Chappe · Engineering to prototype shop",
     template: "%s · Chappe",
   },
   description:
-    "Review complex manufacturing instructions and workshop capabilities before releasing a QR-linked floor guide.",
+    "A prepared product demo for keeping R&D engineering context connected to prototype manufacturing and shop-floor questions.",
   referrer: "strict-origin-when-cross-origin",
 };
 

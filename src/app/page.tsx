@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import styles from "./home.module.css";
 
@@ -14,8 +15,8 @@ const handoffStages = [
   },
   {
     number: "03",
-    title: "Release useful guidance",
-    text: "Engineering reviews concise guidance for the operations that need it, then publishes the approved part knowledge.",
+    title: "Review useful guidance",
+    text: "Engineering reviews a concise assembly outline with the shop before it becomes floor guidance.",
   },
   {
     number: "04",
@@ -45,51 +46,10 @@ const capabilities = [
 function SignalMark() {
   return (
     <svg viewBox="0 0 36 36" aria-hidden="true">
-      <path d="M7 8h13.5a8.5 8.5 0 0 1 0 17H12" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="square" />
-      <path d="M7 8v20h5" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="square" />
-      <path d="M24 11.5 29 7m-5 17 5 5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square" />
-    </svg>
-  );
-}
-
-function HeroPart() {
-  return (
-    <svg className={styles.heroPart} viewBox="0 0 760 600" role="img" aria-labelledby="part-title part-description">
-      <title id="part-title">Illustrative formed manufacturing bracket</title>
-      <desc id="part-description">A technical, labelled view of an illustrative formed bracket. It is a visual explanation of the Chappe handoff, not manufacturing evidence.</desc>
-      <g className={styles.partConstruction} fill="none" stroke="currentColor" strokeWidth="1">
-        <path d="M84 104h524M84 179h524M84 254h524M84 329h524M84 404h524" />
-        <path d="M105 77v382M224 77v382M343 77v382M462 77v382M581 77v382" />
-      </g>
-      <g className={styles.partMotionLines} fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M42 251c82-52 137-63 200-39" />
-        <path d="M37 267c87-48 145-54 208-28" />
-        <path d="M46 284c77-36 135-37 193-9" />
-      </g>
-      <g className={styles.partAssembly}>
-        <path d="M171 232 342 134l241 76-171 99Z" fill="var(--ch-metal-light)" stroke="var(--ch-schematic-stroke)" strokeWidth="3" />
-        <path d="m171 232 241 76v121L171 353Z" fill="var(--ch-metal-mid)" stroke="var(--ch-schematic-stroke)" strokeWidth="3" />
-        <path d="m412 308 171-98v118L412 429Z" fill="var(--ch-metal-dark)" stroke="var(--ch-schematic-stroke)" strokeWidth="3" />
-        <path d="m205 232 139-80 205 64-139 81Z" fill="none" stroke="var(--ch-schematic-line)" strokeWidth="2" />
-        <path d="m213 251 198 62m-125-109 199 62m-126-109 198 62" fill="none" stroke="var(--ch-schematic-line)" strokeWidth="2" />
-        <path d="M224 250v84m55-52v84m55-52v84m55-52v84" fill="none" stroke="var(--ch-schematic-line)" strokeWidth="2" />
-        <path d="M454 292v84m54-116v84" fill="none" stroke="var(--ch-schematic-line)" strokeWidth="2" />
-        <ellipse cx="299" cy="231" rx="24" ry="13" fill="var(--ch-canvas)" stroke="var(--ch-schematic-stroke)" strokeWidth="3" />
-        <ellipse cx="459" cy="281" rx="24" ry="13" fill="var(--ch-canvas)" stroke="var(--ch-schematic-stroke)" strokeWidth="3" />
-        <path d="m369 324 30 9v48l-30-9Z" fill="var(--ch-canvas-subtle)" stroke="var(--ch-schematic-stroke)" strokeWidth="2" />
-      </g>
-      <g className={styles.partDimensions} fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M170 468h414m-414-8v16m414-16v16" />
-        <path d="M615 203v225m-8-225h16m-16 225h16" />
-        <path d="M143 221 151 215m-8 6 7 7" />
-      </g>
-      <g className={styles.partAnnotations} fill="currentColor">
-        <circle cx="143" cy="221" r="4" />
-        <circle cx="615" cy="316" r="4" />
-        <text x="245" y="496">PART WIDTH / ILLUSTRATIVE</text>
-        <text x="634" y="323">B2</text>
-        <text x="84" y="204">FORMED AREA</text>
-      </g>
+      <path d="M18 31V9" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="square" />
+      <path d="m18 9-11-4m11 4 11-4" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="square" />
+      <path d="M7 5v6m22-6v6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
+      <circle cx="18" cy="9" r="2" fill="currentColor" />
     </svg>
   );
 }
@@ -111,9 +71,7 @@ export default function HomePage() {
           <a className={styles.navPlain} href="#evidence">Evidence</a>
           <span className={styles.navDivider} aria-hidden="true" />
           <Link className={styles.workspaceLink} href="/studio">Engineering <Arrow /></Link>
-          <Link className={styles.workspaceLink} href="/studio/manufacturing">Manufacturing <Arrow /></Link>
-          <Link className={styles.signIn} href="/login">Sign in</Link>
-          <Link className={styles.navCta} href="/signup">Create account <Arrow /></Link>
+          <Link className={styles.navCta} href="/parts/manufacturing-test-sheet">Explore Steel Bracket <Arrow /></Link>
         </nav>
       </header>
 
@@ -121,28 +79,27 @@ export default function HomePage() {
         <div className={styles.heroRail} aria-hidden="true"><span>01</span><span>Part knowledge, carried forward</span></div>
         <div className={styles.heroGrid}>
           <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>Engineering → workshop → floor</p>
-            <h1 id="hero-title">Make complex work clear before it reaches the floor.</h1>
+            <p className={styles.eyebrow}>R&amp;D engineering → prototype shop</p>
+            <h1 id="hero-title">Keep engineering intent close to the prototype.</h1>
             <p className={styles.lede}>
-              Chappe holds the drawing, visual model, documented facility context, reviewed guidance, and floor questions around one evolving part record.
+              Bring source references, manufacturing context, assembly guidance, and shop-floor questions together around one evolving part.
             </p>
             <div className={styles.heroActions}>
-              <Link className={styles.primaryAction} href="/studio">Open engineering <Arrow /></Link>
-              <Link className={styles.secondaryAction} href="/studio/manufacturing">See a manufacturer handoff <Arrow /></Link>
+              <Link className={styles.primaryAction} href="/studio">Explore engineering <Arrow /></Link>
             </div>
-            <p className={styles.scopeNote}>The part visual is illustrative. Chappe distinguishes source evidence, human approval, conflicts, and unknowns.</p>
+            <p className={styles.scopeNote}>Public demo · Steel Bracket source drawing, STL visual reference, and QR-enabled guide · no sign-in required. Source revision, material, and work guidance require review.</p>
           </div>
           <figure className={styles.heroVisual}>
-            <div className={styles.visualTopline}><span>Prepared part view</span><span>Context / B2</span></div>
-            <HeroPart />
+            <div className={styles.visualTopline}><span>Steel Bracket · demo drawing</span><span>QR-enabled source view</span></div>
+            <Image className={styles.heroDrawing} src="/chappe-demo/steel-bracket-qr-drawing-preview.png" alt="Steel Bracket demo drawing with a QR code that opens the shop guide" width={2382} height={1684} priority />
             <figcaption>
-              <span>Illustrative formed bracket</span>
-              <span>Not a manufacturing instruction</span>
+              <span>Steel Bracket · QR-enabled demo drawing</span>
+              <span>Scan to open the shop guide</span>
             </figcaption>
           </figure>
         </div>
         <div className={styles.heroBottom} aria-label="Chappe handoff summary">
-          <span>Files stay with the part</span><span>Human review stays explicit</span><span>Floor context returns intact</span>
+          <span>References stay with the part</span><span>Review stays explicit</span><span>Shop questions keep context</span>
         </div>
       </section>
 
@@ -198,7 +155,7 @@ export default function HomePage() {
         <div className={styles.platformTopline}><span><i aria-hidden="true" />The Chappe platform</span><span>03 / reviewable work</span></div>
         <h2 id="platform-title">The part can move forward.<br />Its context should too.</h2>
         <div className={styles.platformIntro}>
-          <p>Chappe gives engineers and manufacturers separate places to work, connected by the same part record rather than a detached dashboard.</p>
+          <p>R&amp;D engineers and prototype manufacturers get distinct views of the same source packet, from initial review through shop questions.</p>
           <Link className={styles.inverseAction} href="/studio">Open engineering <Arrow /></Link>
         </div>
         <div className={styles.capabilityGrid}>{capabilities.map((capability) => (
@@ -216,18 +173,13 @@ export default function HomePage() {
       </section>
 
       <section className={styles.workspaceCallout} aria-labelledby="workspace-title">
-        <div className={styles.sideLabel}><span className={styles.square} aria-hidden="true" />Choose your work area</div>
+        <div className={styles.sideLabel}><span className={styles.square} aria-hidden="true" />Engineering workspace</div>
         <div className={styles.workspaceBody}>
-          <h2 id="workspace-title">Start where the decision sits.</h2>
+          <h2 id="workspace-title">Start with the part review.</h2>
           <div className={styles.workspaceChoices}>
             <Link href="/studio" className={styles.workspaceChoice}>
               <span className={styles.choiceIndex}>01</span>
-              <span><strong>Engineering</strong><small>Prepare the part, review guidance, and release approved knowledge.</small></span>
-              <Arrow />
-            </Link>
-            <Link href="/studio/manufacturing" className={styles.workspaceChoice}>
-              <span className={styles.choiceIndex}>02</span>
-              <span><strong>Manufacturing</strong><small>Inspect received handoffs, document equipment context, and resolve questions.</small></span>
+              <span><strong>Engineering</strong><small>Bring drawings, model references, and open decisions into one review.</small></span>
               <Arrow />
             </Link>
           </div>
@@ -236,9 +188,9 @@ export default function HomePage() {
 
       <footer className={styles.footer}>
         <div className={styles.footerBrand}><span className={styles.footerMark}><SignalMark /></span><strong>Chappe</strong></div>
-        <p>Clear information across the distance between design and the people making the part.</p>
-        <div className={styles.footerLinks}><Link href="/login" aria-label="Sign in to Chappe">Sign in</Link><Link href="/signup" aria-label="Create a Chappe account">Create account</Link></div>
-        <p className={styles.prototypeNote}>Chappe is a reviewed manufacturing handoff workflow. AI proposals are drafts, facility checks depend on documented evidence, and engineering approval remains explicit.</p>
+        <p>A clearer conversation between the people designing a part and the people making its prototype.</p>
+        <div className={styles.footerLinks}><Link href="/studio">Engineering demo</Link></div>
+        <p className={styles.prototypeNote}>This is a public interface demo with local copies of supplied source files. It does not provide live AI, saved collaboration, or manufacturing approval.</p>
       </footer>
     </main>
   );
