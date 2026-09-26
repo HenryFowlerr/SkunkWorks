@@ -1,0 +1,101 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 3395 >>
+stream
+0.160 0.340 0.460 rg BT /F1 9.0 Tf 42.00 748.00 Td (SKUNKWORKS  /  PROTOTYPE HANDOFF) Tj ET
+0.120 0.170 0.210 rg BT /F1 19.0 Tf 42.00 715.00 Td (SENSOR MOUNT - SKW-SM-104) Tj ET
+0.120 0.170 0.210 rg BT /F1 10.0 Tf 42.00 693.00 Td (Drawing revision A   |   Flat blank mapping) Tj ET
+0.680 0.260 0.120 rg BT /F1 10.0 Tf 42.00 670.00 Td (SYNTHETIC EXAMPLE - NOT FOR PRODUCTION) Tj ET
+0.310 0.360 0.390 rg BT /F1 9.0 Tf 42.00 647.00 Td (Top view of flat panel layout; bend IDs match the reviewed bend manifest.) Tj ET
+197.85 430.00 m
+449.85 430.00 l
+449.85 598.00 l
+197.85 598.00 l
+h
+0.28 0.32 0.35 RG 1.1 w 0.90 0.91 0.90 rg B
+145.35 430.00 m
+197.85 430.00 l
+197.85 598.00 l
+145.35 598.00 l
+h
+0.28 0.32 0.35 RG 1.1 w 0.90 0.91 0.90 rg B
+107.55 430.00 m
+145.35 430.00 l
+145.35 598.00 l
+107.55 598.00 l
+h
+0.28 0.32 0.35 RG 1.1 w 0.90 0.91 0.90 rg B
+449.85 430.00 m
+504.45 430.00 l
+504.45 598.00 l
+449.85 598.00 l
+h
+0.28 0.32 0.35 RG 1.1 w 0.90 0.91 0.90 rg B
+281.85 598.00 m
+365.85 598.00 l
+365.85 640.00 l
+281.85 640.00 l
+h
+0.28 0.32 0.35 RG 1.1 w 0.90 0.91 0.90 rg B
+292.35 392.20 m
+355.35 392.20 l
+355.35 430.00 l
+292.35 430.00 l
+h
+0.28 0.32 0.35 RG 1.1 w 0.90 0.91 0.90 rg B
+0.080 0.350 0.720 RG 2.10 w 197.85 430.00 m 197.85 598.00 l S
+0.080 0.350 0.720 RG 2.10 w 145.35 430.00 m 145.35 598.00 l S
+0.080 0.350 0.720 RG 2.10 w 449.85 430.00 m 449.85 598.00 l S
+0.080 0.350 0.720 RG 2.10 w 281.85 598.00 m 365.85 598.00 l S
+0.080 0.350 0.720 RG 2.10 w 292.35 430.00 m 355.35 430.00 l S
+0.080 0.350 0.720 rg 187.85 520.00 20 13 re f
+1.000 1.000 1.000 rg BT /F1 7.0 Tf 191.35 523.00 Td (B1) Tj ET
+0.080 0.350 0.720 rg 135.35 520.00 20 13 re f
+1.000 1.000 1.000 rg BT /F1 7.0 Tf 138.85 523.00 Td (B2) Tj ET
+0.080 0.350 0.720 rg 439.85 520.00 20 13 re f
+1.000 1.000 1.000 rg BT /F1 7.0 Tf 443.35 523.00 Td (B3) Tj ET
+0.080 0.350 0.720 rg 313.85 604.00 20 13 re f
+1.000 1.000 1.000 rg BT /F1 7.0 Tf 317.35 607.00 Td (B4) Tj ET
+0.080 0.350 0.720 rg 313.85 436.00 20 13 re f
+1.000 1.000 1.000 rg BT /F1 7.0 Tf 317.35 439.00 Td (B5) Tj ET
+0.160 0.340 0.460 rg BT /F1 9.0 Tf 42.00 305.00 Td (FLAT LAYOUT REFERENCE) Tj ET
+0.120 0.170 0.210 rg BT /F1 10.0 Tf 42.00 286.00 Td (Overall blank width: 189 mm) Tj ET
+0.120 0.170 0.210 rg BT /F1 10.0 Tf 42.00 269.00 Td (Overall blank height: 118 mm) Tj ET
+0.120 0.170 0.210 rg BT /F1 10.0 Tf 42.00 252.00 Td (Material thickness: 2.0 mm) Tj ET
+0.160 0.340 0.460 rg BT /F1 9.0 Tf 42.00 225.00 Td (BEND TARGETS \(internal angle convention\)) Tj ET
+0.120 0.170 0.210 rg BT /F1 9.0 Tf 42.00 207.00 Td (B1     90 deg     Signed fold rotation +90 deg) Tj ET
+0.120 0.170 0.210 rg BT /F1 9.0 Tf 42.00 191.00 Td (B2     90 deg     Signed fold rotation -90 deg) Tj ET
+0.120 0.170 0.210 rg BT /F1 9.0 Tf 42.00 175.00 Td (B3     90 deg     Signed fold rotation -90 deg) Tj ET
+0.120 0.170 0.210 rg BT /F1 9.0 Tf 42.00 159.00 Td (B4     90 deg     Signed fold rotation +90 deg) Tj ET
+0.120 0.170 0.210 rg BT /F1 9.0 Tf 42.00 143.00 Td (B5     90 deg     Signed fold rotation -90 deg) Tj ET
+0.120 0.170 0.210 rg BT /F1 9.0 Tf 42.00 94.00 Td (Step order: B1  >  B3  >  B4  >  B5  >  B2) Tj ET
+0.390 0.430 0.460 rg BT /F1 8.0 Tf 42.00 72.00 Td (Rigid-panel diagram excludes bend radii, springback, collision and press-brake motion.) Tj ET
+0.390 0.430 0.460 rg BT /F1 8.0 Tf 42.00 48.00 Td (Original synthetic artwork for the SkunkWorks prototype. Not an engineering release.) Tj ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000000317 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+3763
+%%EOF
