@@ -7,12 +7,12 @@ These examples make the [design system](README.md) actionable. They define infor
 **Section order**
 
 1. Light hero: “A clearer handoff from engineering to the workshop.” Brief supporting copy and one primary CTA. Brand name present as plain text; semaphore mark is optional.
-2. Large crisp original image: operator using a phone beside a real machine, with the phone plausible but without invented UI. A second image may show an operator viewing a selected 3D part area. Use images as narrative evidence, not decoration.
+2. Large, legible prepared part or drawing illustration showing the selected B2 area. Label it as illustrative and retain the source boundary; the front screen has no person photograph.
 3. One compact product sequence: `Check the facility → Review the guide → Release to the floor → Resolve questions`. Each step should name the human decision and show a small authentic product crop or a simple diagram.
 4. A high-trust section: supported / conflict / unknown and proposal / approved / released, with honest explanation of scope.
 5. Final invitation to see the workflow. No wall of feature cards or fabricated customer metrics.
 
-**Placement:** desktop copy width around 650px; hero photo can span most of viewport width. On phone, keep copy before image and crop to keep person, phone and machine legible. Reserve 16–24px side gutters. Headline should wrap naturally without orphaned one-word lines. Prefer clean image edges or a single 24px photo radius; no boxed copy floating over a busy photo. A dark chapter may be used later, once, to signal the released handoff.
+**Placement:** desktop copy width around 650px; the part visual can span most of the viewport width. On phone, keep copy before the visual and keep B2 legible. Reserve 16–24px side gutters. Headline should wrap naturally without orphaned one-word lines. Prefer clean image edges; no boxed copy floating over the part. A dark chapter may be used later, once, to signal the released handoff.
 
 **Motion:** one short reveal of a semaphore-like mark to plain “Chappe” near the hero is acceptable. No essential explanation depends on the animation. Use reduced-motion fallback and avoid scroll trapping.
 
