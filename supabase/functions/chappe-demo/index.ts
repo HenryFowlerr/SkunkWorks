@@ -25,6 +25,10 @@ type IssueRow = {
   operation_id: string;
   kind: "question" | "flag";
   body: string;
+  report_type: "none" | "assist" | "escalation";
+  operator_outcome: "resolved" | "blocked" | null;
+  report_summary: string | null;
+  recommendation: string | null;
   status: "pending" | "answered";
   hold_active: boolean;
   answer: string | null;
@@ -87,7 +91,7 @@ async function loadSession(id: unknown): Promise<SessionRow> {
 }
 async function view(session: SessionRow) {
   const issues = await query<IssueRow[]>(
-    `demo_issues?session_id=eq.${session.id}&select=id,session_id,operation_id,kind,body,status,hold_active,answer,created_at,answered_at&order=created_at.desc`,
+    `demo_issues?session_id=eq.${session.id}&select=id,session_id,operation_id,kind,body,report_type,operator_outcome,report_summary,recommendation,status,hold_active,answer,created_at,answered_at&order=created_at.desc`,
   );
   return {
     session: {
@@ -102,6 +106,10 @@ async function view(session: SessionRow) {
         operationId: issue.operation_id,
         kind: issue.kind,
         body: issue.body,
+        reportType: issue.report_type,
+        operatorOutcome: issue.operator_outcome,
+        reportSummary: issue.report_summary,
+        recommendation: issue.recommendation,
         status: issue.status,
         holdActive: issue.hold_active,
         answer: issue.answer,
@@ -162,6 +170,19 @@ Deno.serve(async (request: Request) => {
       }
       const issueText = typeof body.body === "string" ? body.body.trim() : "";
       if (!issueText || issueText.length > 500) throw new HttpError(400, "Use 1–500 characters.");
+      const reportType = body.reportType === "assist" || body.reportType === "escalation" ? body.reportType : "none";
+      const operatorOutcome = body.operatorOutcome === "resolved" || body.operatorOutcome === "blocked" ? body.operatorOutcome : null;
+      const reportSummary = typeof body.reportSummary === "string" ? body.reportSummary.trim() : null;
+      const recommendation = typeof body.recommendation === "string" ? body.recommendation.trim() : null;
+      if ((reportSummary && reportSummary.length > 500) || (recommendation && recommendation.length > 500)) {
+        throw new HttpError(400, "Assistant report fields must be 500 characters or fewer.");
+      }
+      if (reportType === "assist" && operatorOutcome !== "resolved") {
+        throw new HttpError(400, "An assisted report requires an explicit resolved outcome.");
+      }
+      if (reportType === "escalation" && (body.kind !== "flag" || operatorOutcome !== "blocked")) {
+        throw new HttpError(400, "A hard-stop report requires a red flag and blocked outcome.");
+      }
       const existing = await query<Array<{ id: string }>>(
         `demo_issues?session_id=eq.${session.id}&select=id`,
       );
@@ -169,7 +190,17 @@ Deno.serve(async (request: Request) => {
       await query<IssueRow[]>("demo_issues", {
         method: "POST",
         body: JSON.stringify({
-          session_id: session.id, operation_id: "B2", kind: body.kind, body: issueText,
+          session_id: session.id,
+          operation_id: "B2",
+          kind: body.kind,
+          body: issueText,
+          report_type: reportType,
+          operator_outcome: operatorOutcome,
+          report_summary: reportSummary || null,
+          recommendation: recommendation || null,
+          // A normal question or a resolved assist never creates a hold. A red
+          // flag is a hard stop before engineering reads any assistant draft.
+          hold_active: body.kind === "flag" || reportType === "escalation",
         }),
       });
       return json(await view(session), 201, origin);

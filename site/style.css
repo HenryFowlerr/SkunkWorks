@@ -315,3 +315,34 @@ a:hover{color:var(--ch-action)}
 .motion-ready .landing .reveal,.motion-ready .landing .reveal.is-visible{opacity:1;transform:none;transition:none}
 @media(max-width:700px){.hero-product{width:100%;border-left:0;border-right:0}.hero-product-right{border-left:0;border-bottom:1px solid var(--ch-border)}.hero-product-left{padding:30px 22px 34px}.hero-figure figcaption{width:auto}.object-layout{min-height:0}.object-scene{height:410px}}
 @media(max-width:600px){.landing .hero{padding-top:68px;padding-bottom:52px}.landing .hero h1{font-size:clamp(48px,12vw,68px);margin:18px auto 20px}.landing .hero h1 br{display:initial}.landing .hero-actions{align-items:stretch}.landing .hero-actions .button,.landing .hero-actions .text-link{justify-content:center}.object-layout{padding-block:70px 35px}.object-scene{height:340px;margin-inline:-20px}.phone{border-radius:0;box-shadow:none}.phone-page{background:var(--ch-surface)}}
+
+/* QR floor support: keep two large, deliberate actions in reach while the
+   product, release and approved instruction remain the reading surface. */
+.phone-inner{padding-bottom:112px}
+.floor-action-bar{position:fixed;z-index:35;left:50%;bottom:0;transform:translateX(-50%);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;width:min(100%,460px);border:1px solid var(--ch-border-strong);border-bottom:0;background:var(--ch-surface);padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -5px 16px rgba(27,37,33,.09)}
+.floor-action-bar .button{width:100%;min-height:52px;padding-inline:10px;text-align:center}
+.floor-composer{display:grid;gap:16px;border-top:1px solid var(--ch-border);padding:22px 0 8px;background:var(--ch-canvas-subtle)}
+.floor-composer>div,.floor-composer form{padding-inline:14px}
+.floor-composer h2{margin:5px 0 7px;font-size:21px;letter-spacing:-.035em}
+.floor-composer p{font-size:14px;line-height:1.45}
+.floor-composer .field{margin:0}
+.floor-composer textarea{min-height:118px;resize:vertical}
+.floor-composer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.floor-composer-actions .button{min-height:50px;padding-inline:10px}
+.dictation-note,.floor-message{margin:9px 0 0;color:var(--ch-text-secondary);font-size:12px;line-height:1.45}
+.floor-message{color:var(--ch-status-review)}
+.floor-flag-composer{border-left:3px solid var(--ch-status-conflict);background:var(--ch-status-conflict-bg)}
+.floor-flag-composer .dictation-note{color:var(--ch-text-secondary)}
+.floor-assist-answer{background:var(--ch-action-tint)}
+.assist-question{padding-top:10px;border-top:1px solid var(--ch-border)}
+.assistant-report{display:grid;gap:5px;border-top:1px solid var(--ch-border);border-bottom:1px solid var(--ch-border);padding:13px 14px;color:var(--ch-text);font-size:13px}
+.assistant-report span,.assistant-report small{color:var(--ch-text-secondary)}
+.floor-feedback{border-top:1px solid var(--ch-border);padding:16px 0}
+.floor-feedback p{margin:7px 0;font-size:14px}
+.issue-row-urgent{border-left:3px solid var(--ch-status-conflict);padding-left:12px}
+.issue-summary{color:var(--ch-text-secondary);font-size:13px}
+.floor-alert-summary{display:flex;flex-wrap:wrap;gap:8px 18px;border-top:1px solid var(--ch-border);border-bottom:1px solid var(--ch-border);padding:13px 0;font-size:13px}
+.floor-alert-summary strong{color:var(--ch-status-conflict)}
+.floor-alert-summary span{color:var(--ch-text-secondary)}
+@media(max-width:600px){.phone-inner{padding-bottom:118px}.floor-action-bar{width:100%;border-left:0;border-right:0;padding-inline:16px}.floor-composer{margin-inline:-20px}.floor-composer>div,.floor-composer form{padding-inline:20px}}
+@media(max-width:380px){.floor-action-bar,.floor-composer-actions{grid-template-columns:1fr}.floor-action-bar{gap:6px;padding-top:7px;padding-bottom:calc(7px + env(safe-area-inset-bottom))}.floor-action-bar .button{min-height:46px}}

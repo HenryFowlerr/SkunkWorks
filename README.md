@@ -1,10 +1,10 @@
 # Chappe
 
-Chappe is a website for clearer engineering-to-workshop prototype handoffs. Engineers select a facility, review documented capability gaps, approve visual guidance for unusually complex work, and send a QR-linked guide to the floor. Operators can ask or flag a problem in the context of the exact released operation. SkunkWorks is the team and repository name.
+Chappe is a website for clearer engineering-to-workshop prototype handoffs. Engineers select a facility, review documented capability gaps, approve visual guidance for unusually complex work, and send a QR-linked guide to the floor. Operators can ask by voice or text, flag a hard stop, and return a product/operation-specific improvement report in the context of the exact released operation. SkunkWorks is the team and repository name.
 
 ## Live website
 
-**[Open the Chappe demo](https://henryfowlerr.github.io/SkunkWorks/)**. Follow the prepared Sensor Mount `SKW-SM-104` journey: choose the receiving facility, inspect documented support/conflict/unknown, approve the focused B2 guide, open its QR-linked phone view, flag a concern, and answer it from the engineer view. The live demo session, guide approval, issue, hold decision, and response are stored in the existing **Chappe** Supabase project. The drawing, authored bend manifest, illustrative model, facility profiles, and proposed guide are **prepared synthetic demo data**. The site labels that scope throughout.
+**[Open the Chappe demo](https://henryfowlerr.github.io/SkunkWorks/)**. Follow the prepared Sensor Mount `SKW-SM-104` journey: choose the receiving facility, inspect documented support/conflict/unknown, approve the focused B2 guide, open its QR-linked phone view, ask Chappe a source-bound question, queue an improvement candidate if it resolves the immediate uncertainty, or raise a red flag and hold the operation for engineering. The live demo session, guide approval, issue, hold decision, assistant-report draft, and response are stored in the existing **Chappe** Supabase project after the accompanying migration and Edge Function deploy. The drawing, authored bend manifest, illustrative model, facility profiles, and proposed guide are **prepared synthetic demo data**. The site labels that scope throughout.
 
 The opening uses the Chappe symbol sequence to resolve into the wordmark as the visitor scrolls. It is a scroll-scrubbed visual treatment with a reduced-motion fallback to the finished wordmark.
 

@@ -50,7 +50,7 @@ Start with facility name and what engineering sent. Equipment profile appears as
 
 ## 6. Operator phone
 
-After scan, show **job + release identity** and a short operation chooser. The selected operation screen has a clear heading, model or image region with labelled target, concise approved steps, and ask/flag actions. Long steps are split into a meaningful sequence, not hidden in accordions. Keep controls reachable with gloves in mind, but test actual device and environment before asserting usability. Include a text operation list beside or below a model hotspot interface. If model content fails, the approved text and operation context remain available.
+After scan, show **job + release identity** and a short operation chooser. The selected operation screen has a clear heading, model or image region with labelled target, and concise approved steps. Long steps are split into a meaningful sequence, not hidden in accordions. Keep controls reachable with gloves in mind, but test actual device and environment before asserting usability. Include a text operation list beside or below a model hotspot interface. If model content fails, the approved text and operation context remain available.
 
 Example phone information order:
 
@@ -61,14 +61,15 @@ Sensor mount / Operation 2: Bend B
 Step 2 of 4 · Approved by engineering
 “Align the marked flange to the stop before the bend.”
 [Next step]
-Ask about this operation   Flag an issue
+────────────────────────────────────
+[ Speak or type question ] [ Flag & hold ]
 ```
 
-A question composer includes the context automatically and states where the message goes. After sending, show “Sent to engineering” and its current response state. A generated answer must remain labelled as a draft until approved by engineering.
+A phone has one persistent, safe-area-aware bottom action bar with exactly two deliberate actions: **Speak or type question** (petrol) and **Flag & hold** (reserved conflict red). “Speak” opens a compact composer with browser dictation, an editable typed transcript, an explicit stop/listening state, and a typed fallback; raw audio is not retained by default. The assistant answer is release/operation-scoped, names its approved-source scope, and never clears a hold or asserts a manufacturing outcome. If the operator says it resolved the immediate issue, automatically queue the raw question plus an **assistant draft** improvement candidate for engineering review. “Flag & hold” creates the hold before any AI reporting, preserves the raw statement, and queues an urgent assistant-drafted investigation note. Do not use a sound alone as the alert. A prepared/static demo must name that limitation honestly.
 
 ## 7. Engineer issues and floor response
 
-Desktop list: open issues first, with job, release, operation, reporter, age and state. Selection opens the original question plus exact release/operation context. Engineer can respond, approve a suggested response, or issue a revised release, according to supported API behaviour. A response to an old release cannot silently overwrite it. On phone, an operator sees the approved answer alongside the original question and the version it applies to.
+Desktop list: hard-stop flags first, then ordinary questions and resolved-assist improvement reports, each with job, release, operation, reporter, age and state. Selection opens the raw statement plus exact release/operation context, assistant draft summary, candidate improvement, source/uncertainty, and hold state. Engineer can keep a hold, respond, approve/edit a suggested response, correct a guide, or issue a revised release, according to supported API behaviour. An assistant draft cannot publish a release or clear a hold. A response to an old release cannot silently overwrite it. On phone, an operator sees the approved answer alongside the original question and the version it applies to.
 
 ## Components, states and language
 
@@ -90,7 +91,7 @@ Use a real `<button>` for actions and `<a>` for navigation. Preserve focus when 
 
 - **Wide desktop:** navigation + main work + inspector together when useful; top toolbar carries persistent identity and action.
 - **Narrow desktop/tablet:** collapse inspector first, then sidebar if needed; don't shrink critical type or conceal status.
-- **Phone:** single column; current task and release first; direct back path; one primary action; supportive actions nearby; no desktop table squeezed to viewport.
+- **Phone:** single column; current task and release first; direct back path; the two-action help/hold bar stays reachable above the safe area; no desktop table squeezed to viewport.
 - **Reduced motion / low bandwidth:** task and status remain functional without large photography, 3D rendering, or animated reveals.
 
 ## Code usage
