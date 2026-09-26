@@ -88,6 +88,7 @@ function SessionProblem({ message, onRetry }: { message: string; onRetry: () => 
 
 function StudioFrame({ children, context }: { children: ReactNode; context: StudioContextValue }) {
   const router = useRouter();
+  const pathname = usePathname();
   const workspaceOptions = context.session.memberships;
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const workspaceLabel = context.role === "fabricator" ? "Workshop workspace" : "Designer workspace";
@@ -111,9 +112,9 @@ function StudioFrame({ children, context }: { children: ReactNode; context: Stud
         </Link>
         <p className={styles.navLabel}>{workspaceLabel}</p>
         <nav className={styles.nav} aria-label={workspaceLabel}>
-          <Link href={`/studio${workspaceQuery}`}>Jobs <span aria-hidden="true">↗</span></Link>
-          <Link href={`/studio/workshops${workspaceQuery}`}>{context.role === "fabricator" ? "Equipment and setup" : "Workshop setup"} <span aria-hidden="true">↗</span></Link>
-          {context.role === "admin" ? <Link href={`/studio/invites${workspaceQuery}`}>Invitations <span aria-hidden="true">↗</span></Link> : null}
+          <Link href={`/studio${workspaceQuery}`} aria-current={pathname === "/studio" || pathname.startsWith("/studio/jobs") ? "page" : undefined}>Jobs <span aria-hidden="true">↗</span></Link>
+          <Link href={`/studio/workshops${workspaceQuery}`} aria-current={pathname === "/studio/workshops" ? "page" : undefined}>{context.role === "fabricator" ? "Equipment and setup" : "Workshop setup"} <span aria-hidden="true">↗</span></Link>
+          {context.role === "admin" ? <Link href={`/studio/invites${workspaceQuery}`} aria-current={pathname === "/studio/invites" ? "page" : undefined}>Invitations <span aria-hidden="true">↗</span></Link> : null}
         </nav>
         <div className={styles.sidebarFooter}>
           <label className={styles.workspaceLabel} htmlFor="workspace-switcher">Workspace</label>

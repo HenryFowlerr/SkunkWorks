@@ -37,6 +37,7 @@ export default function HomePage() {
         <nav className={styles.topnav} aria-label="Main navigation">
           <a href="#features">Features</a>
           <a href="#workflow">How it works</a>
+          <Link href="/demo">Explore prepared demo</Link>
           <Link href="/login">Sign in</Link>
           <Link className={styles.navCta} href="/signup">Create account</Link>
         </nav>
@@ -50,10 +51,10 @@ export default function HomePage() {
             Chappe turns engineering files into a reviewed, scan-ready guide for the operations that need extra explanation. The selected workshop’s recorded capabilities and the engineer’s approval stay in the loop.
           </p>
           <div className={styles.heroActions}>
-            <Link className="button button--primary" href="/signup">Create an account <span aria-hidden="true">↗</span></Link>
-            <a className="button button--secondary" href="#workflow">See the workflow <span aria-hidden="true">↓</span></a>
+            <Link className="button button--primary" href="/demo">Explore prepared demo <span aria-hidden="true">↗</span></Link>
+            <Link className="button button--secondary" href="/signup">Create an account <span aria-hidden="true">→</span></Link>
           </div>
-          <p className={styles.heroNote}>Built for prototype handoffs between engineers, manufacturers and people doing the work.</p>
+          <p className={styles.heroNote}>The prepared example is labelled throughout. Live workspace data requires sign-in.</p>
         </div>
         <div className={styles.heroDiagram} aria-label="Engineering handoff stages">
           <div className={styles.diagramHeader}><span>One job · shared context</span><span className={styles.liveDot} aria-hidden="true" /></div>
@@ -80,7 +81,7 @@ export default function HomePage() {
 
       <section className={styles.closing} aria-labelledby="closing-title">
         <div><p className={styles.eyebrow}>A precise, reviewable handoff</p><h2 id="closing-title">Give the floor clarity. Give engineering the context to respond.</h2></div>
-        <Link className="button button--primary" href="/login">Sign in to Chappe <span aria-hidden="true">↗</span></Link>
+        <Link className="button button--primary" href="/demo">Open the prepared demo <span aria-hidden="true">↗</span></Link>
       </section>
 
       <footer className={styles.footer}>

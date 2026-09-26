@@ -64,6 +64,15 @@ function apiHarness(floorView: ReleaseView = viewFixture()) {
 }
 
 describe('release-bound factory floor', () => {
+  it('opens on the approved operation guide with direct contextual help', async () => {
+    const { client } = apiHarness();
+    render(<OperatorFloor releaseId={ids.release} client={client} />);
+    expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'Guide' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('button', { name: 'Ask about this operation' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Flag an issue' })).toBeVisible();
+  });
+
   it('asks against the current published bend and shows the returned grounded answer', async () => {
     const { client, requests } = apiHarness();
     render(<OperatorFloor releaseId={ids.release} client={client} />);
@@ -94,7 +103,7 @@ describe('release-bound factory floor', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save flag to release' }));
 
-    expect(await screen.findByText('Flag saved to the published release.')).toBeVisible();
+    expect(await screen.findByText('Flag saved to the published release. Hold this operation while engineering reviews it.')).toBeVisible();
     const request = requests.find((item) => item.method === 'POST' && item.path === '/api/flags');
     const body = request?.body as { context: Flag['context']; question: string; photoAssetIds: string[] };
     expect(body.context).toEqual(releaseContext);

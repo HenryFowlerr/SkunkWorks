@@ -151,6 +151,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .auth-card { margin: 26px auto 0; }
 }
 
+@media (max-width: 520px) {
+  .auth-story { padding: var(--ch-space-4) var(--ch-space-6); }
+  .auth-story__content { padding: var(--ch-space-4) 0 0; }
+  .auth-story__content h1 { margin: var(--ch-space-2) 0 0; font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.04em; }
+  .auth-story__content > p:not(.eyebrow), .auth-flow, .auth-story__footer { display: none; }
+  .auth-main { padding-top: var(--ch-space-4); }
+  .auth-card { margin-top: var(--ch-space-4); padding: var(--ch-space-6); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
