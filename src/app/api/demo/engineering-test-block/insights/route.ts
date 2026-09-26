@@ -1,7 +1,9 @@
 import { PitchDemoInsightSchema, PitchIssueInputSchema } from "@/contracts";
 import { createPitchAiAdapter } from "@/server/ai";
 import { assertPitchRequestQuotaAvailable, consumePitchRequestQuota } from "@/server/ai/pitch-guardrails";
+import { AiProviderError } from "@/server/ai/types";
 import { engineeringTestBlockDemo } from "@/server/demo/engineering-test-block";
+import { preparedEngineeringTestBlockInsight } from "@/server/demo/engineering-test-block-fallback";
 import {
   listEngineeringTestBlockInsights,
   recordEngineeringTestBlockInsight,
@@ -26,13 +28,19 @@ export async function POST(request: Request): Promise<Response> {
     const issue = await parseApiBody(request, PitchIssueInputSchema);
     assertPitchRequestQuotaAvailable(demoQuota);
     consumePitchRequestQuota(demoQuota);
-    const triage = await createPitchAiAdapter().triageIssue({
-      partName: engineeringTestBlockDemo.partName,
-      partNumber: engineeringTestBlockDemo.partNumber,
-      issue,
-      sources: engineeringTestBlockDemo.sources,
-      knowledgeBase: engineeringTestBlockDemo.knowledgeBase,
-    });
+    let triage;
+    try {
+      triage = await createPitchAiAdapter().triageIssue({
+        partName: engineeringTestBlockDemo.partName,
+        partNumber: engineeringTestBlockDemo.partNumber,
+        issue,
+        sources: engineeringTestBlockDemo.sources,
+        knowledgeBase: engineeringTestBlockDemo.knowledgeBase,
+      });
+    } catch (cause) {
+      if (!(cause instanceof AiProviderError)) throw cause;
+      triage = preparedEngineeringTestBlockInsight(issue);
+    }
     return PitchDemoInsightSchema.parse(recordEngineeringTestBlockInsight({ issue, triage }));
   });
 }

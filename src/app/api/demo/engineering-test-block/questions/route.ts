@@ -1,7 +1,9 @@
 import { PitchMobilePreviewAnswerSchema, PitchPreviewQuestionInputSchema } from "@/contracts";
 import { createPitchMobilePreviewAdapter } from "@/server/ai/pitch-mobile-preview";
 import { assertPitchRequestQuotaAvailable, consumePitchRequestQuota } from "@/server/ai/pitch-guardrails";
+import { AiProviderError } from "@/server/ai/types";
 import { engineeringTestBlockDemo } from "@/server/demo/engineering-test-block";
+import { preparedEngineeringTestBlockAnswer } from "@/server/demo/engineering-test-block-fallback";
 import { handleApiOperation, parseApiBody } from "@/server/http/api";
 
 const demoQuota = {
@@ -16,12 +18,18 @@ export async function POST(request: Request): Promise<Response> {
     const body = await parseApiBody(request, PitchPreviewQuestionInputSchema);
     assertPitchRequestQuotaAvailable(demoQuota);
     consumePitchRequestQuota(demoQuota);
-    const answer = await createPitchMobilePreviewAdapter().answerDraftQuestion({
-      partName: engineeringTestBlockDemo.partName,
-      partNumber: engineeringTestBlockDemo.partNumber,
-      question: body.question,
-      knowledgeBase: engineeringTestBlockDemo.knowledgeBase,
-    });
+    let answer;
+    try {
+      answer = await createPitchMobilePreviewAdapter().answerDraftQuestion({
+        partName: engineeringTestBlockDemo.partName,
+        partNumber: engineeringTestBlockDemo.partNumber,
+        question: body.question,
+        knowledgeBase: engineeringTestBlockDemo.knowledgeBase,
+      });
+    } catch (cause) {
+      if (!(cause instanceof AiProviderError)) throw cause;
+      answer = preparedEngineeringTestBlockAnswer(body.question);
+    }
     return PitchMobilePreviewAnswerSchema.parse(answer);
   });
 }
