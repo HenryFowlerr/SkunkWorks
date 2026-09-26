@@ -202,7 +202,7 @@ describe('designer review desk', () => {
     const { client, requests } = apiHarness({ twoSteps: true });
     render(<JobReviewDesk jobId={ids.job} role="designer" client={client} />);
 
-    expect(await screen.findByRole('heading', { name: 'Current bend and step' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'Process sequence and phone guidance' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Move step 2, Bend B1, earlier' }));
 
     expect(screen.getByText(/Step 2 of 2/)).toBeVisible();
@@ -216,6 +216,25 @@ describe('designer review desk', () => {
     expect(save?.body).toMatchObject({
       expectedVersion: 1,
       content: { steps: [{ id: ids.review }, { id: ids.step }] },
+    });
+    expect(await screen.findByText('Draft version 2 saved by the service.')).toBeVisible();
+  });
+
+  it('lets an engineer edit and select a guide before a new draft review', async () => {
+    const { client, requests } = apiHarness();
+    render(<JobReviewDesk jobId={ids.job} role="designer" client={client} />);
+
+    const instruction = await screen.findByRole('textbox', { name: 'Proposed instruction' });
+    fireEvent.change(instruction, { target: { value: 'Check the marked orientation before forming this return.' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Show detailed guidance to the operator?' }), { target: { value: 'exclude' } });
+    expect(screen.getByRole('button', { name: 'Submit design review' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Save draft changes' }));
+
+    await waitFor(() => expect(requests.some((request) => request.method === 'PUT' && request.path === `/api/jobs/${ids.job}/draft`)).toBe(true));
+    const save = requests.find((request) => request.method === 'PUT' && request.path === `/api/jobs/${ids.job}/draft`);
+    expect(save?.body).toMatchObject({
+      expectedVersion: 1,
+      content: { steps: [{ instruction: 'Check the marked orientation before forming this return.', guidance: { decision: 'exclude' } }] },
     });
     expect(await screen.findByText('Draft version 2 saved by the service.')).toBeVisible();
   });
@@ -234,7 +253,7 @@ describe('designer review desk', () => {
     });
     expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Generate AI draft' })).not.toBeInTheDocument();
-    expect(screen.getByText(/Current bend and step/i)).toBeVisible();
+    expect(screen.getByText(/Process sequence and phone guidance/i)).toBeVisible();
   });
 
   it('sends a review request for the current role and shows the API authorization error unchanged', async () => {

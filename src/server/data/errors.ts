@@ -37,7 +37,7 @@ export function throwDatabaseError(
         ? "FORBIDDEN"
         : error.message?.includes("VALIDATION_FAILED")
           ? "VALIDATION_FAILED"
-        : error.message?.includes("REVIEW_REQUIRED")
+        : error.message?.includes("REVIEW_REQUIRED") || error.message?.includes("releases_guide_decisions_complete")
           ? "REVIEW_REQUIRED"
           : error.message?.includes("RELEASE_REVOKED")
             ? "RELEASE_REVOKED"

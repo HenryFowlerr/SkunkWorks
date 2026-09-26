@@ -556,6 +556,20 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
     setActionMessage('Step order change staged. Save draft changes before review or publication.');
   };
 
+  const stageStep = (nextStep: Step) => {
+    if (!draft || busyAction || (role !== 'admin' && role !== 'designer')) return;
+    setDraft({
+      ...draft,
+      content: {
+        ...draft.content,
+        steps: draft.content.steps.map((step) => step.id === nextStep.id ? nextStep : step),
+      },
+    });
+    setDraftDirty(true);
+    setOperationError(null);
+    setActionMessage('Guide changes staged. Save the draft, then review this version before publication.');
+  };
+
   const resolveFinding = async (finding: Finding) => {
     if (!draft || findingBusyId) return;
     const note = findingNotes[finding.id]?.trim() ?? '';
@@ -647,9 +661,23 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
               </Panel>
 
               {draft ? (
-                <Panel title="Current bend and step" eyebrow="Instruction identity">
+                <Panel title="Process sequence and phone guidance" eyebrow="Engineer decision">
                   <PanelBody>
                     {currentStep ? <div className={styles.currentStep}><p className={styles.eyebrow}>Step {currentStepIndex + 1} of {draft.content.steps.length} · {currentStep.id}</p><h3>{currentStep.instruction}</h3><p>Bend {currentStep.bendId}</p><EvidenceList evidence={currentStep.evidence} assets={sourceAssets} links={assetLinks} /></div> : <p className={styles.subtle}>This draft has no instruction steps yet.</p>}
+                    {currentStep ? <div className={styles.guideEditor}>
+                      <p className={styles.subtle}>The full sequence stays available for process review. Only operations you include here become detailed phone guides.</p>
+                      <p className={styles.subtle}><strong>AI suggestion:</strong> {currentStep.guidance?.suggestion ?? 'uncertain'}{currentStep.guidance?.rationale ? ` — ${currentStep.guidance.rationale}` : ''}. This is a suggestion, not an approval.</p>
+                      <Field id={`guide-instruction-${currentStep.id}`} label="Proposed instruction">
+                        <textarea id={`guide-instruction-${currentStep.id}`} className="field__control" rows={3} maxLength={1000} value={currentStep.instruction} disabled={busyAction !== null || (role !== 'admin' && role !== 'designer')} onChange={(event) => stageStep({ ...currentStep, instruction: event.target.value })} />
+                      </Field>
+                      <Field id={`guide-decision-${currentStep.id}`} label="Show detailed guidance to the operator?">
+                        <select id={`guide-decision-${currentStep.id}`} className="field__control" value={currentStep.guidance?.decision ?? 'pending'} disabled={busyAction !== null || (role !== 'admin' && role !== 'designer')} onChange={(event) => stageStep({ ...currentStep, guidance: { suggestion: currentStep.guidance?.suggestion ?? 'uncertain', rationale: currentStep.guidance?.rationale ?? '', decision: event.target.value as 'pending' | 'include' | 'exclude' } })}>
+                          <option value="pending">Decision needed</option>
+                          <option value="include">Include detailed guide</option>
+                          <option value="exclude">Routine work — omit detailed guide</option>
+                        </select>
+                      </Field>
+                    </div> : null}
                     <div className={styles.stepList} role="list" aria-label="Draft step order">
                       {draft.content.steps.map((step, index) => (
                         <div key={step.id} className={styles.stepRow} role="listitem">
