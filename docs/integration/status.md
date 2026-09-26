@@ -10,6 +10,7 @@ Updated 26 September 2026. This file is the concise handoff for any new SkunkWor
 - Dedicated Supabase organization: `SkunkWorks` (free). Project: `Chappe`, ID `lzomgexzwxipbgdkgzbd`, region `ap-southeast-2` (Sydney), project URL `https://lzomgexzwxipbgdkgzbd.supabase.co`. Do not use the unrelated SipSaver project. The local checkout has ignored `.env.local` with project URL, publishable key, and server secret key; never commit or echo secrets.
 - Initial schema and workspace/job RPC migrations were applied to Chappe on 26 September 2026. The repo contains matching files in `supabase/migrations/`. All public application tables have RLS enabled. Supabase's INFO notices for six server-only tables without policies are intentional; check after any schema change.
 - Auth, workshop versions, source upload preparation/completion, workspace creation, job list/create/get/update, and authorized member asset link routes are implemented. The workspace creation route provides the first admin membership after sign-up.
+- The operator view has direct operation selection, browser voice transcription with typed fallback, and a supplied-model-first phone entry when a verified GLB exists. Signed-in workspace members can read a published release and its flags through scoped routes. These routes do not grant QR visitor access or enable feedback writes.
 
 ## Verification on this slice
 
@@ -20,7 +21,7 @@ Updated 26 September 2026. This file is the concise handoff for any new SkunkWor
 ## What remains real work
 
 - AI generation route and persisted draft lifecycle; explicit selective guide decision and engineer edit/approval; stronger facility/process feasibility review with documented evidence and unknown states.
-- Invitation issuance/redemption, floor QR exchange, release publication/read/share, operator question/flag/response round trip, visitor asset access. The existing screens show endpoint-unavailable errors until those routes exist.
+- Invitation issuance/redemption, floor QR exchange, release publication/share, operator question/flag/response round trip, visitor asset access. Release and flag reads are currently member-only; feedback controls remain read-only until their write routes exist.
 - OpenAI key/model are not configured. No live AI generation has been verified. The final demo product and output illustration design are undecided.
 - Hosted deployment and public URL are not configured. Local tests do not prove the judge-accessible demo. The database password reset is with Henry in Supabase's open dialog; automatic review rejected the agent entering a new credential. The app uses API keys and does not need the direct Postgres password.
 

@@ -108,4 +108,22 @@ describe('release-bound factory floor', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Release unavailable' })).toBeVisible());
     expect(screen.getByText(/endpoint is not available in the current build/i)).toBeVisible();
   });
+
+  it('offers typed input when browser speech recognition is unavailable', async () => {
+    const { client } = apiHarness();
+    render(<OperatorFloor releaseId={ids.release} client={client} />);
+    expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
+    fireEvent.click(screen.getByRole('tab', { name: 'Ask' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Speak question' }));
+    expect(screen.getByText('Voice input is not available in this browser. Type your question instead.')).toBeVisible();
+    expect(screen.getByLabelText("Question for the designer's released information")).toBeEnabled();
+  });
+
+  it('keeps a direct operation selector available above the floor tabs', async () => {
+    const { client } = apiHarness();
+    render(<OperatorFloor releaseId={ids.release} client={client} />);
+    expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
+    expect(screen.getByLabelText('Jump to an operation')).toHaveValue('0');
+    expect(screen.getByRole('option', { name: /B1/ })).toBeVisible();
+  });
 });
