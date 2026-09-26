@@ -49,5 +49,5 @@ export function getPublishBlockers(draft: PublishDraftSnapshot, isDirty = false)
 }
 
 export function evidenceAssetId(evidence: EvidenceRef): string | null {
-  return evidence.kind === 'document' ? evidence.assetId : null;
+  return evidence.kind === 'document' || evidence.kind === 'authored_manifest' ? evidence.assetId : null;
 }

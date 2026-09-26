@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Asset } from "../../../src/contracts";
 import { prepareGenerationInput } from "../../../src/server/ai/generation-input";
+import { assertAuthoredManifestEvidence } from "../../../src/server/domain/manifest-evidence";
 import { ids, job, workshopSnapshot } from "../../contracts/fixtures";
 
 const manifestId = "10000000-0000-4000-8000-000000000001";
@@ -38,7 +39,36 @@ describe("generation input preparation", () => {
     expect(result.aiInput.sources.some((source) => source.kind === "document")).toBe(true);
     expect(result.aiInput.stepTargets).toHaveLength(5);
     expect(result.aiInput.mappedBends.map((bend) => bend.bendId)).toEqual(["B1", "B3", "B4", "B5", "B2"]);
+    expect(result.aiInput.mappedBends[0].foldRotationDeg.evidence).toEqual([
+      { kind: "authored_manifest", assetId: manifestId, bendId: "B1" },
+    ]);
     expect(result.panelModel.reviewed).toBe(false);
+  });
+
+  it("checks a cited rotation against the exact hash-verified authored mapping", async () => {
+    const input = await fixture();
+    const prepared = await prepareGenerationInput(input);
+    const first = prepared.aiInput.mappedBends[0];
+    const bends = [{
+      ...first,
+      finishedAngle: { value: null, evidence: [], evidenceState: "not_found" as const, originalText: null },
+      insideRadiusMm: { value: null, evidence: [], evidenceState: "not_found" as const, originalText: null },
+      directionText: { value: null, evidence: [], evidenceState: "not_found" as const, originalText: null },
+    }];
+    const check = (nextBends: typeof bends) => assertAuthoredManifestEvidence({
+      bends: nextBends, assets: input.assets, sourceAssetIds: input.job.sourceAssetIds, readSource: input.readSource,
+      panelModelOrigin: "authored_manifest", publication: true,
+    });
+    await expect(check(bends)).resolves.toBeUndefined();
+    await expect(check([{ ...bends[0], foldRotationDeg: { ...bends[0].foldRotationDeg, value: 12 } }]))
+      .rejects.toMatchObject({ code: "MAPPING_REQUIRED" });
+    await expect(check([{ ...bends[0], hingeId: "other-hinge" }]))
+      .rejects.toMatchObject({ code: "MAPPING_REQUIRED" });
+    await expect(check([{ ...bends[0], foldRotationDeg: { ...bends[0].foldRotationDeg, evidence: [] } }]))
+      .rejects.toMatchObject({ code: "MAPPING_REQUIRED" });
+    await expect(assertAuthoredManifestEvidence({
+      bends, assets: input.assets, sourceAssetIds: [ids.asset], readSource: input.readSource,
+    })).rejects.toMatchObject({ code: "MAPPING_REQUIRED" });
   });
 
   it("rejects bytes that changed after upload verification", async () => {
