@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { IdSchema } from "./domain";
 
 /**
  * Browser-safe contract for the non-persistent pitch analysis endpoints.
@@ -105,6 +106,30 @@ export const PitchIssueInputSchema = z.object({
   text: z.string().trim().min(4).max(1_000),
 }).strict();
 export type PitchIssueInput = z.infer<typeof PitchIssueInputSchema>;
+
+/** Browser-safe view of the fixed Engineering Test Block pitch package. */
+export const PitchDemoPackageSchema = z.object({
+  id: z.literal("engineering-test-block"),
+  partName: text.max(180),
+  partNumber: text.max(180),
+  inputFiles: z.array(z.object({
+    name: text.max(240),
+    kind: text.max(120),
+    status: z.literal("Prepared"),
+  }).strict()).length(2),
+  capability: PitchCapabilityCheckSchema,
+  knowledgeBase: PitchKnowledgeBaseSchema,
+}).strict();
+export type PitchDemoPackage = z.infer<typeof PitchDemoPackageSchema>;
+
+/** A Luna-generated floor insight, retained only for the prepared demo session. */
+export const PitchDemoInsightSchema = z.object({
+  id: IdSchema,
+  issue: PitchIssueInputSchema,
+  triage: PitchIssueTriageSchema,
+  createdAt: z.iso.datetime(),
+}).strict();
+export type PitchDemoInsight = z.infer<typeof PitchDemoInsightSchema>;
 
 /**
  * A designer may ask a question against the exact server-held pitch draft to

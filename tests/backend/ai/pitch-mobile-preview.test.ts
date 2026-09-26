@@ -62,6 +62,7 @@ describe("draft mobile knowledge-base preview", () => {
     expect(request.model).toBe("configured-luna-model");
     expect(request.store).toBe(false);
     expect(request.max_output_tokens).toBe(750);
+    expect(request.reasoning).toEqual({ effort: "none" });
     expect(request.instructions).toBe(PITCH_MOBILE_PREVIEW_INSTRUCTIONS);
     expect(request.input[0].content).toHaveLength(1);
     const prompt = JSON.parse(request.input[0].content[0].text);

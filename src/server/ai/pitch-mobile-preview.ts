@@ -91,6 +91,10 @@ export class OpenAiPitchMobilePreviewAdapter implements PitchMobilePreviewAdapte
           },
         },
         max_output_tokens: input.maxOutputTokens,
+        // Phone answers are short, source-bound lookups. Keeping Luna's
+        // reasoning budget at none makes this responsive and predictable for
+        // the pitch without changing Astra's deeper initial analysis.
+        reasoning: { effort: "none" },
         store: false,
       });
     } catch (error) {

@@ -100,11 +100,11 @@ This is not production authorization. "clear_for_engineer_review" means the supp
 
 export const PITCH_KNOWLEDGE_BASE_INSTRUCTIONS = `You prepare a concise draft part knowledge base for engineer review and later phone presentation. ${commonInstructions}
 
-Do not approve, publish, certify or release anything. Use short, plain language. Create only source-backed operator step candidates and two to five focused attention points when evidence supports them; return fewer than two only when the packet does not support two, and make that gap explicit in openQuestions. Each step, attention point, title, part summary, source summary and open question needs exact citations. Keep openQuestionCitations in the same order as openQuestions. Do not teach generic safety practice as if it were part-specific guidance. Do not infer a tool, material, tolerance, sequence, direction, clearance or exact physical setup. Put every unresolved item in openQuestions. recommendedPhoneStartStepId must be null or exactly match one returned operator step ID. The result is a draft; an engineer must edit and explicitly approve content before a QR phone guide may present it as approved.`;
+Do not approve, publish, certify or release anything. Use short, plain language suitable for a phone. Default to no more than three compact operator step candidates, three focused attention points, and three open questions; return fewer when the packet does not support them. When a source establishes a drawing feature or measurement but does not establish a machining sequence, it is useful to create an "attention" step that tells the worker to compare that specific feature with the drawing and pause for engineering if it differs; do not invent a setup or tool action. Each step, attention point, title, part summary, source summary and open question needs exact citations. Keep openQuestionCitations in the same order as openQuestions. Do not teach generic safety practice as if it were part-specific guidance. Do not infer a tool, material, tolerance, sequence, direction, clearance or exact physical setup. Put every unresolved item in openQuestions. recommendedPhoneStartStepId must be null or exactly match one returned operator step ID. The result is a draft; an engineer must edit and explicitly approve content before a QR phone guide may present it as approved.`;
 
 export const PITCH_ISSUE_TRIAGE_INSTRUCTIONS = `You prepare a concise draft triage report for an engineer after a floor issue. ${commonInstructions}
 
-The operator report is an observation, not proof of a technical cause. Never resolve the issue, clear a hold, approve a correction or invent a fix. Every generated pitch triage must use severity "hold"; only a human engineer may later approve any continuation. Separate what is known from what is unknown. knownEvidenceCitations must match knownEvidence by index and cite every known technical fact; put the operator observation in summary instead of presenting it as source-backed evidence. Do not turn the operator's observation into a design fact. SuggestedReply must be short, tell the operator what to do while waiting, and must be explicitly described by the application as a draft for engineer approval.`;
+The operator report is an observation, not proof of a technical cause. Never resolve the issue, clear a hold, approve a correction or invent a fix. Every generated pitch triage must use severity "hold"; only a human engineer may later approve any continuation. Separate what is known from what is unknown. Use no more than two short known-evidence points and three short unknowns. knownEvidenceCitations must match knownEvidence by index and cite every known technical fact; put the operator observation in summary instead of presenting it as source-backed evidence. Do not turn the operator's observation into a design fact. SuggestedReply must be one short sentence telling the operator what to do while waiting, and must be explicitly described by the application as a draft for engineer approval.`;
 
 function promptSources(sources: PitchSource[]) {
   return sources.map((source) => ({ sourceKey: source.sourceKey, label: source.label, text: source.text }));
@@ -134,8 +134,10 @@ export function capabilityPrompt(input: PitchCapabilityInput): string {
       "Return a direct error code and clear explanation when a cited conflict blocks review.",
       "Use needs_supplier_input when a supplier profile or setup fact is missing, not blocked.",
       "For clear_for_engineer_review, at least one supported check must cite both partSources and supplier.capabilityEvidenceSourceKeys.",
+      "If returning clear_for_engineer_review, include only directly supported comparison rows in checks. Put every remaining setup, tooling, fixture, material, tolerance, or engineering uncertainty in requiredEngineerDecisions instead of adding an unknown or unreadable check.",
       "sourceKeysRead must contain only supplied sourceKey values.",
       "Citations must use only supplied sourceKey values and exact excerpts.",
+      "For citations, copy excerpts from the supplied partSources or supplier.evidenceSources text. The attached PDF is only visual context for choosing checks; do not quote its glyphs, add a diameter symbol, unit, or wording unless those exact characters appear in a source text value.",
       "An optional STL-derived raster is visual-only orientation context, never a citation source or technical evidence. Do not derive numeric dimensions, scale, tolerance, material, process, capability, clearance, safety condition, or feasibility from it.",
     ],
   });
@@ -152,6 +154,7 @@ export function knowledgeBasePrompt(input: PitchKnowledgeBaseInput): string {
     rules: [
       "approvalState must be draft.",
       "Include only meaningful source-backed operator step candidates.",
+      "Default to no more than three compact operator steps, three attention points, and three open questions.",
       "Set guidanceKind to unknown rather than inventing a detailed step.",
       "Every source-backed technical claim needs a cited excerpt.",
       "titleCitations, partSummaryCitations and sourceSummaryCitations must each contain exact supporting excerpts.",
@@ -175,6 +178,7 @@ export function issueTriagePrompt(input: PitchIssueTriageInput): string {
       "Do not resolve the issue or state that a hold is cleared.",
       "severity must be hold; only a human engineer can later approve continuation.",
       "Separate knownEvidence, unknowns and the decision the engineer needs to make.",
+      "Use no more than two short knownEvidence points and three short unknowns; keep suggestedReply to one sentence.",
       "knownEvidenceCitations must match knownEvidence by index and cite every known technical fact; operator observations belong in summary.",
       "Citations must use only supplied sourceKey values and exact excerpts.",
     ],
@@ -368,13 +372,18 @@ function isSubstantiveCitationExcerpt(excerpt: string): boolean {
   if (hasMeaningfulWords) return true;
 
   // PDF drawing extraction often separates an actual dimension from its
-  // surrounding callout. Permit only a bounded engineering number here so
-  // values such as "60.0" and "Ø10.0" remain citable, while "mm", ".", and
-  // a one-character fragment are still rejected.
-  const boundedDrawingCallout = /^(?:[Ø⌀]\s*)?[+-]?\d+(?:[.,]\d+)?(?:\s*\(\s*(?:TYP|REF|MAX|MIN)\s*\))?$/iu;
-  return normalized.length >= 2 && boundedDrawingCallout.test(normalized);
+  // surrounding callout, and sometimes returns a short adjacent sequence of
+  // dimensions. Permit only one to three bounded engineering callouts here so
+  // values such as "60.0", "Ø10.0", and "60.0 60.0" remain citable, while
+  // "mm", ".", and arbitrary numeric prose remain rejected.
+  const oneBoundedDrawingCallout = "(?:[Ø⌀]\\s*)?[+-]?\\d+(?:[.,]\\d+)?(?:\\s*\\(\\s*(?:TYP|REF|MAX|MIN)\\s*\\))?";
+  const boundedDrawingCallouts = new RegExp(`^${oneBoundedDrawingCallout}(?:\\s+${oneBoundedDrawingCallout}){0,2}$`, "iu");
+  return normalized.length >= 2 && boundedDrawingCallouts.test(normalized);
 }
 
 function normalise(value: string): string {
-  return value.normalize("NFKC").replace(/\s+/g, " ").trim();
+  // PDF text extraction preserves evidence but may change its casing. Treat
+  // case and whitespace as presentation details while keeping every number,
+  // symbol, and word in the cited excerpt grounded in the source.
+  return value.normalize("NFKC").replace(/\s+/g, " ").trim().toLocaleLowerCase();
 }

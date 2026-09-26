@@ -1,0 +1,209 @@
+{
+  "capability": {
+    "approvalState": "draft",
+    "decision": "clear_for_engineer_review",
+    "code": "PITCH_CHECK_CLEAR",
+    "title": "Engineering Test Block — limited dimensions clear for review",
+    "explanation": "The cited 60.0 callouts are below the confirmed 300 mm envelope. This does not verify material, stock, fixturing, drilling depth, access, tolerance capability, collision clearance or production approval.",
+    "checks": [
+      {
+        "id": "section-envelope",
+        "label": "Section dimensions versus machining envelope",
+        "status": "supported",
+        "reason": "The two cited 60.0 section callouts are below the confirmed 300 mm envelope.",
+        "citations": [
+          {
+            "sourceKey": "drawing:engineering-test-block:1",
+            "excerpt": "60.0\n60.0"
+          },
+          {
+            "sourceKey": "drawing:engineering-test-block:1",
+            "excerpt": "ALL DIMENSIONS IN MILLIMETERS."
+          },
+          {
+            "sourceKey": "supplier:ridgeway:cnc-capability",
+            "excerpt": "Confirmed machining envelope: 300 x 300 x 300 mm."
+          }
+        ]
+      },
+      {
+        "id": "typical-drill-callout",
+        "label": "Typical drill callout versus recorded capability",
+        "status": "supported",
+        "reason": "The drawing has a cited 10.0(TYP) callout and the supplier record includes a Ø10 mm drilling capability; setup details still require engineer review.",
+        "citations": [
+          {
+            "sourceKey": "drawing:engineering-test-block:1",
+            "excerpt": "10.0(TYP)"
+          },
+          {
+            "sourceKey": "drawing:engineering-test-block:1",
+            "excerpt": "ALL DIMENSIONS IN MILLIMETERS."
+          },
+          {
+            "sourceKey": "supplier:ridgeway:cnc-capability",
+            "excerpt": "Drilling capability: Ø10 mm."
+          }
+        ]
+      }
+    ],
+    "requiredEngineerDecisions": [
+      "Confirm material and stock before setup.",
+      "Confirm drilling depth, intersections, tool reach and fixturing before machining.",
+      "Confirm applicable tolerances and inspection method before release."
+    ],
+    "sourceKeysRead": [
+      "drawing:engineering-test-block:1",
+      "supplier:ridgeway:profile",
+      "supplier:ridgeway:cnc-capability"
+    ]
+  },
+  "knowledgeBase": {
+    "approvalState": "draft",
+    "title": "Engineering test block — draft review",
+    "titleCitations": [
+      {
+        "sourceKey": "drawing:engineering-test-block:1",
+        "excerpt": "Engineering test block"
+      }
+    ],
+    "partSummary": "SECTION D-D shows a 60.0 × 60.0 mm outer section and an internal passage. The plan view includes a circular feature marked Ø10.0(TYP).",
+    "partSummaryCitations": [
+      {
+        "sourceKey": "drawing:engineering-test-block:1",
+        "excerpt": "SECTION D-D shows a 60.0 mm wide by 60.0 mm high outer section."
+      },
+      {
+        "sourceKey": "drawing:engineering-test-block:1",
+        "excerpt": "An internal horizontal passage enters from the left face, has a 15.0 mm vertical dimension, and terminates at the vertical centreline 30.0 mm from the left edge."
+      },
+      {
+        "sourceKey": "drawing:engineering-test-block:1",
+        "excerpt": "The plan view shows a circular feature on the vertical centreline with the callout Ø10.0(TYP)."
+      }
+    ],
+    "sourceSummary": "Sources include drawing text with a visual-review description and a confirmed Ridgeway supplier profile. Recorded capabilities are a 300 × 300 × 300 mm envelope and Ø10 mm drilling. These are limited capability facts, not production approval. This draft requires engineer editing and explicit approval before approved phone use.",
+    "sourceSummaryCitations": [
+      {
+        "sourceKey": "drawing:engineering-test-block:1",
+        "excerpt": "Drawing visual review: SECTION D-D shows a 60.0 mm wide by 60.0 mm high outer section."
+      },
+      {
+        "sourceKey": "supplier:ridgeway:profile",
+        "excerpt": "Supplier profile: Ridgeway Precision Machining. Supplier profile confirmation: confirmed. Selected machine: Ridgeway CNC machining centre. Recorded process: CNC milling and drilling."
+      },
+      {
+        "sourceKey": "supplier:ridgeway:cnc-capability",
+        "excerpt": "Confirmed machining envelope: 300 x 300 x 300 mm. Drilling capability: Ø10 mm."
+      }
+    ],
+    "operatorSteps": [
+      {
+        "id": "compare-section",
+        "title": "Compare the outer section",
+        "instruction": "Compare the outer section with SECTION D-D: 60.0 mm wide and 60.0 mm high. Pause for engineering if it differs.",
+        "guidanceKind": "attention",
+        "citations": [
+          {
+            "sourceKey": "drawing:engineering-test-block:1",
+            "excerpt": "SECTION D-D shows a 60.0 mm wide by 60.0 mm high outer section."
+          }
+        ]
+      },
+      {
+        "id": "compare-passage",
+        "title": "Compare the internal passage",
+        "instruction": "Compare with SECTION D-D: the passage enters from the drawing's left face, has a 15.0 mm vertical dimension, and ends at the vertical centreline, 30.0 mm from the left edge. Pause for engineering if it differs. This is not a tool-entry instruction.",
+        "guidanceKind": "attention",
+        "citations": [
+          {
+            "sourceKey": "drawing:engineering-test-block:1",
+            "excerpt": "An internal horizontal passage enters from the left face, has a 15.0 mm vertical dimension, and terminates at the vertical centreline 30.0 mm from the left edge."
+          }
+        ]
+      },
+      {
+        "id": "compare-circular-feature",
+        "title": "Compare the circular feature",
+        "instruction": "Compare the plan-view feature with the drawing: on the vertical centreline, marked Ø10.0(TYP). Pause for engineering if it differs. The callout alone does not establish drilling depth or sequence.",
+        "guidanceKind": "attention",
+        "citations": [
+          {
+            "sourceKey": "drawing:engineering-test-block:1",
+            "excerpt": "The plan view shows a circular feature on the vertical centreline with the callout Ø10.0(TYP)."
+          }
+        ]
+      }
+    ],
+    "attentionPoints": [
+      {
+        "title": "Use the drawing's tolerance requirements",
+        "instruction": "Have engineering confirm tolerance application and inspection before these comparisons become acceptance checks.",
+        "reason": "The drawing gives default decimal and angular tolerances and references ISO1101-2004.",
+        "citations": [
+          {
+            "sourceKey": "drawing:engineering-test-block:1",
+            "excerpt": "Tolerance table (unless otherwise specified): .X ± .1, .XX ± .05, .XXX ± .010, ANG. ± 1°."
+          },
+          {
+            "sourceKey": "drawing:engineering-test-block:1",
+            "excerpt": "GD&T AS PER ISO1101-2004."
+          }
+        ]
+      },
+      {
+        "title": "Keep the capability comparison limited",
+        "instruction": "Do not treat the envelope and drilling records as proof that the complete part can be machined.",
+        "reason": "The two 60.0 mm section dimensions are below 300 mm, and Ø10 mm drilling is recorded. That comparison does not establish a complete setup or manufacturing feasibility.",
+        "citations": [
+          {
+            "sourceKey": "drawing:engineering-test-block:1",
+            "excerpt": "SECTION D-D shows a 60.0 mm wide by 60.0 mm high outer section."
+          },
+          {
+            "sourceKey": "supplier:ridgeway:cnc-capability",
+            "excerpt": "Confirmed machining envelope: 300 x 300 x 300 mm. Drilling capability: Ø10 mm."
+          }
+        ]
+      }
+    ],
+    "openQuestions": [
+      "What material, stock dimensions and finish are required? MATERIAL and FINISH are blank; stock is not specified in the supplied text.",
+      "Can engineering confirm the complete part dimensions and machining plan, including passage and circular-feature depths, intersections, access, tool reach, fixturing, clearance and sequence? The supplied section description and capability record do not establish these.",
+      "Which tolerances apply to each feature, can the supplier achieve them, and what inspection method should be used? The drawing lists default tolerances, but capability and inspection evidence are absent."
+    ],
+    "openQuestionCitations": [
+      [
+        {
+          "sourceKey": "drawing:engineering-test-block:1",
+          "excerpt": "The title-block MATERIAL and FINISH fields are blank."
+        }
+      ],
+      [
+        {
+          "sourceKey": "drawing:engineering-test-block:1",
+          "excerpt": "An internal horizontal passage enters from the left face, has a 15.0 mm vertical dimension, and terminates at the vertical centreline 30.0 mm from the left edge."
+        },
+        {
+          "sourceKey": "drawing:engineering-test-block:1",
+          "excerpt": "The plan view shows a circular feature on the vertical centreline with the callout Ø10.0(TYP)."
+        },
+        {
+          "sourceKey": "supplier:ridgeway:cnc-capability",
+          "excerpt": "Confirmed machining envelope: 300 x 300 x 300 mm. Drilling capability: Ø10 mm."
+        }
+      ],
+      [
+        {
+          "sourceKey": "drawing:engineering-test-block:1",
+          "excerpt": "Tolerance table (unless otherwise specified): .X ± .1, .XX ± .05, .XXX ± .010, ANG. ± 1°."
+        },
+        {
+          "sourceKey": "drawing:engineering-test-block:1",
+          "excerpt": "GD&T AS PER ISO1101-2004."
+        }
+      ]
+    ],
+    "recommendedPhoneStartStepId": "compare-passage"
+  }
+}

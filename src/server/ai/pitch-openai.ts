@@ -113,6 +113,10 @@ export class OpenAiPitchAdapter implements PitchAiAdapter {
       schema: PitchIssueTriageJsonSchema,
       outputSchema: PitchIssueTriageSchema,
       maxOutputTokens: pitchOutputTokenLimit("triage", this.environment),
+      // A floor report is deliberately small and structured. Luna does not
+      // need a long private reasoning budget to turn a single observation
+      // into a hold-preserving handoff for an engineer.
+      reasoningEffort: "none",
     });
     try {
       assertPitchIssueTriageForInput(output, input);
@@ -144,6 +148,7 @@ export class OpenAiPitchAdapter implements PitchAiAdapter {
     schema: object;
     outputSchema: z.ZodType<T>;
     maxOutputTokens: number;
+    reasoningEffort?: "none" | "low";
   }): Promise<T> {
     let response: OpenAI.Responses.Response;
     try {
@@ -171,6 +176,7 @@ export class OpenAiPitchAdapter implements PitchAiAdapter {
         }],
         text: { format: { type: "json_schema", name: input.formatName, strict: true, schema: input.schema as never } },
         max_output_tokens: input.maxOutputTokens,
+        ...(input.reasoningEffort ? { reasoning: { effort: input.reasoningEffort } } : {}),
         store: false,
       });
     } catch (error) {

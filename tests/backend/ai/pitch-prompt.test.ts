@@ -65,6 +65,7 @@ describe("pitch prompt contracts", () => {
     expect(prompt.supplier.capabilityEvidenceSourceKeys).toEqual(supplier.capabilitySourceKeys);
     expect(prompt.rules.join(" ")).toMatch(/error code/i);
     expect(prompt.rules.join(" ")).toMatch(/both partSources and supplier\.capabilityEvidenceSourceKeys/i);
+    expect(prompt.rules.join(" ")).toMatch(/requiredEngineerDecisions instead of adding an unknown/i);
   });
 
   it("uses strict structured output and accepts only exact source citations", async () => {
@@ -220,6 +221,30 @@ describe("pitch prompt contracts", () => {
     expect(() => assertPitchCitations([{ sourceKey: "drawing:dimension", excerpt: "mm" }], drawing)).toThrow(/unsupported evidence/i);
   });
 
+  it("allows a short exact sequence of adjacent numeric drawing callouts", () => {
+    const drawing = [{ sourceKey: "drawing:section", label: "Test block section", text: "60.0\n60.0\n10.0(TYP)" }];
+    expect(() => assertPitchCitations([
+      { sourceKey: "drawing:section", excerpt: "60.0\n60.0" },
+    ], drawing)).not.toThrow();
+    expect(() => assertPitchCitations([
+      { sourceKey: "drawing:section", excerpt: "60.0 60.0 10.0 15.0" },
+    ], drawing)).toThrow(/unsupported evidence/i);
+  });
+
+  it("accepts a source citation when PDF extraction changes only presentation casing", () => {
+    const drawing = [{
+      sourceKey: "drawing:notes",
+      label: "Test block drawing notes",
+      text: "ALL DIMENSIONS IN MILLIMETERS.",
+    }];
+    expect(() => assertPitchCitations([
+      { sourceKey: "drawing:notes", excerpt: "All dimensions in millimeters." },
+    ], drawing)).not.toThrow();
+    expect(() => assertPitchCitations([
+      { sourceKey: "drawing:notes", excerpt: "All dimensions in inches." },
+    ], drawing)).toThrow(/unsupported evidence/i);
+  });
+
   it("prepares a draft knowledge base and issue triage without letting either publish content", async () => {
     const knowledgeOutput: PitchKnowledgeBase = {
       approvalState: "draft", title: "Prepared Sensor Mount knowledge base",
@@ -238,6 +263,8 @@ describe("pitch prompt contracts", () => {
     const knowledge = adapter(knowledgeOutput);
     await expect(knowledge.ai.createKnowledgeBase(knowledgeInput)).resolves.toMatchObject({ approvalState: "draft", recommendedPhoneStartStepId: "orient" });
     expect(knowledge.create.mock.calls[0][0].instructions).toMatch(/must edit and explicitly approve/i);
+    expect(knowledge.create.mock.calls[0][0].instructions).toMatch(/no more than three compact operator step candidates/i);
+    expect(knowledge.create.mock.calls[0][0].instructions).toMatch(/useful to create an "attention" step/i);
     expect(knowledge.create.mock.calls[0][0].model).toBe("configured-astra-model");
     expect(knowledge.create.mock.calls[0][0].max_output_tokens).toBe(1_800);
     expect(knowledge.create.mock.calls[0][0].input[0].content).toHaveLength(1);
@@ -282,10 +309,12 @@ describe("pitch prompt contracts", () => {
     expect(triage.create.mock.calls[0][0].instructions).toMatch(/Never resolve the issue/i);
     expect(triage.create.mock.calls[0][0].model).toBe("configured-luna-model");
     expect(triage.create.mock.calls[0][0].max_output_tokens).toBe(900);
+    expect(triage.create.mock.calls[0][0].reasoning).toEqual({ effort: "none" });
     expect(triage.create.mock.calls[0][0].input[0].content).toHaveLength(1);
     expect(JSON.parse(triage.create.mock.calls[0][0].input[0].content[0].text).promptVersion).toBe(PITCH_PROMPT_VERSIONS.issueTriage);
     expect(triage.create.mock.calls[0][0].text.format.schema.properties.severity.enum).toEqual(["hold"]);
     expect(JSON.parse(issueTriagePrompt(triageInput)).rules.join(" ")).toMatch(/severity must be hold/i);
+    expect(JSON.parse(issueTriagePrompt(triageInput)).rules.join(" ")).toMatch(/no more than two short knownEvidence/i);
     expect(JSON.parse(issueTriagePrompt(triageInput)).rules.join(" ")).not.toMatch(/review or information/i);
 
     const uncitedKnownEvidence = structuredClone(triageOutput);
