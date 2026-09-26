@@ -58,7 +58,6 @@ body{letter-spacing:-.01em}
 .object-copy p{color:#ced7e2;font-size:clamp(17px,1.7vw,21px);line-height:1.47;max-width:560px;margin:0 0 20px}
 .object-copy .text-link{color:#9dcaff}
 .object-scene{height:600px;position:relative;display:grid;place-items:center;perspective:1000px;isolation:isolate}
-.object-aura{position:absolute;width:70%;aspect-ratio:1;background:radial-gradient(circle,rgba(57,112,174,.22),transparent 66%);filter:blur(10px);z-index:-1}
 .object-part{display:block;width:min(100%,760px);height:auto;overflow:visible;filter:drop-shadow(10px 45px 25px rgba(0,0,0,.4));transform:rotateX(11deg) rotateY(var(--object-turn,0deg)) translateY(-10px);transition:transform .18s linear;will-change:transform}
 .object-label{position:absolute;right:4%;top:22%;display:flex;gap:8px;align-items:center;padding:10px 13px;border:1px solid rgba(255,255,255,.35);border-radius:var(--ch-radius-pill);background:rgba(22,34,50,.85);font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
 .object-label strong{font-size:13px}
