@@ -77,7 +77,7 @@ Use opacity and small position changes only to clarify a state transition. A sem
 
 - Show **what the person is deciding** first. Engineer: which facility, where the check conflicts or lacks evidence, what will be released. Operator: which job/release/operation, next approved step, ask/flag.
 - Every facility check is **documented support**, **documented conflict**, or **unknown**. Unknown must never be made green. Geometry inference and AI proposals remain labelled as such.
-- An AI suggestion is visually distinct from engineer-approved, published content. Publication is an explicit action on an immutable release version.
+- An AI suggestion is visually distinct from engineer-approved, published content. Approval is explicit; the stable part QR opens current approved knowledge while internal approval records preserve history.
 - A floor question carries job, release, operation, and optional selected model area. A reply shows its approval and version context.
 - Show source and recency close to consequential claims. Link to drawing/profile evidence where possible. No badge that merely says “verified” when the verification scope is narrower.
 - Reserve petrol for navigation and action. A petrol badge must not mean “safe to manufacture.”

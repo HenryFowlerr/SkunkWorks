@@ -12,7 +12,7 @@ These examples make the [design system](README.md) actionable. They define infor
 4. A high-trust section: supported / conflict / unknown and proposal / approved / released, with honest explanation of scope.
 5. Final invitation to see the workflow. No wall of feature cards or fabricated customer metrics.
 
-For the current Pages demo, place the permanent phone QR immediately after the part illustration. Follow it with a separate full-width evidence section: a headline and short explanation above three status columns. Keep the navigation solid and sticky while scrolling, with the engineer and manufacturer routes in that order. Avoid small all-caps section labels when the adjacent headline already names the section; keep source and uncertainty language beside the actual evidence.
+For the Vercel-hosted landing, place the stable part QR immediately after the part illustration only once its authorised destination is available. Follow it with a separate full-width evidence section: a headline and short explanation above three status columns. Keep the navigation solid and sticky while scrolling, with the engineer and manufacturer routes in that order. Avoid small all-caps section labels when the adjacent headline already names the section; keep source and uncertainty language beside the actual evidence.
 
 **Placement:** desktop copy width around 650px; the part visual can span most of the viewport width. On phone, keep copy before the visual and keep B2 legible. Reserve 16–24px side gutters. Headline should wrap naturally without orphaned one-word lines. Prefer clean image edges; no boxed copy floating over the part. A dark chapter may be used later, once, to signal the released handoff.
 
@@ -22,7 +22,7 @@ For the current Pages demo, place the permanent phone QR immediately after the p
 
 Use a descriptive page title, one-line status summary, a top-level “New job” action, and a list/table. Priority columns: job/part, chosen facility, handoff state, latest release, updated time. Search and status filter sit immediately above the list. Select a job to reach its own view; do not make every cell a separate card. Empty state tells the engineer how to create the first job. Avoid a decorative analytics dashboard before the work list.
 
-For the Pages pitch, the jobs overview places the project list to the left of a large file drop area. Selecting Sensor Mount opens a separate prepared job view. A new local draft can record file names and a manufacturer choice, with its limited scope visible. Keep manufacturer navigation out of the engineer sidebar; the top bar switches between the two work areas. The sidebar should end at its links and scroll away instead of stretching into an empty coloured column.
+The live engineering jobs overview places the project list beside the file drop area. Keep manufacturer navigation out of the engineer sidebar; the top bar switches between the two work areas. The sidebar should end at its links and scroll away instead of stretching into an empty coloured column.
 
 A job header persistently states part/job name, facility, release version or draft, and current decision. Supporting files and history follow. If the facility has not been chosen, the next action is explicit. Version numbers use tabular numerals.
 
@@ -42,7 +42,7 @@ This is deliberately more useful than “Capability check passed.”
 
 The main list is operations, grouped by part area if needed. Each row states whether extra guidance is included, proposal/review state, and the latest change. Selecting an operation opens a detail inspector containing: model/drawing context, proposed concise step, cited source/uncertainty, editable approved wording, include/exclude control, and reviewer identity/time. A routine operation can be excluded from detailed floor guidance while remaining selectable on the model.
 
-The publish path is a deliberate review moment: show what the floor will receive, which operations have approved text, unresolved conflicts/unknowns, destination facility, and release version. The final button says “Publish release” rather than “Generate.” A release is immutable; revisions create a new version. Show the older version distinctly when a QR refers to it.
+The publish path is a deliberate review moment: show what the floor will receive, which operations have approved text, unresolved conflicts/unknowns, destination facility, and release version. The final button says “Publish release” rather than “Generate.” The part QR stays stable and opens current approved knowledge. Internal approval history may remain visible as secondary context; formal CAD revision management is outside the demo.
 
 ## 5. Manufacturer desktop
 
@@ -50,9 +50,9 @@ Start with facility name and what engineering sent. Equipment profile appears as
 
 ## 6. Operator phone
 
-After scan, show **job + release identity** and a short operation chooser. The selected operation screen has a clear heading, model or image region with labelled target, and concise approved steps. Long steps are split into a meaningful sequence, not hidden in accordions. Keep controls reachable with gloves in mind, but test actual device and environment before asserting usability. Include a text operation list beside or below a model hotspot interface. If model content fails, the approved text and operation context remain available.
+After scan, show **part identity and current approved guidance** with a short operation chooser. The selected operation screen has a clear heading, model or image region with labelled target, concise approved steps, and an obvious path to ask or flag an unresolved issue. Long steps are split into a meaningful sequence, not hidden in accordions. Keep controls reachable with gloves in mind, but test the actual device and environment before asserting usability. Include a text operation list beside or below a model hotspot interface. If model content fails, the approved text, drawing link, and operation context remain available.
 
-**Current QR model/chat exception.** The supplied Engineering test block is a direct, product-specific floor implementation rather than a general operation browser. Its initial QR page is one `100dvh` workspace with no document scroll: an orbitable, pinch-zoomable 3D visual reference in the upper region and a release-scoped question composer docked at the bottom. Keep product/revision identity as a quiet overlay, not a dashboard header; do not show a chooser, guide card, persistent flag control, or unrelated navigation before the operator asks. Long assistant answers may scroll only inside the chat history. A contextual report/hold action may appear after an answer, but remains a separate deliberate flow. If graphics fail, offer the released drawing; the drawing remains the controlled source and the 3D model never establishes dimensions, datum interpretation, tooling, setup, or safety.
+**Current Engineering Test Block phone flow.** The default QR guide puts an authorised GLB/STL visual reference above the selected released step and a compact release-scoped **Quick assist** composer below it. Keep part and revision identity quiet, avoid a dashboard header, and do not put a persistent red report control ahead of the question flow. An assist answer may offer a contextual flag/report action prefilled with the question; reporting remains a separate deliberate flow. Long answers may scroll inside chat history. The visual model is a navigation aid only: it never establishes dimensions, datum interpretation, tooling, setup, safety, or manufacturing feasibility. If graphics fail, offer the released drawing as the controlled source.
 
 Example phone information order:
 
@@ -117,3 +117,7 @@ New CSS should consume `--ch-*` variables from [`design-tokens.css`](../../src/a
 ```
 
 Do not add inline hex values to new modules. Prefer an existing shared component; if a pattern must be repeated, add a shared component and document its states. Verify on an actual screenshot at desktop and phone widths; a passing build does not prove the hierarchy is right.
+
+## Separate engineering and manufacturing work areas
+
+Use a shared compact top navigation to switch work areas, then task-specific side navigation. Engineering opens the parts/jobs list and review desk. Manufacturing opens parts/handoffs, with equipment editing on a separate route. A handoff groups approved part requirements, selected facility evidence and contextual questions; unavailable historical evidence must not be replaced with a newer profile. Use flat rows, a definition list for specifications, and a contained horizontally scrollable operation table on narrow phones. Switching workspace returns to that work area's list rather than preserving the previous part URL.

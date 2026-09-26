@@ -10,6 +10,13 @@ test("entry page explains the reviewed handoff and links to account entry", asyn
   await expect(page.getByRole("heading", { name: "Guide the difficult work" })).toBeVisible();
 });
 
+test("legacy demo links stay inside the server-hosted application", async ({ page }) => {
+  await page.goto("/demo");
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { name: "Make complex work clear before it reaches the floor." })).toBeVisible();
+});
+
 test("entry page fits its desktop and phone viewport", async ({ page }) => {
   await page.goto("/");
 

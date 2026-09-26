@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 export function Panel({
+  id,
   title,
   eyebrow,
   action,
@@ -8,6 +9,7 @@ export function Panel({
   className,
   variant = "plain",
 }: {
+  id?: string;
   title?: string;
   eyebrow?: string;
   action?: ReactNode;
@@ -16,7 +18,7 @@ export function Panel({
   variant?: "plain" | "surface";
 }) {
   return (
-    <section className={["panel", `panel--${variant}`, className].filter(Boolean).join(" ")}>
+    <section id={id} className={["panel", `panel--${variant}`, className].filter(Boolean).join(" ")}>
       {title ? (
         <header className="panel__header">
           <div className="panel__heading">

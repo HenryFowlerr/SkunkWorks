@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { api } from "@/lib/api/client";
+import { isPartPath } from "@/lib/parts/path";
 import { Button, TextInput } from "@/components/ui";
 
 type AuthMode = "signIn" | "signUp";
@@ -16,7 +17,7 @@ function safeReturnPath(value: string | null) {
     if (target.origin !== window.location.origin) return null;
     const allowed = ["/studio", "/workshops", "/invites/redeem"];
     const inviteTokenRoute = /^\/invite\/[A-Za-z0-9_-]+$/.test(target.pathname);
-    if (!inviteTokenRoute && !allowed.some((prefix) => target.pathname === prefix || target.pathname.startsWith(`${prefix}/`))) return null;
+    if (!inviteTokenRoute && !isPartPath(target.pathname) && !allowed.some((prefix) => target.pathname === prefix || target.pathname.startsWith(`${prefix}/`))) return null;
     return `${target.pathname}${target.search}${target.hash}`;
   } catch {
     return null;
@@ -32,7 +33,7 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const returnQuery = returnTo?.startsWith("/invite/") && /^\/invite\/[A-Za-z0-9_-]{43}$/.test(returnTo)
+  const returnQuery = returnTo && (isPartPath(returnTo) || /^\/invite\/[A-Za-z0-9_-]{43}$/.test(returnTo))
     ? `?returnTo=${encodeURIComponent(returnTo)}`
     : "";
 
@@ -153,7 +154,7 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
             {isSignUp ? "Already have an account?" : "New to this workspace?"}{" "}
             <Link href={`${isSignUp ? "/login" : "/signup"}${returnQuery}`}>{isSignUp ? "Sign in" : "Create an account"}</Link>
           </p>
-          <p className="auth-switch">Want to see the journey first? <Link href="/demo">Explore the prepared demo</Link></p>
+          <p className="auth-switch">Want to see how it works first? <Link href="/">Return to the overview</Link></p>
           <p className="auth-service-note">Account changes are confirmed only after the service responds.</p>
         </div>
       </section>

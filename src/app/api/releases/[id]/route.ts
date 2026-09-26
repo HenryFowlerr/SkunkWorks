@@ -31,8 +31,8 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
       replacementReleaseId: replacement.replacementReleaseId,
       canFollowReplacement: false,
       actor,
-      // Feedback mutations and visitor QR exchange are not yet live.
-      permissions: { canAsk: false, canFlag: false, canRespond: false },
+      // Members may ask and flag; only engineering may approve a reply.
+      permissions: { canAsk: true, canFlag: true, canRespond: actor.roles.includes("designer") || actor.roles.includes("admin") },
     });
   });
 }

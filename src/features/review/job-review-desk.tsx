@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { PartQr } from '@/features/parts/part-qr';
+import { NativePartSources } from '@/features/parts/native-part-sources';
 import { IdSchema } from '@/contracts';
 import type { Asset, Bend, Draft, EvidenceRef, Finding, Flag, Generation, Id, Release, Role, Step } from '@/contracts';
 import { Button, Field, Panel, PanelBody, SourceReference, StatusBadge } from '@/components/ui';
@@ -9,7 +11,9 @@ import { ApiClientError, api } from '@/lib/api/client';
 import type { ApiClient } from '@/lib/api/client';
 import { BendMapEditor, BendScene, ModelViewer } from '@/features/visualization';
 import type { SceneData } from '@/features/visualization';
+import { FlagReplySuggestionControl } from './components/flag-reply-suggestion';
 import { BendFactEditor } from './components/bend-fact-editor';
+import { PitchAnalysisPanel } from './components/pitch-analysis-panel';
 import { evidenceAssetId, getPublishBlockers, toDraftContentInput } from './review.logic';
 import styles from './review.module.css';
 
@@ -181,7 +185,7 @@ function FindingCard({
 type FlagResponseDraft = { text: string; kind: 'explanation' | 'replacement_release'; replacementReleaseId: string };
 const emptyFlagResponse: FlagResponseDraft = { text: '', kind: 'explanation', replacementReleaseId: '' };
 
-function FlagResponseCard({ flag, jobId, releases, busy, value, error, onChange, onRespond }: {
+function FlagResponseCard({ flag, jobId, releases, busy, value, error, onChange, onRespond, client }: {
   flag: Flag;
   jobId: string;
   releases: Release[];
@@ -190,6 +194,7 @@ function FlagResponseCard({ flag, jobId, releases, busy, value, error, onChange,
   error: string | null;
   onChange: (next: FlagResponseDraft) => void;
   onRespond: () => void;
+  client: Pick<ApiClient, 'flags'>;
 }) {
   const release = releases.find((item) => item.id === flag.context.releaseId && item.jobId === jobId);
   const validReplacementReleases = releases.filter((item) => item.jobId === jobId && item.id !== flag.context.releaseId);
@@ -218,6 +223,7 @@ function FlagResponseCard({ flag, jobId, releases, busy, value, error, onChange,
         <p className={styles.error}>This issue does not resolve to a release in this job, so a response cannot be safely attached.</p>
       ) : (
         <div className={styles.responseForm}>
+          <FlagReplySuggestionControl key={`${flag.id}:${flag.version}`} flag={flag} client={client} onUse={(text) => onChange({ text, kind: 'explanation', replacementReleaseId: '' })} />
           <Field id={`flag-response-${flag.id}`} label="Response to the factory-floor issue">
             <textarea id={`flag-response-${flag.id}`} className="field__control" rows={3} value={value.text} onChange={(event) => onChange({ ...value, text: event.target.value })} placeholder="Answer this exact release and bend context…" />
           </Field>
@@ -237,7 +243,7 @@ function FlagResponseCard({ flag, jobId, releases, busy, value, error, onChange,
           ) : null}
           {error ? <p className={styles.error} role="alert">{error}</p> : null}
           <Button type="button" small disabled={busy || !value.text.trim() || (value.kind === 'replacement_release' && !validReplacementReleases.some((item) => item.id === value.replacementReleaseId))} onClick={onRespond}>
-            {busy ? 'Sending response…' : 'Respond to this issue'}
+            {busy ? 'Sending response…' : 'Approve and send reply'}
           </Button>
         </div>
       )}
@@ -381,7 +387,10 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
   useEffect(() => {
     if (!jobLoad) return undefined;
     let active = true;
+    let inFlight = false;
     const loadFlags = async () => {
+      if (inFlight) return;
+      inFlight = true;
       setFlagsLoading(true);
       setFlagsError(null);
       try {
@@ -390,23 +399,30 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
       } catch (error) {
         if (active) setFlagsError(explainError(error));
       } finally {
+        inFlight = false;
         if (active) setFlagsLoading(false);
       }
     };
     void loadFlags();
-    return () => { active = false; };
+    const timer = window.setInterval(() => { void loadFlags(); }, 10_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
   }, [client, jobId, jobLoad]);
 
   const sourceAssets = jobLoad?.assets ?? NO_ASSETS;
   const sourceAssetIds = new Set(jobLoad?.job.sourceAssetIds ?? []);
   const drawing = sourceAssets.find((asset) => sourceAssetIds.has(asset.id) && asset.kind === 'drawing_pdf' && asset.status === 'ready' && asset.sha256 !== null) ?? null;
-  const glb = sourceAssets.find((asset) => sourceAssetIds.has(asset.id) && asset.kind === 'model_glb' && asset.status === 'ready' && asset.sha256 !== null) ?? null;
+  const viewableModel = sourceAssets.find((asset) => sourceAssetIds.has(asset.id) && asset.kind === 'model_glb' && asset.status === 'ready' && asset.sha256 !== null)
+    ?? sourceAssets.find((asset) => sourceAssetIds.has(asset.id) && asset.kind === 'model_stl' && asset.status === 'ready' && asset.sha256 !== null)
+    ?? null;
   const manifest = sourceAssets.find((asset) => sourceAssetIds.has(asset.id) && asset.kind === 'bend_manifest' && asset.status === 'ready' && asset.sha256 !== null) ?? null;
   const generationBlockers = [
     ...(jobLoad?.job.workshopSnapshotId ? [] : ['Select a workshop snapshot on the job first.']),
     ...(jobLoad?.job.machineId ? [] : ['Select the machine for this job first.']),
     ...(drawing && sourceAssetIds.has(drawing.id) ? [] : ['Attach a ready, verified drawing PDF.']),
-    ...(glb && sourceAssetIds.has(glb.id) ? [] : ['Attach a ready, verified GLB model.']),
+    ...(viewableModel && sourceAssetIds.has(viewableModel.id) ? [] : ['Attach a ready, verified GLB or STL model.']),
     ...(manifest ? [] : ['Attach one ready, verified authored bend manifest.']),
   ];
 
@@ -415,7 +431,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
     let active = true;
     const ids = new Set<string>();
     if (drawing) ids.add(drawing.id);
-    if (glb) ids.add(glb.id);
+    if (viewableModel) ids.add(viewableModel.id);
     if (draft) for (const evidence of evidenceForDraft(draft)) {
       const assetId = evidenceAssetId(evidence);
       if (assetId && sourceAssets.some((asset) => asset.id === assetId)) ids.add(assetId);
@@ -444,7 +460,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
     };
     void loadLinks();
     return () => { active = false; };
-  }, [client, draft, drawing, glb, jobLoad, sourceAssets]);
+  }, [client, draft, drawing, viewableModel, jobLoad, sourceAssets]);
 
   useEffect(() => {
     if (!draft) { setSelectedStepId(null); return; }
@@ -640,13 +656,23 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
     <main className={styles.reviewShell}>
       <header className={styles.reviewHeader}>
         <div>
-          <p className={styles.eyebrow}>Designer review desk · {role}</p>
+          <p className={styles.eyebrow}>Engineering · part review</p>
           <h1>{jobLoad?.job.title ?? 'Job review'}</h1>
           {jobLoad ? <p className={styles.subtitle}>{jobLoad.job.partNumber} · {jobLoad.job.partFamily} · version {jobLoad.job.version}</p> : <p className={styles.subtitle}>Job {jobId}</p>}
         </div>
-        <Button type="button" tone="secondary" small onClick={() => setReloadCount((count) => count + 1)} disabled={loading}>Reload server state</Button>
+        <Button type="button" tone="secondary" small onClick={() => setReloadCount((count) => count + 1)} disabled={loading}>Refresh part</Button>
       </header>
 
+      {jobLoad ? <>
+        <section className={styles.workflowSummary} aria-label="Part handoff progress">
+          <div><strong>Sources</strong><span>{sourceAssets.filter(a => a.status === 'ready').length} retained files · {drawing ? 'drawing PDF available' : 'readable drawing PDF needed'}</span></div>
+          <div><strong>Guidance</strong><span>{draft ? `${draft.content.steps.filter(s => s.guidance?.decision === 'include').length} detailed operations selected` : 'No draft prepared'}</span></div>
+          <div><strong>Floor handoff</strong><span>{jobLoad.job.latestReleaseId ? 'Approved guidance available' : 'Awaiting engineering approval'}</span></div>
+          <div><strong>Questions</strong><span>{flagsLoading ? 'Loading…' : `${flags.filter(f => f.status === 'open').length} awaiting an answer`}</span></div>
+        </section>
+        <nav className={styles.taskNav} aria-label="Engineering part sections"><a href="#part-sources">Sources and specifications</a><a href="#facility-check">Facility check</a><a href="#part-guidance">Guidance</a><a href="#pitch-analysis">Pitch analysis</a><a href="#part-approval">Approval and handoff</a><a href="#part-issues">Floor questions</a></nav>
+        <PartQr key={jobLoad.job.id} jobId={jobLoad.job.id} />
+      </> : null}
       {loadError ? <p className={styles.error} role="alert">{loadError}</p> : null}
       {operationError ? <p className={styles.error} role="alert">{operationError}</p> : null}
       {actionMessage ? <p className={styles.success} role="status">{actionMessage}</p> : null}
@@ -656,7 +682,8 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
         <>
           <section className={styles.reviewGrid}>
             <div className={styles.reviewColumn}>
-              <Panel title="Source drawing" eyebrow="Authorized source" className={styles.sourcePanel}>
+              <NativePartSources assets={sourceAssets} client={client} />
+              <Panel id="part-sources" title="Source drawing" eyebrow="Authorized source" className={styles.sourcePanel}>
                 <PanelBody>
                   {drawing ? (
                     <>
@@ -672,7 +699,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
               </Panel>
 
               {draft ? (
-                <Panel title="Process sequence and phone guidance" eyebrow="Engineer decision">
+                <Panel id="part-guidance" title="Process sequence and phone guidance" eyebrow="Engineer decision">
                   <PanelBody>
                     {currentStep ? <div className={styles.currentStep}><p className={styles.eyebrow}>Step {currentStepIndex + 1} of {draft.content.steps.length} · {currentStep.id}</p><h3>{currentStep.instruction}</h3><p>Bend {currentStep.bendId}</p><EvidenceList evidence={currentStep.evidence} assets={sourceAssets} links={assetLinks} /></div> : <p className={styles.subtle}>This draft has no instruction steps yet.</p>}
                     {currentStep ? <div className={styles.guideEditor}>
@@ -762,27 +789,28 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
                   </Panel>
                 </>
               ) : !loading && !loadError ? (
-                <Panel title="Generate the first draft" eyebrow="Uses this job’s real source packet">
-                  <PanelBody>
-                    <p className={styles.subtle}>Ask the service to read the uploaded drawing, model and selected workshop setup. The review desk opens only after the API returns a saved draft.</p>
-                    {generationError ? <p className={styles.error} role="alert">{generationError}</p> : null}
-                    {generationId && generation?.state === 'running' ? <p className={styles.loading} role="status">Generation is processing. Its server operation expires {new Date(generation.expiresAt).toLocaleString()}.</p> : null}
-                    {generationId && !generation ? <p className={styles.loading} role="status">Checking the saved generation operation…</p> : null}
-                    {generationBlockers.length > 0 ? <ul className={styles.blockerList}>{generationBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul> : null}
-                    {generationId && generation?.state === 'running' ? (
-                      <Button type="button" tone="secondary" onClick={() => void pollGeneration(generationId)}>Check generation status</Button>
-                    ) : (
-                      <Button type="button" disabled={generationStartBusy || Boolean(generationId) || generationBlockers.length > 0} onClick={() => void startGeneration()}>
-                        {generationStartBusy ? 'Starting generation…' : generation?.state === 'failed' || generation?.state === 'expired' ? 'Try generation again' : 'Generate AI draft'}
-                      </Button>
-                    )}
-                  </PanelBody>
-                </Panel>
+                <>
+                  <Panel id="part-guidance" title="Generate the first draft" eyebrow="Bend-guide source packet">
+                    <PanelBody>
+                      <p className={styles.subtle}>This existing path reads the uploaded drawing, confirmed workshop setup and authored bend manifest. The 3D model stays a visual reference; the review desk opens only after the API returns a saved draft.</p>
+                      {generationError ? <p className={styles.error} role="alert">{generationError}</p> : null}
+                      {generationId && generation?.state === 'running' ? <p className={styles.loading} role="status">Generation is processing. Its server operation expires {new Date(generation.expiresAt).toLocaleString()}.</p> : null}
+                      {generationId && !generation ? <p className={styles.loading} role="status">Checking the saved generation operation…</p> : null}
+                      {generationBlockers.length > 0 ? <ul className={styles.blockerList}>{generationBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul> : null}
+                      {generationId && generation?.state === 'running' ? (
+                        <Button type="button" tone="secondary" onClick={() => void pollGeneration(generationId)}>Check generation status</Button>
+                      ) : (
+                        <Button type="button" disabled={generationStartBusy || Boolean(generationId) || generationBlockers.length > 0} onClick={() => void startGeneration()}>
+                          {generationStartBusy ? 'Starting generation…' : generation?.state === 'failed' || generation?.state === 'expired' ? 'Try generation again' : 'Generate AI draft'}
+                        </Button>
+                      )}
+                    </PanelBody>
+                  </Panel>
+                  <PitchAnalysisPanel jobId={jobLoad.job.id} jobVersion={jobLoad.job.version} hasDrawing={Boolean(drawing)} hasSupplierSelection={Boolean(jobLoad.job.workshopSnapshotId && jobLoad.job.machineId)} client={client} />
+                </>
               ) : null}
 
-              {glb ? (
-                <Panel title="Supplied 3D model" eyebrow="Source asset"><PanelBody><p className={styles.assetHeading}><strong>{glb.filename}</strong><span>{glb.byteSize.toLocaleString()} bytes</span></p><ModelViewer assetId={glb.id} resolveAssetUrl={resolveAssetUrl} onError={setModelError} />{modelError ? <p className={styles.error}>{modelError}</p> : null}<p className={styles.subtle}>{assetLinkErrors[glb.id] ?? (assetLinks[glb.id] ? 'Loaded through an authorized, short-lived asset URL.' : '')}</p></PanelBody></Panel>
-              ) : null}
+              {viewableModel ? <Panel title="Supplied 3D model" eyebrow="Source asset"><PanelBody><p className={styles.assetHeading}><strong>{viewableModel.filename}</strong><span>{viewableModel.byteSize.toLocaleString()} bytes · {viewableModel.kind === 'model_stl' ? 'STL visual reference' : 'GLB'}</span></p><ModelViewer assetId={viewableModel.id} format={viewableModel.kind === 'model_stl' ? 'stl' : 'glb'} resolveAssetUrl={resolveAssetUrl} onError={setModelError} />{modelError ? <p className={styles.error}>{modelError}</p> : null}<p className={styles.subtle}>{assetLinkErrors[viewableModel.id] ?? (assetLinks[viewableModel.id] ? 'Loaded through an authorized, short-lived asset URL.' : '')}</p></PanelBody></Panel> : null}
             </div>
           </section>
 
@@ -815,7 +843,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
           ) : null}
 
           <section className={styles.reviewGrid}>
-            <Panel title="Review and publish" eyebrow="Server-authorized actions">
+            <Panel id="part-approval" title="Review and publish" eyebrow="Server-authorized actions">
               <PanelBody>
                 {draft ? <>
                   <p className={styles.subtle}>Review actions are sent to the API with your current session and role. API authorization and validation errors are shown above.</p>
@@ -831,12 +859,12 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
               </PanelBody>
             </Panel>
 
-            <Panel title="Factory-floor issues" eyebrow="Exact release context" action={<Button type="button" tone="quiet" small disabled={flagsLoading} onClick={() => setReloadCount((count) => count + 1)}>Reload issues</Button>}>
+            <Panel id="part-issues" title="Factory-floor issues" eyebrow="Exact release context" action={<Button type="button" tone="quiet" small disabled={flagsLoading} onClick={() => setReloadCount((count) => count + 1)}>Reload issues</Button>}>
               <PanelBody className={styles.flagList}>
                 {flagsLoading ? <p className={styles.subtle} role="status">Loading issue responses…</p> : null}
                 {flagsError ? <p className={styles.error} role="alert">{flagsError}</p> : null}
                 {flags.length === 0 && !flagsLoading && !flagsError ? <p className={styles.subtle}>No factory-floor issues are recorded for this job.</p> : null}
-                {flags.map((flag) => <FlagResponseCard key={flag.id} flag={flag} jobId={jobId} releases={releases} busy={flagBusyId === flag.id} value={flagDrafts[flag.id] ?? emptyFlagResponse} error={flagErrors[flag.id] ?? null} onChange={(next) => setFlagDrafts((items) => ({ ...items, [flag.id]: next }))} onRespond={() => void respondToFlag(flag)} />)}
+                {flags.map((flag) => <FlagResponseCard key={flag.id} client={client} flag={flag} jobId={jobId} releases={releases} busy={flagBusyId === flag.id} value={flagDrafts[flag.id] ?? emptyFlagResponse} error={flagErrors[flag.id] ?? null} onChange={(next) => setFlagDrafts((items) => ({ ...items, [flag.id]: next }))} onRespond={() => void respondToFlag(flag)} />)}
               </PanelBody>
             </Panel>
           </section>

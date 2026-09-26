@@ -111,7 +111,7 @@ export class AiProviderError extends Error {
 function safeMessage(code: AiProviderFailureCode): string {
   switch (code) {
     case "MISSING_CREDENTIALS": return "AI provider credentials are not configured.";
-    case "MISSING_MODEL_CONFIGURATION": return "OPENAI_MODEL is not configured.";
+    case "MISSING_MODEL_CONFIGURATION": return "The required server-side AI model is not configured.";
     case "PROVIDER_TIMEOUT": return "The AI provider did not respond before the configured timeout.";
     case "PROVIDER_UNAVAILABLE": return "The AI provider is temporarily unavailable.";
     case "MODEL_OR_FEATURE_UNAVAILABLE": return "The configured model does not support the requested PDF and structured-output features.";

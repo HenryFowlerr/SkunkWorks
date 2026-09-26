@@ -15,6 +15,8 @@ import {
   WorkshopSnapshotSchema,
   IdSchema,
   type Asset,
+  type ContextRef,
+  type RespondToFlagInput,
   type Draft,
   type DraftContentInput,
   type Flag,
@@ -564,6 +566,43 @@ export class WorkspaceDataRepository {
     throwDatabaseError(error, "read release");
     if (!data) throw new DataAdapterError("NOT_FOUND", "Release not found.");
     return this.mapRelease(data as ReleaseRow);
+  }
+
+  async createFlag(input: {
+    flagId: Id;
+    context: ContextRef;
+    question: string;
+    displayName: string;
+    idempotencyRecordId: Id;
+    idempotencyClaimToken: Id;
+  }): Promise<Flag> {
+    const { data, error } = await this.client.rpc("create_member_flag_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_actor_id: this.scope.actorId,
+      p_flag_id: input.flagId,
+      p_context: input.context,
+      p_question: input.question,
+      p_display_name: input.displayName,
+      p_idempotency_record_id: input.idempotencyRecordId,
+      p_idempotency_claim_token: input.idempotencyClaimToken,
+    });
+    throwDatabaseError(error, "create flag");
+    return FlagSchema.parse(data);
+  }
+
+  async respondToFlag(input: RespondToFlagInput): Promise<Flag> {
+    this.requireRole("designer");
+    const { data, error } = await this.client.rpc("respond_to_flag_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_actor_id: this.scope.actorId,
+      p_flag_id: input.flagId,
+      p_expected_version: input.expectedVersion,
+      p_text: input.text,
+      p_kind: input.kind,
+      p_replacement_release_id: input.replacementReleaseId,
+    });
+    throwDatabaseError(error, "respond to flag");
+    return FlagSchema.parse(data);
   }
 
   async listFlags(input: { jobId?: Id; releaseId?: Id }): Promise<Flag[]> {

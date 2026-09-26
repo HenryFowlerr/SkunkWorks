@@ -5,8 +5,9 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const projectUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const demoOrigin = Deno.env.get("CHAPPE_DEMO_ORIGIN") ?? "";
 const allowedOrigin = (origin: string | null) =>
-  !origin || origin === "https://henryfowlerr.github.io" ||
+  !origin || (demoOrigin !== "" && origin === demoOrigin) ||
   /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -25,10 +26,6 @@ type IssueRow = {
   operation_id: string;
   kind: "question" | "flag";
   body: string;
-  report_type: "none" | "assist" | "escalation";
-  operator_outcome: "resolved" | "blocked" | null;
-  report_summary: string | null;
-  recommendation: string | null;
   status: "pending" | "answered";
   hold_active: boolean;
   answer: string | null;
@@ -41,7 +38,7 @@ class HttpError extends Error {
 }
 function cors(origin: string | null): HeadersInit {
   return {
-    "Access-Control-Allow-Origin": origin ?? "https://henryfowlerr.github.io",
+    "Access-Control-Allow-Origin": origin && allowedOrigin(origin) ? origin : demoOrigin || "null",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "authorization, apikey, content-type",
     "Cache-Control": "no-store",
@@ -91,7 +88,7 @@ async function loadSession(id: unknown): Promise<SessionRow> {
 }
 async function view(session: SessionRow) {
   const issues = await query<IssueRow[]>(
-    `demo_issues?session_id=eq.${session.id}&select=id,session_id,operation_id,kind,body,report_type,operator_outcome,report_summary,recommendation,status,hold_active,answer,created_at,answered_at&order=created_at.desc`,
+    `demo_issues?session_id=eq.${session.id}&select=id,session_id,operation_id,kind,body,status,hold_active,answer,created_at,answered_at&order=created_at.desc`,
   );
   return {
     session: {
@@ -106,10 +103,6 @@ async function view(session: SessionRow) {
         operationId: issue.operation_id,
         kind: issue.kind,
         body: issue.body,
-        reportType: issue.report_type,
-        operatorOutcome: issue.operator_outcome,
-        reportSummary: issue.report_summary,
-        recommendation: issue.recommendation,
         status: issue.status,
         holdActive: issue.hold_active,
         answer: issue.answer,
@@ -165,24 +158,11 @@ Deno.serve(async (request: Request) => {
     }
     if (action === "issue") {
       if (session.guide_status !== "approved") throw new HttpError(409, "Engineering must approve the guide first.");
-      if (!["B2", "PART"].includes(body.operationId) || !["question", "flag"].includes(body.kind)) {
-        throw new HttpError(400, "Choose a released operation or part-level context and a question or flag.");
+      if (body.operationId !== "B2" || !["question", "flag"].includes(body.kind)) {
+        throw new HttpError(400, "Choose the B2 operation and a question or flag.");
       }
       const issueText = typeof body.body === "string" ? body.body.trim() : "";
       if (!issueText || issueText.length > 500) throw new HttpError(400, "Use 1–500 characters.");
-      const reportType = body.reportType === "assist" || body.reportType === "escalation" ? body.reportType : "none";
-      const operatorOutcome = body.operatorOutcome === "resolved" || body.operatorOutcome === "blocked" ? body.operatorOutcome : null;
-      const reportSummary = typeof body.reportSummary === "string" ? body.reportSummary.trim() : null;
-      const recommendation = typeof body.recommendation === "string" ? body.recommendation.trim() : null;
-      if ((reportSummary && reportSummary.length > 500) || (recommendation && recommendation.length > 500)) {
-        throw new HttpError(400, "Assistant report fields must be 500 characters or fewer.");
-      }
-      if (reportType === "assist" && operatorOutcome !== "resolved") {
-        throw new HttpError(400, "An assisted report requires an explicit resolved outcome.");
-      }
-      if (reportType === "escalation" && (body.kind !== "flag" || operatorOutcome !== "blocked")) {
-        throw new HttpError(400, "A hard-stop report requires a red flag and blocked outcome.");
-      }
       const existing = await query<Array<{ id: string }>>(
         `demo_issues?session_id=eq.${session.id}&select=id`,
       );
@@ -190,17 +170,7 @@ Deno.serve(async (request: Request) => {
       await query<IssueRow[]>("demo_issues", {
         method: "POST",
         body: JSON.stringify({
-          session_id: session.id,
-          operation_id: body.operationId,
-          kind: body.kind,
-          body: issueText,
-          report_type: reportType,
-          operator_outcome: operatorOutcome,
-          report_summary: reportSummary || null,
-          recommendation: recommendation || null,
-          // A normal question or a resolved assist never creates a hold. A red
-          // flag is a hard stop before engineering reads any assistant draft.
-          hold_active: body.kind === "flag" || reportType === "escalation",
+          session_id: session.id, operation_id: "B2", kind: body.kind, body: issueText,
         }),
       });
       return json(await view(session), 201, origin);

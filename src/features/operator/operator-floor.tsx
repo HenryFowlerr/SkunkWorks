@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import type { Answer, Asset, ContextRef, EvidenceRef, Flag, ReleaseView, Step } from '@/contracts';
+import { NativePartSources } from '@/features/parts/native-part-sources';
 import { Button, Panel, PanelBody, SourceReference, StatusBadge, TextInput } from '@/components/ui';
 import { ApiClientError, api } from '@/lib/api/client';
 import type { ApiClient } from '@/lib/api/client';
@@ -67,7 +68,7 @@ function EvidenceList({ evidence, assets }: { evidence: EvidenceRef[]; assets: A
   );
 }
 
-function readySourceAsset(assets: Asset[], kind: 'drawing_pdf' | 'model_glb'): Asset | null {
+function readySourceAsset(assets: Asset[], kind: 'drawing_pdf' | 'model_glb' | 'model_stl'): Asset | null {
   return assets.find((asset) => asset.kind === kind && asset.status === 'ready' && asset.sha256 !== null) ?? null;
 }
 
@@ -125,6 +126,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
   const [stepIndex, setStepIndex] = useState(0);
   const [previewProgress, setPreviewProgress] = useState(0);
   const [question, setQuestion] = useState('');
+  const [lastAskedQuestion, setLastAskedQuestion] = useState('');
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [askError, setAskError] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
@@ -204,7 +206,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
   const currentStep: Step | null = steps[stepIndex] ?? null;
   const currentBend = currentStep ? snapshot?.bends.find((bend) => bend.bendId === currentStep.bendId) ?? null : null;
   const drawingAsset = view ? readySourceAsset(view.sourceAssets, 'drawing_pdf') : null;
-  const modelAsset = view ? readySourceAsset(view.sourceAssets, 'model_glb') : null;
+  const modelAsset = view ? (readySourceAsset(view.sourceAssets, 'model_glb') ?? readySourceAsset(view.sourceAssets, 'model_stl')) : null;
   const sceneData: SceneData | null = snapshot?.panelModel ? {
     panelModel: snapshot.panelModel,
     bends: snapshot.bends,
@@ -282,12 +284,14 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
     event.preventDefault();
     const context = buildContext(currentStep);
     if (!context || !question.trim() || !view?.permissions.canAsk) return;
+    const askedQuestion = question.trim();
     setAsking(true);
     setAskError(null);
     setAnswer(null);
     try {
-      const result = await client.questions.ask({ context, question: question.trim() });
+      const result = await client.questions.ask({ context, question: askedQuestion });
       setAnswer(result);
+      setLastAskedQuestion(askedQuestion);
       setQuestion('');
     } catch (error) {
       setAskError(explainError(error));
@@ -332,7 +336,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
       setPhotoAsset(null);
       flagIdempotencyKey.current = null;
       photoIdempotencyKey.current = null;
-      setLastAction('Flag saved to the published release. Hold this operation while engineering reviews it.');
+      setLastAction('Flag saved to the published release. Engineering will receive a concise Luna draft report with this exact operation context. Hold this operation while they review it.');
     } catch (error) {
       setFlagError(explainError(error));
     } finally {
@@ -384,6 +388,20 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
     return (
       <div className={styles.guideGrid}>
         <div className={styles.guideMain}>
+          {modelAsset ? (
+            <section className={styles.quickModelRegion} aria-labelledby="floor-model-quick-title">
+              <div className={styles.quickModelHeading}>
+                <div>
+                  <p className={styles.eyebrow}>Released visual reference</p>
+                  <h2 id="floor-model-quick-title">{modelAsset.filename}</h2>
+                </div>
+                <span className={styles.quickModelHint}>Drag to orbit · pinch to zoom</span>
+              </div>
+              <ModelViewer assetId={modelAsset.id} format={modelAsset.kind === 'model_stl' ? 'stl' : 'glb'}
+                resolveAssetUrl={async (assetId) => (await client.assets.getLink({ assetId })).url}
+              />
+            </section>
+          ) : null}
           <Panel title={currentStep ? 'Operation ' + currentStep.bendId : 'Guide complete'} eyebrow={currentStep ? 'Step ' + (stepIndex + 1) + ' of ' + steps.length : 'All released steps'}>
             <PanelBody>
               {currentStep ? (
@@ -427,7 +445,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
               )}
             </PanelBody>
           </Panel>
-          {sceneData ? (
+          {!modelAsset && sceneData ? (
             <div className={styles.sceneFrame}>
               <p className={styles.sceneLabel}>Illustrative bend view · select an area or use the operation list above</p>
               <BendScene data={sceneData} completedStepCount={currentStep ? allSteps.findIndex((step) => step.id === currentStep.id) : 0}
@@ -438,9 +456,10 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
                   if (selectedIndex >= 0) { setStepIndex(selectedIndex); setPreviewProgress(0); setAnswer(null); }
                 }} />
             </div>
-          ) : (
+          ) : !modelAsset ? (
             <p className={styles.muted}>No reviewed geometry preview is available for this release. Use the approved guide and drawing.</p>
-          )}
+          ) : null}
+          {renderQuickAssistDock()}
         </div>
         <aside className={styles.guideSide}>
           <Panel title="Released drawing" eyebrow="Controlled source">
@@ -477,12 +496,53 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
     );
   };
 
+  const renderQuickAssistDock = () => {
+    if (!view) return null;
+    const context = currentStep ? `Operation ${currentStep.bendId}` : 'General release question';
+    return (
+      <section className={styles.quickAssistDock} aria-labelledby="quick-assist-title">
+        <div className={styles.quickAssistHeading}>
+          <div>
+            <p className={styles.eyebrow}>Release-bound help</p>
+            <h2 id="quick-assist-title">Quick assist</h2>
+          </div>
+          <span>{context}</span>
+        </div>
+        {view.permissions.canAsk ? (
+          <form className={styles.quickAskForm} onSubmit={(event) => void askQuestion(event)}>
+            <label className={styles.quickAskLabel} htmlFor="floor-quick-question">Ask Chappe about this operation</label>
+            <div className={styles.quickAskControls}>
+              <input id="floor-quick-question" className="field__control" value={question}
+                onChange={(event) => setQuestion(event.currentTarget.value)} disabled={asking}
+                placeholder="Ask about this released part…" />
+              <Button type="submit" small disabled={asking || question.trim().length < 3}>{asking ? 'Checking…' : 'Ask Chappe'}</Button>
+            </div>
+          </form>
+        ) : <p className={styles.muted}>This release session does not have permission to ask questions.</p>}
+        {askError ? <p className={styles.error} role="alert">{askError}</p> : null}
+        {answer ? (
+          <div className={styles.quickAnswer} aria-live="polite">
+            <p className={styles.quickAnswerLabel}>{answer.evidenceState === 'supported' ? 'Answer from released sources' : 'Engineering decision needed'}</p>
+            <p>{answer.text}</p>
+            {answer.evidence.length > 0 ? <EvidenceList evidence={answer.evidence} assets={view.sourceAssets} /> : null}
+            {answer.evidenceState !== 'supported' ? <p className={styles.holdNotice}>Hold this operation until engineering clarifies it.</p> : null}
+            <Button type="button" tone="secondary" small onClick={() => {
+              setFlagQuestion(answer.suggestedFlag || lastAskedQuestion || 'I need a designer to clarify this operation.');
+              setTab('flags');
+            }}>Flag this answer</Button>
+          </div>
+        ) : null}
+      </section>
+    );
+  };
+
   const renderModel = () => {
     if (!view) return null;
-    if (!modelAsset) return <Panel title="Model unavailable" eyebrow="Release asset"><PanelBody><p>No ready verified GLB is attached to this release. No substitute model is shown.</p></PanelBody></Panel>;
+    if (!modelAsset && view.sourceAssets.some(asset => asset.kind === 'native_part' || asset.kind === 'native_drawing')) return <NativePartSources assets={view.sourceAssets} client={client} />;
+    if (!modelAsset) return <Panel title="Model unavailable" eyebrow="Release asset"><PanelBody><p>No ready verified GLB or STL model is attached to this release. No substitute model is shown.</p></PanelBody></Panel>;
     return <Panel title={modelAsset.filename} eyebrow="Supplied final model"><PanelBody>
       <p className={styles.muted}>Orbit or zoom to orient yourself, then choose the relevant operation above. This model has no reviewed clickable operation markers.</p>
-      <ModelViewer assetId={modelAsset.id} resolveAssetUrl={async (assetId) => (await client.assets.getLink({ assetId })).url}
+      <ModelViewer assetId={modelAsset.id} format={modelAsset.kind === 'model_stl' ? 'stl' : 'glb'} resolveAssetUrl={async (assetId) => (await client.assets.getLink({ assetId })).url}
       />
     </PanelBody></Panel>;
   };
@@ -493,7 +553,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
       <div className={styles.narrowColumn}>
         <Panel title="Ask about this operation" eyebrow="Release-bound question">
           <PanelBody>
-            <p className={styles.muted}>Your question includes this release and the selected operation. Check any cited evidence before acting; an uncertain answer should go to the designer.</p>
+            <p className={styles.muted}>This chat uses the approved part knowledge for this release and selected operation. Check any cited evidence before acting; an uncertain answer should go to the designer.</p>
             <p className={styles.contextLine}>Context: {view.job.partNumber} · release R{view.release.revisionNumber} · {currentStep ? `operation ${currentStep.bendId}` : 'general release'}</p>
             {view.permissions.canAsk ? (
               <form className={styles.form} onSubmit={(event) => void askQuestion(event)}>
@@ -514,7 +574,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
             <PanelBody><p className={styles.answerText}>{answer.text}</p><EvidenceList evidence={answer.evidence} assets={view.sourceAssets} />
               {answer.evidenceState !== 'supported' ? <p className={styles.holdNotice}>Hold this operation until engineering clarifies it. This answer does not establish the missing detail.</p> : null}
               {answer.evidenceState !== 'supported' || answer.suggestedFlag ? <Button type="button" tone="secondary" onClick={() => {
-                setFlagQuestion(answer.suggestedFlag || question || 'I need a designer to clarify this operation.');
+                setFlagQuestion(answer.suggestedFlag || lastAskedQuestion || 'I need a designer to clarify this operation.');
                 setTab('flags');
               }}>Flag for designer review</Button> : null}
             </PanelBody>
@@ -531,7 +591,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
         <div className={styles.narrowColumn}>
           <Panel title="Raise a floor flag" eyebrow={currentStep ? 'Operation ' + currentStep.bendId : 'Published release'}>
             <PanelBody>
-              <p className={styles.muted}>This note is stored against the current release and step. Attach a photo only if it helps the designer understand the issue.</p>
+              <p className={styles.muted}>This note is stored against the current release and step. Engineering receives a concise Luna draft report from that context; an engineer still reviews it before any reply is sent.</p>
               <p className={styles.contextLine}>Context: {view.job.partNumber} · release R{view.release.revisionNumber} · {currentStep ? `operation ${currentStep.bendId}` : 'general release'}</p>
               {view.permissions.canFlag ? (
                 <form className={styles.form} onSubmit={(event) => void submitFlag(event)}>

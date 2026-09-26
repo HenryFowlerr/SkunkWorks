@@ -77,7 +77,7 @@ function SessionProblem({ message, onRetry }: { message: string; onRetry: () => 
       <Panel>
         <PanelBody>
           <p className="eyebrow">Workspace access</p>
-          <h1 className={styles.setupTitle}>The designer desk is unavailable</h1>
+          <h1 className={styles.setupTitle}>The workspace is unavailable</h1>
           <p className={styles.muted}>{message}</p>
           <Button type="button" onClick={onRetry}>Try again</Button>
         </PanelBody>
@@ -91,7 +91,8 @@ function StudioFrame({ children, context }: { children: ReactNode; context: Stud
   const pathname = usePathname();
   const workspaceOptions = context.session.memberships;
   const [signOutError, setSignOutError] = useState<string | null>(null);
-  const workspaceLabel = context.role === "fabricator" ? "Workshop workspace" : "Designer workspace";
+  const manufacturing = pathname.startsWith("/studio/manufacturing") || (context.role === "fabricator" && (pathname === "/studio" || pathname.startsWith("/studio/jobs")));
+  const workspaceLabel = manufacturing ? "Manufacturing" : "Engineering";
   const workspaceQuery = `?workspace=${encodeURIComponent(context.workspaceId)}`;
 
   async function signOut() {
@@ -106,15 +107,19 @@ function StudioFrame({ children, context }: { children: ReactNode; context: Stud
 
   return (
     <div className={styles.frame}>
+      <header className={styles.surfaceHeader}><Link href="/" className={styles.brand}>Chappe</Link><nav aria-label="Work areas"><Link href={`/studio${workspaceQuery}`} aria-current={!manufacturing ? 'page' : undefined}>Engineering</Link><Link href={`/studio/manufacturing${workspaceQuery}`} aria-current={manufacturing ? 'page' : undefined}>Manufacturing</Link></nav></header>
       <aside className={styles.sidebar}>
-        <Link className={styles.brand} href={`/studio${workspaceQuery}`} aria-label={`Chappe ${workspaceLabel.toLowerCase()}`}>
-          <span className={styles.brandMark} aria-hidden="true">C</span><span>Chappe</span>
-        </Link>
         <p className={styles.navLabel}>{workspaceLabel}</p>
         <nav className={styles.nav} aria-label={workspaceLabel}>
-          <Link href={`/studio${workspaceQuery}`} aria-current={pathname === "/studio" || pathname.startsWith("/studio/jobs") ? "page" : undefined}>Jobs <span aria-hidden="true">↗</span></Link>
-          <Link href={`/studio/workshops${workspaceQuery}`} aria-current={pathname === "/studio/workshops" ? "page" : undefined}>{context.role === "fabricator" ? "Equipment and setup" : "Workshop setup"} <span aria-hidden="true">↗</span></Link>
-          {context.role === "admin" ? <Link href={`/studio/invites${workspaceQuery}`} aria-current={pathname === "/studio/invites" ? "page" : undefined}>Invitations <span aria-hidden="true">↗</span></Link> : null}
+          {manufacturing ? <>
+            <Link href={`/studio/manufacturing${workspaceQuery}`} aria-current={!pathname.endsWith('/equipment') ? 'page' : undefined}>Parts and handoffs</Link>
+            <Link href={`/studio/manufacturing/equipment${workspaceQuery}`} aria-current={pathname.endsWith('/equipment') ? 'page' : undefined}>Equipment and capabilities</Link>
+          </> : <>
+            <Link href={`/studio${workspaceQuery}`} aria-current={pathname === '/studio' || pathname.startsWith('/studio/jobs') ? 'page' : undefined}>Parts and jobs</Link>
+            {context.role !== 'fabricator' ? <Link href={`/studio/jobs/new${workspaceQuery}`}>Add a part</Link> : null}
+            <Link href={`/studio/workshops${workspaceQuery}`} aria-current={pathname === '/studio/workshops' ? 'page' : undefined}>Manufacturer profiles</Link>
+            {context.role === 'admin' ? <Link href={`/studio/invites${workspaceQuery}`} aria-current={pathname === '/studio/invites' ? 'page' : undefined}>Workspace access</Link> : null}
+          </>}
         </nav>
         <div className={styles.sidebarFooter}>
           <label className={styles.workspaceLabel} htmlFor="workspace-switcher">Workspace</label>
@@ -127,7 +132,7 @@ function StudioFrame({ children, context }: { children: ReactNode; context: Stud
               const url = new URL(window.location.href);
               url.searchParams.set("workspace", next);
               context.setWorkspaceId(next);
-              router.push(`${url.pathname}?${url.searchParams.toString()}`);
+              router.push(`${manufacturing ? "/studio/manufacturing" : "/studio"}?${url.searchParams.toString()}`);
             }}
             aria-label="Select workspace"
           >
@@ -142,7 +147,7 @@ function StudioFrame({ children, context }: { children: ReactNode; context: Stud
           <button type="button" className={styles.signOut} onClick={() => void signOut()}>Sign out</button>
         </div>
       </aside>
-      <main className={styles.main}>{children}</main>
+      <div className={styles.main}>{children}</div>
     </div>
   );
 }

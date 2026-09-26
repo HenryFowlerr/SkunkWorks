@@ -188,6 +188,7 @@ describe("contract DTO schemas", () => {
     expect(AssetSchema.safeParse({ ...sourceAsset, kind: "issue_photo", releaseId: ids.release }).success).toBe(true);
     expect(AssetSchema.safeParse({ ...sourceAsset, kind: "issue_photo", releaseId: null }).success).toBe(false);
     expect(AssetSchema.safeParse({ ...sourceAsset, kind: "drawing_pdf", releaseId: ids.release }).success).toBe(false);
+    expect(AssetSchema.safeParse({ ...sourceAsset, kind: "model_stl", releaseId: null }).success).toBe(true);
   });
 
   it("requires server-verified hashes only once an asset is ready", () => {

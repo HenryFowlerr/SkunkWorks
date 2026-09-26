@@ -37,7 +37,7 @@ export default function HomePage() {
         <nav className={styles.topnav} aria-label="Main navigation">
           <a href="#features">Features</a>
           <a href="#workflow">How it works</a>
-          <Link href="/demo">Explore prepared demo</Link>
+          <Link href="/studio">Open workspace</Link>
           <Link href="/login">Sign in</Link>
           <Link className={styles.navCta} href="/signup">Create account</Link>
         </nav>
@@ -51,10 +51,10 @@ export default function HomePage() {
             Chappe turns engineering files into a reviewed, scan-ready guide for the operations that need extra explanation. The selected workshop’s recorded capabilities and the engineer’s approval stay in the loop.
           </p>
           <div className={styles.heroActions}>
-            <Link className="button button--primary" href="/demo">Explore prepared demo <span aria-hidden="true">↗</span></Link>
-            <Link className="button button--secondary" href="/signup">Create an account <span aria-hidden="true">→</span></Link>
+            <Link className="button button--primary" href="/signup">Create a workspace <span aria-hidden="true">↗</span></Link>
+            <a className="button button--secondary" href="#workflow">See the workflow <span aria-hidden="true">↓</span></a>
           </div>
-          <p className={styles.heroNote}>The prepared example is labelled throughout. Live workspace data requires sign-in.</p>
+          <p className={styles.heroNote}>Start a workspace to upload the Engineering Test Block packet and select its supplier.</p>
         </div>
         <div className={styles.heroDiagram} aria-label="Engineering handoff stages">
           <div className={styles.diagramHeader}><span>One job · shared context</span><span className={styles.liveDot} aria-hidden="true" /></div>
@@ -81,20 +81,12 @@ export default function HomePage() {
 
       <section className={styles.closing} aria-labelledby="closing-title">
         <div><p className={styles.eyebrow}>A precise, reviewable handoff</p><h2 id="closing-title">Give the floor clarity. Give engineering the context to respond.</h2></div>
-        <Link className="button button--primary" href="/demo">Open the prepared demo <span aria-hidden="true">↗</span></Link>
+        <Link className="button button--primary" href="/signup">Start a workspace <span aria-hidden="true">↗</span></Link>
       </section>
 
       <footer className={styles.footer}>
         <div><strong>Chappe</strong><p>Prototype manufacturing handoff.</p></div>
-        <details className={styles.demoDetails}>
-          <summary>Demo source packets</summary>
-          <p>These original synthetic sheet-metal examples are for trying the current prototype. Downloads do not create a job or claim a live AI run.</p>
-          <div className={styles.demoPackets}>
-            <div><strong>Rev A · SKW-SM-104</strong><a href="/demo/sensor-mount-alpha.drawing.pdf" download>Drawing PDF</a><a href="/demo/sensor-mount-alpha.final.glb" download>Final GLB</a><a href="/demo/sensor-mount-alpha.bend.json" download>Bend manifest</a></div>
-            <div><strong>Rev B · SKW-SM-205</strong><a href="/demo/sensor-mount-bravo.drawing.pdf" download>Drawing PDF</a><a href="/demo/sensor-mount-bravo.final.glb" download>Final GLB</a><a href="/demo/sensor-mount-bravo.bend.json" download>Bend manifest</a></div>
-          </div>
-        </details>
-        <p className={styles.prototypeNote}>Current interactive guide examples support straight-bend sheet metal. Facility checks surface documented conflicts and unknowns; they do not certify physical manufacturability.</p>
+        <p className={styles.prototypeNote}>The pitch workspace is prepared for Engineering Test Block. It requires configured server credentials, reviewed migrations, and a signed-in verification before it can be presented as a live AI workflow. Facility checks surface documented conflicts and unknowns; they do not certify physical manufacturability.</p>
       </footer>
     </main>
   );

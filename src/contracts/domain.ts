@@ -107,7 +107,7 @@ export const AssetSchema = z.object({
   id: IdSchema,
   jobId: IdSchema,
   releaseId: IdSchema.nullable(),
-  kind: z.enum(["drawing_pdf", "model_glb", "bend_manifest", "issue_photo"]),
+  kind: z.enum(["drawing_pdf", "model_glb", "model_stl", "bend_manifest", "native_part", "native_drawing", "issue_photo"]),
   filename: nonEmptyString,
   mimeType: nonEmptyString,
   byteSize: z.number().int().nonnegative(),
