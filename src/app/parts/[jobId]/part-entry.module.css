@@ -1,0 +1,5 @@
+.entry { width: min(100%, 40rem); margin: 0 auto; padding: var(--ch-space-8) var(--ch-space-4); color: var(--ch-text); }
+.entry h1 { margin: var(--ch-space-8) 0 var(--ch-space-4); font-size: var(--ch-type-title); line-height: 1.15; overflow-wrap: anywhere; }
+.entry p { color: var(--ch-text-secondary); line-height: 1.6; }
+.brand { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; text-decoration: none; }
+.action { display: inline-flex; align-items: center; min-height: 44px; color: var(--ch-blue); text-underline-offset: 3px; }

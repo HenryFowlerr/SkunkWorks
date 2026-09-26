@@ -1,3 +1,4 @@
+import { isPartPath } from "@/lib/parts/path";
 import { SignUpInputSchema, SignUpResultSchema } from "@/contracts";
 import { ApiFault, handleApiOperation, parseApiBody } from "@/server/http/api";
 import { createSupabaseServerClient } from "@/lib/auth/server";
@@ -6,7 +7,7 @@ export async function POST(request: Request): Promise<Response> {
   return handleApiOperation(async () => {
     const input = await parseApiBody(request, SignUpInputSchema);
     const supabase = await createSupabaseServerClient();
-    const destination = input.returnPath && /^\/invite\/[A-Za-z0-9_-]{43}$/.test(input.returnPath)
+    const destination = input.returnPath && (isPartPath(input.returnPath) || /^\/invite\/[A-Za-z0-9_-]{43}$/.test(input.returnPath))
       ? input.returnPath
       : "/studio";
     const callback = new URL("/auth/callback", request.url);
