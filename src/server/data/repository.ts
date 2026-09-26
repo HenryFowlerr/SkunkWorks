@@ -5,6 +5,7 @@ import {
   DraftContentInputSchema,
   DraftContentSchema,
   DraftSchema,
+  EvidenceRefSchema,
   FlagSchema,
   GenerationSchema,
   GetJobResultSchema,
@@ -17,6 +18,7 @@ import {
   type Asset,
   type Draft,
   type DraftContentInput,
+  type EvidenceRef,
   type Flag,
   type Generation,
   type Id,
@@ -31,6 +33,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { computeInputFingerprint } from "./fingerprint";
 import { assertAuthoredManifestEvidence } from "@/server/domain/manifest-evidence";
+import { decideMachineProposal } from "@/server/domain/machine-proposals";
 import { DataAdapterError, throwDatabaseError } from "./errors";
 
 type MemberRow = { role: Role; status: "active" | "revoked" };
@@ -771,6 +774,86 @@ export class WorkspaceDataRepository {
     )) {
       throw new DataAdapterError("VERSION_CONFLICT", "Draft changed before its review could be reloaded.");
     }
+    return draft;
+  }
+
+  async recordClarification(input: {
+    jobId: Id;
+    text: string;
+    idempotencyRecordId: Id;
+    idempotencyClaimToken: Id;
+  }): Promise<EvidenceRef> {
+    this.requireRole("designer");
+    const { data, error } = await this.client.rpc("record_clarification_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_job_id: input.jobId,
+      p_actor_id: this.scope.actorId,
+      p_text: input.text,
+      p_idempotency_record_id: input.idempotencyRecordId,
+      p_idempotency_claim_token: input.idempotencyClaimToken,
+    });
+    throwDatabaseError(error, "record clarification");
+    return EvidenceRefSchema.parse(data);
+  }
+
+  async resolveFinding(input: { jobId: Id; findingId: Id; expectedVersion: number; recordId: Id }): Promise<Draft> {
+    this.requireRole("designer");
+    const { data, error } = await this.client.rpc("resolve_draft_finding_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_job_id: input.jobId,
+      p_actor_id: this.scope.actorId,
+      p_finding_id: input.findingId,
+      p_record_id: input.recordId,
+      p_expected_version: input.expectedVersion,
+    });
+    throwDatabaseError(error, "resolve draft finding");
+    return this.reloadChangedDraft(input.jobId, data, input.expectedVersion + 1);
+  }
+
+  async decideProposal(input: { jobId: Id; proposalId: Id; expectedVersion: number; decision: "accept" | "reject" }): Promise<Draft> {
+    this.requireRole("fabricator");
+    const bundle = await this.getJobBundle(input.jobId);
+    if (!bundle.draft || bundle.draft.version !== input.expectedVersion) {
+      throw new DataAdapterError("VERSION_CONFLICT", "The proposal's draft version changed.");
+    }
+    const proposal = bundle.draft.content.machineProposals.find((item) => item.id === input.proposalId);
+    if (!proposal) throw new DataAdapterError("NOT_FOUND", "Machine proposal not found.");
+    if (proposal.status !== "proposed") throw new DataAdapterError("VERSION_CONFLICT", "The proposal was already decided.");
+    if (input.decision === "accept") {
+      if (!bundle.job.workshopSnapshotId || !bundle.job.machineId) {
+        throw new DataAdapterError("REVIEW_REQUIRED", "Select a confirmed machine before accepting an order.");
+      }
+      const workshop = await this.getWorkshopSnapshot(bundle.job.workshopSnapshotId);
+      const machine = workshop.machines.find((item) => item.id === bundle.job.machineId);
+      if (!machine) throw new DataAdapterError("REVIEW_REQUIRED", "The selected machine is unavailable.");
+      decideMachineProposal({
+        draft: bundle.draft,
+        expectedVersion: input.expectedVersion,
+        proposalId: input.proposalId,
+        decision: input.decision,
+        actor: { id: this.scope.actorId, displayName: "Workshop reviewer", kind: "member", roles: [this.scope.role] },
+        workshop,
+        machine,
+        partFamily: bundle.job.partFamily,
+      });
+    }
+    const { data, error } = await this.client.rpc("decide_machine_proposal_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_job_id: input.jobId,
+      p_actor_id: this.scope.actorId,
+      p_proposal_id: input.proposalId,
+      p_expected_version: input.expectedVersion,
+      p_decision: input.decision,
+    });
+    throwDatabaseError(error, "decide machine proposal");
+    return this.reloadChangedDraft(input.jobId, data, input.expectedVersion + 1);
+  }
+
+  private async reloadChangedDraft(jobId: Id, result: unknown, version: number): Promise<Draft> {
+    const receipt = z.object({ draftId: IdSchema, version: z.number().int().positive() }).parse(result);
+    if (receipt.version !== version) throw new DataAdapterError("VERSION_CONFLICT", "The draft changed during this decision.");
+    const draft = await this.getDraftById(jobId, receipt.draftId);
+    if (!draft || draft.version !== version) throw new DataAdapterError("VERSION_CONFLICT", "The changed draft could not be reloaded.");
     return draft;
   }
 

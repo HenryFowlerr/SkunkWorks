@@ -262,7 +262,7 @@ export type CreateDraftFromReleaseInput = z.infer<typeof CreateDraftFromReleaseI
 
 export const RecordClarificationInputSchema = z.object({
   jobId: IdSchema,
-  text: nonEmptyString,
+  text: nonEmptyString.max(4000),
   idempotencyKey: IdempotencyKeySchema,
 }).strict();
 export type RecordClarificationInput = z.infer<typeof RecordClarificationInputSchema>;
