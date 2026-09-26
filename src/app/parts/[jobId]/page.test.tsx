@@ -25,9 +25,9 @@ describe('part QR page', () => {
   });
 
   it('shows a useful approval-pending state without rendering draft content', async () => {
-    entry.resolve.mockResolvedValue({ state: 'unpublished' });
+    entry.resolve.mockResolvedValue({ state: 'unpublished', title: 'Engineering test block', assets: [] });
     render(await PartPage({ params: Promise.resolve({ jobId: ids.job }) }));
-    expect(screen.getByRole('heading')).toHaveTextContent('Engineering has not approved a guide yet');
+    expect(screen.getByRole('heading', { name: 'Engineering has not approved a guide yet' })).toBeInTheDocument();
     expect(screen.queryByTestId('floor')).not.toBeInTheDocument();
   });
 });

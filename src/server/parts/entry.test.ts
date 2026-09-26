@@ -36,7 +36,7 @@ describe('stable part entry', () => {
 
   it('never falls back to the unapproved draft', async () => {
     access.getJobBundle.mockResolvedValue({ job: { ...job, latestReleaseId: null }, releases: [], draft, assets: [sourceAsset] });
-    expect(await resolvePartEntry(ids.job)).toEqual({ state: 'unpublished' });
+    expect(await resolvePartEntry(ids.job)).toEqual({ state: 'unpublished', title: job.title, assets: [] });
   });
 
   it('rejects a latest release pointing at another part', async () => {

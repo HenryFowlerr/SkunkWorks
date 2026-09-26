@@ -60,6 +60,8 @@ describe("typed browser API client", () => {
       drawing_pdf: 25 * 1024 * 1024,
       model_glb: 50 * 1024 * 1024,
       bend_manifest: 2 * 1024 * 1024,
+      native_part: 50 * 1024 * 1024,
+      native_drawing: 50 * 1024 * 1024,
     });
   });
 

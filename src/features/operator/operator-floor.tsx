@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import type { Answer, Asset, ContextRef, EvidenceRef, Flag, ReleaseView, Step } from '@/contracts';
+import { NativePartSources } from '@/features/parts/native-part-sources';
 import { Button, Panel, PanelBody, SourceReference, StatusBadge, TextInput } from '@/components/ui';
 import { ApiClientError, api } from '@/lib/api/client';
 import type { ApiClient } from '@/lib/api/client';
@@ -479,6 +480,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
 
   const renderModel = () => {
     if (!view) return null;
+    if (!modelAsset && view.sourceAssets.some(asset => asset.kind === 'native_part' || asset.kind === 'native_drawing')) return <NativePartSources assets={view.sourceAssets} client={client} />;
     if (!modelAsset) return <Panel title="Model unavailable" eyebrow="Release asset"><PanelBody><p>No ready verified GLB is attached to this release. No substitute model is shown.</p></PanelBody></Panel>;
     return <Panel title={modelAsset.filename} eyebrow="Supplied final model"><PanelBody>
       <p className={styles.muted}>Orbit or zoom to orient yourself, then choose the relevant operation above. This model has no reviewed clickable operation markers.</p>

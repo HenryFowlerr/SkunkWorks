@@ -45,6 +45,7 @@ before(async () => {
   await db.exec(extractFunction(initial, "private.reject_immutable_row_change", "$trigger$"));
   await db.exec("create trigger flag_responses_immutable before update or delete on public.flag_responses for each row execute function private.reject_immutable_row_change();");
   await db.exec(await readFile(new URL("../../../supabase/migrations/20260926110000_member_feedback.sql", import.meta.url), "utf8"));
+  await db.exec(await readFile(new URL("../../../supabase/migrations/20260926090000_native_source_retention.sql", import.meta.url), "utf8"));
   for (const actor of [id.member, id.engineer, id.outsider]) await db.query("insert into auth.users values ($1)", [actor]);
   for (const workspace of [id.workspace, id.foreignWorkspace]) await db.query("insert into public.workspaces (id,name,created_by) values ($1,'Test',$2)", [workspace, id.engineer]);
   for (const [actor, role] of [[id.member, "fabricator"], [id.engineer, "designer"]]) await db.query("insert into public.workspace_members(workspace_id,user_id,role) values ($1,$2,$3)", [id.workspace, actor, role]);
@@ -130,4 +131,14 @@ test("both mutation functions and the serializer are executable only by service 
       assert.equal(value.allowed, role === "service_role", `${role}: ${signature}`);
     }
   }
+});
+
+test("native source preparation retains opaque kinds with service-only execution", async () => {
+  const c = await claim(randomUUID(), id.engineer, "asset.prepare");
+  const assetId = randomUUID();
+  await one("select public.prepare_source_asset_internal($1,$2,$3,$4,'native_part','block.SLDPRT','application/octet-stream',100,$5,$6)", [id.workspace, id.job, id.engineer, assetId, c.recordId, c.claimToken]);
+  const asset = await one("select kind,status,mime_type from public.assets where id=$1", [assetId]);
+  assert.equal(asset.kind, "native_part"); assert.equal(asset.status, "pending");
+  const grant = await one("select has_function_privilege('authenticated','public.prepare_source_asset_internal(uuid,uuid,uuid,uuid,text,text,text,bigint,uuid,uuid)','execute') as allowed");
+  assert.equal(grant.allowed, false);
 });

@@ -538,7 +538,7 @@ export function NewJobIntake({
 
             <section className={styles.section} aria-labelledby="source-files-heading">
               <h2 className={styles.sectionTitle} id="source-files-heading">Source files</h2>
-              <p className={styles.hint}>Add a drawing (PDF or SLDDRW) and model (GLB or SLDPRT) for one part. You can save the native SolidWorks pair now, then add drawing PDF and GLB model exports. Native files are retained privately; they are not converted, read by AI, or shown in the phone viewer. An authored bend manifest is optional for the current example workflow.</p>
+              <p className={styles.hint}>Add a drawing (PDF or SLDDRW) and model (GLB or SLDPRT) for one part. You can save the native SolidWorks pair now, then add drawing PDF and GLB model exports. Native files are retained privately. Supported cached previews can be shown on the phone; they are not interactive geometry or AI drawing evidence. An authored bend manifest is optional for the current example workflow.</p>
               {fieldErrors.drawingSet ? <p className={styles.fileError} role="alert">{fieldErrors.drawingSet}</p> : null}
               <div className={styles.fileGrid}>
                 {FILES.map((definition) => {

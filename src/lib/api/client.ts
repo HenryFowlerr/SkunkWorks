@@ -1,3 +1,4 @@
+import { NativePreviewSchema, type NativePreview } from "@/contracts/native-preview";
 import { FlagReplySuggestionSchema, SuggestFlagReplyBodySchema, type FlagReplySuggestion } from "@/contracts/ai";
 import { z } from "zod";
 import {
@@ -448,6 +449,10 @@ export function createApiClient(transport: ApiTransport = unavailableApiTranspor
       },
     },
     assets: {
+      getPreview(input: { assetId: Id }): Promise<NativePreview> {
+        const assetId = IdSchema.parse(input.assetId);
+        return call({ method: "GET", path: `/api/assets/${encodeURIComponent(assetId)}/preview` }, NativePreviewSchema);
+      },
       async uploadAsset(input: {
         jobId: Id;
         kind: UploadAssetKind;
@@ -460,7 +465,7 @@ export function createApiClient(transport: ApiTransport = unavailableApiTranspor
         UploadAssetKindSchema.parse(kind);
         if (!(file instanceof File)) throw new TypeError("assets.uploadAsset requires a browser File.");
         const key = z.string().min(16).max(128).parse(idempotencyKey);
-        const body = UploadAssetPreparationBodySchema.parse({ kind, filename: file.name, mimeType: file.type || "application/octet-stream", byteSize: file.size });
+        const body = UploadAssetPreparationBodySchema.parse({ kind, filename: file.name, mimeType: kind === "native_part" || kind === "native_drawing" ? "application/octet-stream" : file.type || "application/octet-stream", byteSize: file.size });
         const prepared = await call({
           method: "POST",
           path: `/api/jobs/${encodeURIComponent(jobId)}/assets`,

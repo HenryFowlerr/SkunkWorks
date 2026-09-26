@@ -105,3 +105,9 @@ begin
   return p_asset_id;
 end;
 $function$;
+
+-- Retain the service-only boundary explicitly, including fresh schema installation.
+revoke all on function public.prepare_source_asset_internal(uuid, uuid, uuid, uuid, text, text, text, bigint, uuid, uuid)
+  from public, anon, authenticated;
+grant execute on function public.prepare_source_asset_internal(uuid, uuid, uuid, uuid, text, text, text, bigint, uuid, uuid)
+  to service_role;

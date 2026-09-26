@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { PartQr } from '@/features/parts/part-qr';
+import { NativePartSources } from '@/features/parts/native-part-sources';
 import { IdSchema } from '@/contracts';
 import type { Asset, Bend, Draft, EvidenceRef, Finding, Flag, Generation, Id, Release, Role, Step } from '@/contracts';
 import { Button, Field, Panel, PanelBody, SourceReference, StatusBadge } from '@/components/ui';
@@ -650,6 +652,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
         <Button type="button" tone="secondary" small onClick={() => setReloadCount((count) => count + 1)} disabled={loading}>Reload server state</Button>
       </header>
 
+      {jobLoad ? <PartQr key={jobLoad.job.id} jobId={jobLoad.job.id} /> : null}
       {loadError ? <p className={styles.error} role="alert">{loadError}</p> : null}
       {operationError ? <p className={styles.error} role="alert">{operationError}</p> : null}
       {actionMessage ? <p className={styles.success} role="status">{actionMessage}</p> : null}
@@ -659,6 +662,7 @@ function JobReviewDeskSession({ jobId, role, client }: { jobId: string; role: Ro
         <>
           <section className={styles.reviewGrid}>
             <div className={styles.reviewColumn}>
+              <NativePartSources assets={sourceAssets} client={client} />
               <Panel title="Source drawing" eyebrow="Authorized source" className={styles.sourcePanel}>
                 <PanelBody>
                   {drawing ? (

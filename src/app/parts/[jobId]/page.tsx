@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { OperatorFloor } from '@/features/operator/operator-floor';
+import { NativePartSources } from '@/features/parts/native-part-sources';
 import { partPath } from '@/lib/parts/path';
 import { resolvePartEntry } from '@/server/parts/entry';
 import styles from './part-entry.module.css';
@@ -32,8 +33,10 @@ export default async function PartPage({ params }: { params: Promise<{ jobId: st
   return (
     <main className={styles.entry}>
       <Link href="/" className={styles.brand}>Chappe</Link>
-      <h1>{title}</h1>
+      <h1>{entry.state === 'unpublished' ? entry.title : title}</h1>
+      {entry.state === 'unpublished' ? <h2>{title}</h2> : null}
       <p role="status">{explanation}</p>
+      {entry.state === 'unpublished' ? <NativePartSources assets={entry.assets} /> : null}
       <p>This part’s QR stays the same as approved knowledge is updated.</p>
       <Link href="/studio" className={styles.action}>Open your workspace</Link>
     </main>
