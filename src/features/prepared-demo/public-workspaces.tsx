@@ -104,7 +104,7 @@ export function PreparedPartDetail({ part }: { part: PreparedPart }) {
         </div>
         <div className={styles.qrReadout}>
           <Image src={part.qrCodeImage} alt={`QR code that opens the Steel Bracket shop view`} width={120} height={120} />
-          <div><strong>Phone demo QR</strong><span>Connect the phone to the same Wi-Fi, then scan the QR sticker to open the interactive shop view.</span><a href={part.qrTarget}>{part.qrTarget}<span aria-hidden="true"> ↗</span></a></div>
+          <div><strong>Phone demo QR</strong><span>Scan the QR sticker from any phone connection to open the interactive shop view.</span><a href={part.qrTarget}>{part.qrTarget}<span aria-hidden="true"> ↗</span></a></div>
         </div>
         <p>Original local source files remain available beside the QR-enabled demo copy. The STL is a visual reference; the demo guide is available in the interactive shop view.</p>
       </section>
