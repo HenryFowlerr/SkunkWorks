@@ -137,6 +137,18 @@ describe("designer jobs and intake", () => {
     expect(apiMock.jobs.list).toHaveBeenCalledWith({ workspaceId: ids.workspace });
   });
 
+  it("offers designer intake while keeping the fabricator queue focused on shared jobs", async () => {
+    apiMock.jobs.list.mockResolvedValue([]);
+    const designer = render(<JobsDashboard workspaceId={ids.workspace} role="designer" />);
+    expect(screen.getByRole("link", { name: "Start job" })).toHaveAttribute(
+      "href", `/studio/jobs/new?workspace=${ids.workspace}`,
+    );
+
+    designer.rerender(<JobsDashboard workspaceId={ids.workspace} role="fabricator" />);
+    expect(screen.getByRole("heading", { name: "Workshop jobs" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Start job" })).not.toBeInTheDocument();
+  });
+
   it("reports a real job-list API failure without rendering fixture rows", async () => {
     apiMock.jobs.list.mockRejectedValue(new Error("UNAUTHENTICATED: sign in to view workspace jobs."));
     render(<JobsDashboard workspaceId={ids.workspace} />);

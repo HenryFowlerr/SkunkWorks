@@ -12,6 +12,8 @@
   gap: 16px;
 }
 
+.headingActions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+
 .heading h1,
 .heading h2 {
   margin: 4px 0 0;
@@ -146,6 +148,8 @@
 
 @media (max-width: 640px) {
   .heading { align-items: flex-start; flex-direction: column; }
+  .headingActions { width: 100%; }
+  .headingActions :global(.button) { flex: 1 1 auto; }
   .jobCard { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
   .jobAction { width: 100%; }
   .jobAction :global(.button) { width: 100%; }
