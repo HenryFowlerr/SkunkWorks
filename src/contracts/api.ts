@@ -10,7 +10,6 @@ import {
   JobSchema,
   MachineInputSchema,
   ReleaseSchema,
-  RoleSchema,
   WorkshopSnapshotSchema,
   WorkspaceMembershipSchema,
   WorkspaceSchema,
@@ -85,6 +84,7 @@ export const SignUpInputSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   displayName: nonEmptyString.optional(),
+  returnPath: safeReturnPathSchema.optional(),
 }).strict();
 export type SignUpInput = z.infer<typeof SignUpInputSchema>;
 
@@ -120,13 +120,14 @@ export const CreateWorkspaceBodySchema = CreateWorkspaceInputSchema.omit({ idemp
 
 export const InviteWorkspaceMemberInputSchema = z.object({
   workspaceId: IdSchema,
-  role: RoleSchema,
+  role: z.enum(["designer", "fabricator"]),
+  invitedEmail: z.email(),
   idempotencyKey: IdempotencyKeySchema,
 }).strict();
 export type InviteWorkspaceMemberInput = z.infer<typeof InviteWorkspaceMemberInputSchema>;
 
 export const RedeemInviteInputSchema = z.object({
-  token: nonEmptyString,
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
   returnPath: safeReturnPathSchema.optional(),
   idempotencyKey: IdempotencyKeySchema,
 }).strict();

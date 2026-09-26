@@ -3,6 +3,7 @@ import { AuthForm } from "@/components/auth/auth-form";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-export default function LoginPage() {
-  return <AuthForm mode="signIn" />;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ returnTo?: string | string[] }> }) {
+  const { returnTo } = await searchParams;
+  return <AuthForm mode="signIn" returnTo={typeof returnTo === "string" ? returnTo : undefined} />;
 }
