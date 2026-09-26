@@ -61,6 +61,8 @@ export type QuestionInput = {
   workshopSnapshot: WorkshopSnapshot | null;
   knownBendIds: string[];
   knownStepTargets: StepTarget[];
+  /** Exact, persisted engineer responses permitted as citable clarification evidence. */
+  approvedClarifications?: Array<{ recordId: string; text: string }>;
   /** Loaded by the server from the exact immutable release, never from the question body. */
   approvedContext?: {
     releaseId: string;

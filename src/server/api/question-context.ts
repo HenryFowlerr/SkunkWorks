@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import type { Asset, AskQuestionInput, Release, WorkshopSnapshot } from "@/contracts";
+import type { Asset, AskQuestionInput, Flag, Release, WorkshopSnapshot } from "@/contracts";
 import { extractPdfEvidence, MAX_PDF_BYTES, PdfTextError } from "@/server/ai/pdf-text";
 import type { GroundingSource, QuestionInput } from "@/server/ai/types";
 import { ApiFault } from "@/server/http/api";
@@ -23,6 +23,7 @@ export async function assembleReleaseQuestionInput(input: {
   request: AskQuestionInput;
   release: Release;
   assets: Asset[];
+  flags?: Flag[];
   workshop: WorkshopSnapshot;
   readSource: (asset: Asset) => Promise<Uint8Array>;
 }): Promise<QuestionInput & { approvedContext: ApprovedContext }> {
@@ -93,6 +94,19 @@ export async function assembleReleaseQuestionInput(input: {
       kind: "workshop_note", snapshotId: input.workshop.id, machineId: machine.id, noteId: note.id, text: note.text,
     });
   }
+  // A floor report is not evidence. Only a persisted engineer response for
+  // this exact release/operation becomes part of the question knowledge packet.
+  const approvedClarifications = (input.flags ?? []).filter((flag) =>
+    flag.context.jobId === input.release.jobId &&
+    flag.context.releaseId === input.release.id &&
+    flag.status !== "open" &&
+    flag.response?.kind === "explanation" &&
+    (context.stepId === null ? flag.context.stepId === null : flag.context.stepId === context.stepId) &&
+    (context.bendId === null ? flag.context.bendId === null : flag.context.bendId === context.bendId),
+  ).map((flag) => ({ recordId: flag.id, text: flag.response!.text }));
+  for (const clarification of approvedClarifications) {
+    sources.push({ kind: "human_clarification", ...clarification });
+  }
 
   return {
     context,
@@ -102,6 +116,7 @@ export async function assembleReleaseQuestionInput(input: {
     workshopSnapshot: input.workshop,
     knownBendIds,
     knownStepTargets,
+    approvedClarifications,
     approvedContext: {
       releaseId: input.release.id,
       revisionNumber: input.release.revisionNumber,
