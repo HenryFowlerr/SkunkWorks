@@ -12,6 +12,7 @@ Updated 26 September 2026. This file is the concise handoff for any new SkunkWor
 - Auth, workshop versions, source upload preparation/completion, workspace creation, job list/create/get/update, and authorized member asset link routes are implemented. The workspace creation route provides the first admin membership after sign-up.
 - Engineer guide selection is being added as a distinct decision from the full process sequence: AI suggests complex/routine/uncertain per step, then an engineer edits wording and explicitly includes or excludes detailed phone guidance. Draft read/save, review, and publish route handlers now connect to scoped repository calls. Saving creates a new draft version and invalidates reviews. A database release constraint rejects any sequence with an undecided guide step; the review RPC requires an explicit guide decision before design sign-off and a confirmed workshop for process sign-off.
 - A designer-only facility evidence preview compares engineer-transcribed, attached-PDF requirements with the job's selected workshop version and machine. It reports documented length conflicts, narrow profile matches, and unknowns for missing tools/process data or operation reachability. The source excerpt is entered by the engineer and is not checked against the PDF; the preview is not persisted or part of the publication gate yet.
+- The operator view has direct operation selection, browser voice transcription with typed fallback, and a supplied-model-first phone entry when a verified GLB exists. Signed-in workspace members can read a published release and its flags through scoped routes. These routes do not grant QR visitor access or enable feedback writes.
 
 ## Verification on this slice
 
@@ -22,14 +23,15 @@ Updated 26 September 2026. This file is the concise handoff for any new SkunkWor
 - Migration filenames now use the exact versions returned by the Chappe project, so a future Supabase CLI run can recognize the applied history rather than replaying the initial schema.
 - The facility evidence slice passed `npm run check` locally on 26 September 2026 (TypeScript, ESLint, 158 Vitest tests, Next production build). Its route tests cover stale versions, attached/ready drawing scope, duplicate requirements, and same-origin writes; domain tests cover supported, conflict, and unknown results. No live authenticated Supabase job was available for an end-to-end check.
 - After integrating engineer review and facility preview on one branch, `npm run check` passed again (163 Vitest tests and a Next production build).
+- After combining that engineer slice with the operator phone/read slice, `npm run check` passed on 26 September 2026: typecheck, lint, 170 Vitest tests, and production build. Tests cover member read scoping and inclusion/exclusion of approved phone guidance. The Chappe database still has zero releases and zero flags, so no live QR or release read was exercised.
 
 ## What remains real work
 
 - AI generation route and persisted generation lifecycle; persisted facility requirements, verified source extraction, and a review gate for facility findings. The selective guide controls and review/publish endpoints need a real signed-in run before they can be called demo-ready.
-- Invitation issuance/redemption, floor QR exchange, release read/share, operator question/flag/response round trip, visitor asset access. Release publication route exists but has not been exercised with real user/source data. The existing screens show endpoint-unavailable errors until their missing routes exist.
+- Invitation issuance/redemption, floor QR exchange, release share, operator question/flag/response round trip, visitor asset access. Release publication route exists but has not been exercised with real user/source data. Release and flag reads are currently member-only; feedback controls remain read-only until their write routes exist.
 - OpenAI key/model are not configured. No live AI generation has been verified. The final demo product and output illustration design are undecided.
 - Hosted deployment and public URL are not configured. Local tests do not prove the judge-accessible demo. The database password reset is with Henry in Supabase's open dialog; automatic review rejected the agent entering a new credential. The app uses API keys and does not need the direct Postgres password.
-- Parallel isolated worktrees are building the generation lifecycle, workspace invites, and operator phone/feedback flow. These are **in progress**, not live on `main`; merge only after their code, migrations, and checks are reviewed.
+- Parallel isolated worktrees are building the generation lifecycle and workspace invites. These are **in progress**, not live on `main`; merge only after their code, migrations, and checks are reviewed.
 
 ## Working rules
 

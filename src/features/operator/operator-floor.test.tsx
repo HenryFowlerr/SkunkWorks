@@ -32,13 +32,13 @@ function viewFixture(): ReleaseView {
   };
 }
 
-function apiHarness() {
+function apiHarness(floorView: ReleaseView = viewFixture()) {
   const requests: ApiTransportRequest[] = [];
   const transport: ApiTransport = {
     async request(request) {
       requests.push(request);
       if (request.method === 'GET' && request.path === '/api/releases/' + ids.release) {
-        return { data: viewFixture(), meta };
+        return { data: floorView, meta };
       }
       if (request.method === 'GET' && request.path.startsWith('/api/flags?')) {
         return { data: [], meta };
@@ -107,5 +107,43 @@ describe('release-bound factory floor', () => {
     render(<OperatorFloor releaseId={ids.release} />);
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Release unavailable' })).toBeVisible());
     expect(screen.getByText(/endpoint is not available in the current build/i)).toBeVisible();
+  });
+
+  it('offers typed input when browser speech recognition is unavailable', async () => {
+    const { client } = apiHarness();
+    render(<OperatorFloor releaseId={ids.release} client={client} />);
+    expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
+    fireEvent.click(screen.getByRole('tab', { name: 'Ask' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Speak question' }));
+    expect(screen.getByText('Voice input is not available in this browser. Type your question instead.')).toBeVisible();
+    expect(screen.getByLabelText("Question for the designer's released information")).toBeEnabled();
+  });
+
+  it('keeps a direct operation selector available above the floor tabs', async () => {
+    const { client } = apiHarness();
+    render(<OperatorFloor releaseId={ids.release} client={client} />);
+    expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
+    expect(screen.getByLabelText('Jump to an operation')).toHaveValue('0');
+    expect(screen.getByRole('option', { name: /B1/ })).toBeVisible();
+  });
+
+  it('does not present legacy steps without a release decision as approved guidance', async () => {
+    const legacy = viewFixture();
+    for (const step of legacy.release.snapshot.steps) Reflect.deleteProperty(step, 'guidance');
+    const { client } = apiHarness(legacy);
+    render(<OperatorFloor releaseId={ids.release} client={client} />);
+    expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
+    expect(screen.queryByLabelText('Jump to an operation')).not.toBeInTheDocument();
+    expect(screen.getByText(/No extra operation guidance was approved/)).toBeVisible();
+  });
+
+  it('omits steps the engineer excluded from detailed phone guidance', async () => {
+    const excluded = viewFixture();
+    excluded.release.snapshot.steps[0].guidance!.decision = 'exclude';
+    const { client } = apiHarness(excluded);
+    render(<OperatorFloor releaseId={ids.release} client={client} />);
+    expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
+    expect(screen.queryByLabelText('Jump to an operation')).not.toBeInTheDocument();
+    expect(screen.getByText(/No extra operation guidance was approved/)).toBeVisible();
   });
 });
