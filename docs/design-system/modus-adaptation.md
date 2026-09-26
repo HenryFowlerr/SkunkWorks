@@ -85,7 +85,7 @@ Use a single hairline to separate adjacent work. A background or shadow must com
 | Facility check | Comparable rows with documented fact, textual result, source, and next action; selected evidence opens in an inspector or detail view |
 | Review desk | Operation list and detail inspector, with proposal/approved/unknown distinctions expressed in text and controlled status styling rather than card colour |
 | Manufacturer workspace | Readable equipment table/profile with exact source and recency; no invented KPI dashboard |
-| Operator phone | A genuine device/model frame may use the larger radius; inside it, keep the job/release, selected operation, approved step, and a fixed two-action ask/flag bar flat and reachable. Petrol means assistance; conflict red means hard hold, never general emphasis. |
+| Operator phone | A genuine device/model frame may use the larger radius; inside it, keep the job/release, selected operation, approved step, and a fixed two-action ask/flag bar flat and reachable. The current supplied Engineering test block QR surface is a narrower exception: one non-scrolling model upper pane and one chat lower pane, with no opening cards or persistent red action. Petrol means assistance; conflict red means hard hold, never general emphasis. |
 
 ## Ready-to-give implementation brief
 

@@ -7,11 +7,15 @@
   <meta name="description" content="Chappe keeps engineering intent connected to the workshop. Explore a prepared Sensor Mount demonstration.">
   <title>Chappe · Make the handoff make sense</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="tokens.css?v=20260926-industrial-ui-floor-assist">
-  <link rel="stylesheet" href="style.css?v=20260926-industrial-ui-floor-assist-logo-morph-small">
+  <link rel="stylesheet" href="tokens.css?v=20260926-industrial-ui-qr-floor">
+  <link rel="stylesheet" href="style.css?v=20260926-industrial-ui-qr-floor-2">
   <script src="config.js" defer></script>
   <script src="vendor/qrcode.js" defer></script>
-  <script src="app.js?v=20260926-industrial-ui-floor-assist-logo-morph-small" defer></script>
+  <script type="importmap">
+    {"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/"}}
+  </script>
+  <script type="module" src="floor-model.js?v=20260926-qr-floor-2"></script>
+  <script src="app.js?v=20260926-industrial-ui-qr-floor" defer></script>
 </head>
 <body>
   <div id="app"></div>

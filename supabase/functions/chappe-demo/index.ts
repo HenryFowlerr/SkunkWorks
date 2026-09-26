@@ -165,8 +165,8 @@ Deno.serve(async (request: Request) => {
     }
     if (action === "issue") {
       if (session.guide_status !== "approved") throw new HttpError(409, "Engineering must approve the guide first.");
-      if (body.operationId !== "B2" || !["question", "flag"].includes(body.kind)) {
-        throw new HttpError(400, "Choose the B2 operation and a question or flag.");
+      if (!["B2", "PART"].includes(body.operationId) || !["question", "flag"].includes(body.kind)) {
+        throw new HttpError(400, "Choose a released operation or part-level context and a question or flag.");
       }
       const issueText = typeof body.body === "string" ? body.body.trim() : "";
       if (!issueText || issueText.length > 500) throw new HttpError(400, "Use 1–500 characters.");
@@ -191,7 +191,7 @@ Deno.serve(async (request: Request) => {
         method: "POST",
         body: JSON.stringify({
           session_id: session.id,
-          operation_id: "B2",
+          operation_id: body.operationId,
           kind: body.kind,
           body: issueText,
           report_type: reportType,
