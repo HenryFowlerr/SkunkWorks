@@ -4,6 +4,10 @@
 
 Read `docs/product/overview.md` for Henry's current product brief, then `docs/integration/status.md` for what is working and what remains. The older team-specific instructions in `docs/coordination/` and `docs/ownership.md` describe stopped workstreams; they are historical context, not current ownership assignments. Use `src/contracts/` for the implemented API vocabulary. Do not claim inferred geometry, AI output, or manufacturing suitability as verified fact.
 
+## Design authority for every UI agent
+
+Before creating or changing any page, component, copy, image, interaction, or responsive style, read `docs/design-system/README.md`, `docs/design-system/apple-research.md`, and `docs/design-system/patterns.md`. Use `src/app/design-tokens.css` as the visual source of truth and the shared UI components where suitable. Apply the desktop/phone pattern for the user’s task, preserve evidence and uncertainty labels, and verify both wide and narrow layouts. A UI PR must identify the pattern and tokens used, provide visual evidence, and document any intentional exception. Update the guide and token file when establishing a new shared pattern; do not create a competing feature-level palette.
+
 ## Working rules
 
 - Use `npm` and commit `package-lock.json`; pin every direct dependency.

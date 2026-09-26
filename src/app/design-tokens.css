@@ -1,0 +1,37 @@
+/* Canonical Chappe tokens. See docs/design-system/README.md before changing. */
+:root {
+  --ch-canvas: #ffffff;
+  --ch-canvas-subtle: #f5f5f7;
+  --ch-surface: #ffffff;
+  --ch-text: #1d1d1f;
+  --ch-text-secondary: #6e6e73;
+  --ch-text-on-dark: #f5f5f7;
+  --ch-border: #d2d2d7;
+  --ch-border-strong: #a1a1a6;
+  --ch-blue: #0071e3;
+  --ch-blue-hover: #0077ed;
+  --ch-blue-tint: #eaf4ff;
+  --ch-status-review: #8a5700;
+  --ch-status-review-bg: #fff3d6;
+  --ch-status-conflict: #a12722;
+  --ch-status-conflict-bg: #fff0ef;
+  --ch-status-complete: #216e40;
+  --ch-status-complete-bg: #eaf5ed;
+  --ch-space-1: 4px;
+  --ch-space-2: 8px;
+  --ch-space-3: 12px;
+  --ch-space-4: 16px;
+  --ch-space-6: 24px;
+  --ch-space-8: 32px;
+  --ch-space-12: 48px;
+  --ch-space-16: 64px;
+  --ch-radius-sm: 8px;
+  --ch-radius-md: 14px;
+  --ch-radius-lg: 24px;
+  --ch-radius-pill: 999px;
+  --ch-type-small: 0.8125rem;
+  --ch-type-body: 1rem;
+  --ch-type-title: clamp(1.75rem, 3vw, 2.5rem);
+  --ch-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --ch-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

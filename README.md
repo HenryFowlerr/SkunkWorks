@@ -2,7 +2,7 @@
 
 Chappe is a website for clearer engineering-to-workshop prototype handoffs. Engineers select a facility, review documented capability gaps, approve visual guidance for unusually complex work, and send a QR-linked guide to the floor. Operators can ask or flag a problem in the context of the exact released operation. SkunkWorks is the team and repository name.
 
-Start with the [current product brief](docs/product/overview.md) and [build status](docs/integration/status.md). For UI/UX work, use the [design handoff](docs/product/design-start-here.md). The existing straight-bend sheet-metal example is a technical demo asset; the final pitch product is undecided.
+Start with the [current product brief](docs/product/overview.md) and [build status](docs/integration/status.md). For UI/UX work, use the [canonical design system](docs/design-system/README.md) and [product design handoff](docs/product/design-start-here.md). The existing straight-bend sheet-metal example is a technical demo asset; the final pitch product is undecided.
 
 ## Local development
 

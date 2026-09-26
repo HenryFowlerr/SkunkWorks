@@ -1,6 +1,6 @@
 # Chappe UI/UX handoff
 
-Read [the full product brief](overview.md) before making design decisions, then [current build status](../integration/status.md) before assuming a screen works. This page is a compact design map, not a replacement for Henry's walkthrough. Chappe is the product; SkunkWorks is the team. The final demonstration product and visual brand are undecided.
+Read [the full product brief](overview.md) before making design decisions, then [current build status](../integration/status.md) before assuming a screen works. This page is a compact product design map, not a replacement for Henry's walkthrough. Use the [canonical visual and interaction system](../design-system/README.md) for all UI work. Chappe is the product; SkunkWorks is the team. The final demonstration part and exact logo artwork remain undecided; the visual direction is defined.
 
 ## The five-minute story
 
@@ -40,6 +40,6 @@ The initial viewer is a straight-bend sheet-metal example with numbered bends. I
 
 ## Current design boundaries
 
-Focus on route clarity, hierarchy, and phone ergonomics. Henry's team will provide detailed brand language and output artwork later. The eventual illustrations/report format, final example product, and exact AI model are open decisions. Do not overbuild CAD editing, general collision simulation, enterprise manufacturing management, or a universal assembly manual for this five-minute demonstration.
+Focus on route clarity, hierarchy, and phone ergonomics. The eventual illustrations/report format, final example product, and exact AI model are open decisions. Follow the current design system for colours, typography, layout and motion. Do not overbuild CAD editing, general collision simulation, enterprise manufacturing management, or a universal assembly manual for this five-minute demonstration.
 
 For implementation-specific API vocabulary, use [architecture and contracts](architecture-and-contracts.md) and `src/contracts/`. For what can currently be clicked through, use [current build status](../integration/status.md); it is updated as work merges.
