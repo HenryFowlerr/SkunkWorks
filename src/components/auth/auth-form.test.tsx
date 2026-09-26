@@ -105,4 +105,35 @@ describe("AuthForm", () => {
     fireEvent.submit(screen.getByRole("button", { name: /create account/i }).closest("form")!);
     await waitFor(() => expect(authApi.signUp).toHaveBeenCalledWith(expect.objectContaining({ returnPath: `/invite/${token}` })));
   });
+  it('returns a signed-in operator to the exact stable part link', async () => {
+    const path = '/parts/00000000-0000-4000-8000-000000000007';
+    authApi.signIn.mockResolvedValue({ actor: { id: 'actor' }, memberships: [] });
+    render(<AuthForm mode="signIn" returnTo={path} />);
+    expect(screen.getByRole('link', { name: 'Create an account' }).getAttribute('href')).toBe(`/signup?returnTo=${encodeURIComponent(path)}`);
+    setInput('Email address', 'floor@example.com');
+    setInput('Password', 'password');
+    fireEvent.submit(screen.getByRole('button', { name: /sign in/i }).closest('form')!);
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith(path));
+  });
+
+  it('preserves the part QR destination through account creation', async () => {
+    const path = '/parts/00000000-0000-4000-8000-000000000007';
+    authApi.signUp.mockResolvedValue({ verificationRequired: true });
+    render(<AuthForm mode="signUp" returnTo={path} />);
+    expect(screen.getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe(`/login?returnTo=${encodeURIComponent(path)}`);
+    setInput('Email address', 'floor@example.com');
+    setInput('Password', 'long-enough-password');
+    fireEvent.submit(screen.getByRole('button', { name: /create account/i }).closest('form')!);
+    await waitFor(() => expect(authApi.signUp).toHaveBeenCalledWith(expect.objectContaining({ returnPath: path })));
+  });
+
+  it.each(['/parts/not-a-part', '//evil.example/parts/00000000-0000-4000-8000-000000000007', '/parts/00000000-0000-4000-8000-000000000007/extra'])('rejects the unsupported part return destination %s', async (path) => {
+    authApi.signIn.mockResolvedValue({ actor: { id: 'actor' }, memberships: [] });
+    render(<AuthForm mode="signIn" returnTo={path} />);
+    setInput('Email address', 'floor@example.com');
+    setInput('Password', 'password');
+    fireEvent.submit(screen.getByRole('button', { name: /sign in/i }).closest('form')!);
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('/studio'));
+  });
+
 });

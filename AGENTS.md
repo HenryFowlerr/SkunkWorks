@@ -13,7 +13,7 @@ Before creating or changing any page, component, copy, image, interaction, or re
 - Use `npm` and commit `package-lock.json`; pin every direct dependency.
 - Keep server secrets out of browser bundles, source control, logs, and QR URLs.
 - UI code calls only the typed same-origin API client. Do not access database tables directly from feature UI.
-- Use immutable release snapshots and `expectedVersion` for mutable writes. Show actual server errors and do not convert fixture behavior into deployment success.
+- Use stable part QR addresses and evolving approved part knowledge. Existing immutable approval records are internal history, not a CAD revision requirement. Use `expectedVersion` for mutable writes. Show actual server errors and do not convert fixture behavior into deployment success.
 - Inspect current main before editing, use isolated branches/worktrees, review diffs, run relevant checks, and never force-push. Keep `docs/integration/status.md` current so other chats have a truthful handoff.
 - Tests and checks are required when a task asks for verification. Record the exact command and outcome.
 - When a long chat starts losing efficiency or approaches its context limit, start a fresh Codex task for a bounded continuation. First commit or publish the current work, then give the new task the exact branch/PR, current status, tests, open risks, and the two canonical docs above. Do not make the new task infer progress from chat history alone.

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Public, prepared pitch journey hosted from this repository's Pages artifact. */
+/** Keep old /demo links inside the server-hosted application after retiring Pages. */
 export default function DemoPage() {
-  redirect("https://henryfowlerr.github.io/SkunkWorks/");
+  redirect("/");
 }

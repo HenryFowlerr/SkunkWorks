@@ -97,4 +97,15 @@ describe("StudioSessionProvider", () => {
     expect(await screen.findByText("Designer desk content")).toBeTruthy();
     expect(apiMock.workspaces.create).toHaveBeenCalledWith(expect.objectContaining({ name: "Prototype Lab" }));
   });
+  it("keeps manufacturing navigation separate and leaves the old part when switching workspace", async () => {
+    location.pathname = "/studio/manufacturing/jobs/old-part";
+    apiMock.auth.me.mockResolvedValue({...session,memberships:[membership,{...membership,id:'membership-2',workspaceId:'workspace-2'}]});
+    render(<StudioSessionProvider><p>Part handoff</p></StudioSessionProvider>);
+    await screen.findByText('Part handoff');
+    expect(screen.getByRole('link',{name:'Parts and handoffs'}).getAttribute('href')).toBe('/studio/manufacturing?workspace=workspace-1');
+    expect(screen.getByRole('link',{name:'Equipment and capabilities'}).getAttribute('href')).toBe('/studio/manufacturing/equipment?workspace=workspace-1');
+    fireEvent.change(screen.getByLabelText('Select workspace'),{target:{value:'workspace-2'}});
+    expect(navigation.push).toHaveBeenCalledWith('/studio/manufacturing?workspace=workspace-2');
+  });
+
 });

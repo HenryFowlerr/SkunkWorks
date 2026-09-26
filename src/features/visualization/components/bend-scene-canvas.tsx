@@ -21,6 +21,11 @@ function panelShape(panel: Panel, thicknessMm: number): THREE.ExtrudeGeometry {
   return geometry;
 }
 
+function colorToken(name: string, fallback: string) {
+  if (typeof window === 'undefined') return fallback;
+  return window.getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
 export function BendSceneCanvas({
   data,
   completedStepCount,
@@ -61,8 +66,16 @@ export function BendSceneCanvas({
     let observer: ResizeObserver | null = null;
     let frameCancel: (() => void) | null = null;
     let readyFrame = 0;
+    const colors = {
+      canvas: colorToken('--ch-canvas-subtle', '#EEF0EB'),
+      schematicFill: colorToken('--ch-schematic-fill', '#E6ECE7'),
+      schematicLine: colorToken('--ch-schematic-line', '#8B9B91'),
+      metalMid: colorToken('--ch-metal-mid', '#A7B5AC'),
+      metalDark: colorToken('--ch-metal-dark', '#68776E'),
+      action: colorToken('--ch-action', '#155E75'),
+    };
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#f6f5f0');
+    scene.background = new THREE.Color(colors.canvas);
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 10000);
     const shapeGroup = new THREE.Group();
     const panelMeshes: THREE.Mesh[] = [];
@@ -101,7 +114,7 @@ export function BendSceneCanvas({
       const key = new THREE.DirectionalLight(0xffffff, 2.4);
       key.position.set(180, 260, 360);
       scene.add(key);
-      const fill = new THREE.DirectionalLight(0xc4dbee, 0.8);
+      const fill = new THREE.DirectionalLight(colors.schematicFill, 0.8);
       fill.position.set(-260, -120, 180);
       scene.add(fill);
 
@@ -111,7 +124,7 @@ export function BendSceneCanvas({
           && childPanelByHinge.get(selectedBend.hingeId) === panel.id;
         const isCompleted = bendId ? activeBendIds.has(bendId) : false;
         const material = new THREE.MeshStandardMaterial({
-          color: isSelected ? '#4a8ec2' : isCompleted ? '#a9b4b8' : '#c4c8c6',
+          color: isSelected ? colors.action : isCompleted ? colors.metalMid : colors.schematicFill,
           metalness: 0.19,
           roughness: 0.52,
           side: THREE.DoubleSide,
@@ -138,7 +151,7 @@ export function BendSceneCanvas({
             new THREE.Vector3(hinge.axisStartMm[0], hinge.axisStartMm[1], data.panelModel.thicknessMm / 2 + 0.15),
             new THREE.Vector3(hinge.axisEndMm[0], hinge.axisEndMm[1], data.panelModel.thicknessMm / 2 + 0.15),
           ]),
-          new THREE.LineBasicMaterial({ color: isSelected ? '#175f9b' : isCompleted ? '#5b7890' : '#7b8589' }),
+          new THREE.LineBasicMaterial({ color: isSelected ? colors.action : isCompleted ? colors.metalDark : colors.schematicLine }),
         );
         line.matrixAutoUpdate = false;
         line.matrix.fromArray(pose);
@@ -156,7 +169,7 @@ export function BendSceneCanvas({
           new THREE.Vector3(0, 0, 1),
           new THREE.Vector3(centroid[0], centroid[1], data.panelModel.thicknessMm / 2 + 0.4),
           arrowLength,
-          0x175f9b,
+          colors.action,
           arrowLength * 0.28,
           arrowLength * 0.16,
         ));

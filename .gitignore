@@ -10,3 +10,6 @@ coverage/
 .vercel/
 .DS_Store
 work/
+# Supplied production design assets belong in private object storage, never the retired static archive.
+site/assets/engineering-test-block.*
+site/assets/phone-preview-qr.svg

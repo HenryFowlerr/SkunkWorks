@@ -75,6 +75,31 @@
 .checkboxRow { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0; font-size: .75rem; line-height: 1.45; }
 .checkboxRow input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--blue); }
 .blockerList { display: grid; gap: 5px; margin: 10px 0; padding-left: 19px; color: #80500c; font-size: .75rem; line-height: 1.4; }
+.pitchPanel, .pitchResult, .pitchRows, .pitchRow, .pitchDecisionList, .pitchTextClaim, .pitchFlagForm, .pitchPhonePreview, .phoneAnswer, .phoneReview { display:grid; gap:10px; min-width:0; }
+.pitchActions { display:flex; flex-wrap:wrap; gap:8px; }
+.pitchResult { border-top:1px solid var(--line); padding-top:14px; }
+.pitchResult > p, .pitchTextClaim > p, .pitchRow > p { margin:0; font-size:.82rem; line-height:1.55; white-space:pre-wrap; }
+.pitchRows { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pitchRow, .pitchTextClaim, .pitchDecisionList, .pitchFlagForm, .pitchPhonePreview { border:1px solid var(--line); border-radius:var(--radius-sm); padding:11px; background:var(--surface); }
+.pitchRow header { display:flex; gap:8px; justify-content:space-between; align-items:flex-start; }
+.pitchRow header strong, .pitchTextClaim strong, .pitchDecisionList strong, .pitchFlagForm h3 { font-size:.78rem; }
+.pitchFlagForm h3 { margin:0; }
+.pitchFlagForm :global(textarea) { resize:vertical; min-height:88px; }
+.pitchPhonePreview { margin-top:2px; background:linear-gradient(145deg,#f7fafc,#fff); }
+.pitchPhonePreview > header, .phoneAnswer > header { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.pitchPhonePreview h3 { margin:3px 0 0; font-size:.88rem; }
+.pitchPhonePreview :global(textarea) { resize:vertical; min-height:70px; }
+.phoneStart { margin:0; padding:8px 10px; border-radius:8px; background:#eef4f7; color:var(--ink); font-size:.78rem; line-height:1.45; }
+.phoneAnswer { border:1px solid #b7cad6; border-radius:13px; padding:12px; background:#fff; box-shadow:0 5px 16px rgba(20,54,70,.07); }
+.phoneAnswer > p, .phoneReview p { margin:0; font-size:.83rem; line-height:1.5; white-space:pre-wrap; }
+.phoneReview { border-left:3px solid var(--blue); padding:8px 10px; background:#eff5f8; }
+.phoneReview strong { font-size:.72rem; }
+.pitchDecisionList ul, .pitchDecisionList ol { display:grid; gap:8px; margin:0; padding-left:20px; font-size:.8rem; line-height:1.5; }
+.pitchDecisionList li { display:grid; gap:6px; }
+.pitchCitations { display:grid; gap:4px; margin:0; padding:0; list-style:none; color:var(--ink-muted); font-size:.68rem; line-height:1.42; }
+.pitchCitations li { display:grid; gap:3px; min-width:0; }
+.pitchCitations code { overflow-wrap:anywhere; color:var(--ink-muted); font-family:ui-monospace,monospace; }
+.pitchCitations span { overflow-wrap:anywhere; }
 
 @media (max-width: 900px) {
   .reviewGrid { grid-template-columns: 1fr; }
@@ -85,7 +110,7 @@
   .reviewHeader { align-items: flex-start; flex-direction: column; }
   .reviewHeader > button { width: 100%; }
   .reviewGrid { gap: 12px; }
-  .valueGrid, .reviewActions, .orderCompare { grid-template-columns: 1fr; }
+  .valueGrid, .reviewActions, .orderCompare, .pitchRows { grid-template-columns: 1fr; }
   .pdfFrame { min-height: 260px; height: 55vh; }
   .reviewShell :global(.button--small), .linkActions .textLink, .evidenceList :global(.source-reference) { min-height: 44px; }
   .linkActions .textLink, .evidenceList :global(.source-reference) { display: inline-flex; align-items: center; }
@@ -94,3 +119,10 @@
   .originalText { font-size: .75rem; }
   .sceneBox { min-height: 240px; }
 }
+
+.workflowSummary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-block:1px solid var(--ch-border); gap:var(--ch-space-4); padding:var(--ch-space-4) 0; }
+.workflowSummary div { display:grid; gap:var(--ch-space-2); }
+.workflowSummary span { color:var(--ch-text-secondary); line-height:1.5; font-size:.85rem; }
+.taskNav { display:flex; flex-wrap:wrap; gap:var(--ch-space-4); }
+.taskNav a { min-height:44px; display:inline-flex; align-items:center; }
+@media(max-width:760px) { .workflowSummary { grid-template-columns:repeat(2,minmax(0,1fr)); } }

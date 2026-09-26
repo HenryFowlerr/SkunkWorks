@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Job, Role } from "@/contracts";
-import { Button, StatusBadge, buttonClassName } from "@/components/ui";
+import { Button, StatusBadge, TextInput, buttonClassName } from "@/components/ui";
 import { api } from "@/lib/api/client";
 import styles from "./jobs.module.css";
 
@@ -26,6 +26,7 @@ export function JobsDashboard({
   role?: Role;
   onOpenJob?: (job: Job) => void;
 }) {
+  const [query, setQuery] = useState("");
   const isFabricator = role === "fabricator";
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,7 @@ export function JobsDashboard({
   const [loadedWorkspaceId, setLoadedWorkspaceId] = useState<string | null>(null);
   const isLoading = loading || loadedWorkspaceId !== workspaceId;
   const visibleJobs = loadedWorkspaceId === workspaceId
-    ? jobs.filter((job) => job.workspaceId === workspaceId)
+    ? jobs.filter((job) => job.workspaceId === workspaceId && `${job.title} ${job.partNumber}`.toLowerCase().includes(query.toLowerCase()))
     : [];
 
   useEffect(() => {
@@ -58,11 +59,11 @@ export function JobsDashboard({
     <div className={styles.stack}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>{isFabricator ? "Workshop workspace" : "Designer workspace"}</p>
-          <h1>{isFabricator ? "Workshop jobs" : "Jobs"}</h1>
+          <p className={styles.eyebrow}>{isFabricator ? "Workshop workspace" : "Engineering"}</p>
+          <h1>{isFabricator ? "Workshop jobs" : "Parts and jobs"}</h1>
           <p className={styles.muted}>{isFabricator
             ? "Review the selected setup and guide before work begins. Open a job to see its source and current review state."
-            : "Source-backed work moving from design review to the factory floor."}</p>
+            : "Add one part with its drawing and model, select the manufacturer, then approve only the guidance the floor needs."}</p>
         </div>
         <div className={styles.headingActions}>
           {isFabricator ? null : <Link className={buttonClassName()} href={`/studio/jobs/new?workspace=${encodeURIComponent(workspaceId)}`}>Start job</Link>}
@@ -74,11 +75,12 @@ export function JobsDashboard({
 
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
       {error && visibleJobs.length > 0 ? <p className={styles.muted} role="status">Showing the last loaded jobs; refresh did not complete.</p> : null}
+      <TextInput id="engineer-part-search" label="Search part name or number" value={query} onChange={event => setQuery(event.target.value)} />
       <section className={styles.jobSection} aria-label="Workspace jobs">
           {isLoading && visibleJobs.length === 0 ? <p className={styles.muted} role="status">Loading jobs from this workspace…</p> : null}
           {!isLoading && !error && visibleJobs.length === 0 ? (
             <div>
-              <p className={styles.muted}>No jobs have been created in this workspace yet.</p>
+              <p className={styles.muted}>{query ? `No parts match “${query}”.` : "No jobs have been created in this workspace yet."}</p>
               <p className={styles.muted}>{isFabricator
                 ? "When a designer shares a job with this workspace, its drawing, setup and guide review will appear here."
                 : "Start a job intake to attach a drawing, model and confirmed workshop machine."}</p>
@@ -96,7 +98,7 @@ export function JobsDashboard({
                       <div className={styles.jobMeta}>
                         <span>{job.partFamily}</span>
                         <span>{job.sourceAssetIds.length} source asset{job.sourceAssetIds.length === 1 ? "" : "s"}</span>
-                        <span>Updated record v{job.version}</span>
+                        <span>{job.workshopSnapshotId ? "Manufacturer selected" : "Choose a manufacturer"}</span>
                       </div>
                     </div>
                     <div className={styles.jobAction}>

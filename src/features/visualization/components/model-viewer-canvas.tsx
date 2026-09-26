@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import { Button } from '@/components/ui';
@@ -71,7 +72,21 @@ function validateSelfContainedGlb(buffer: ArrayBuffer): void {
   }
 }
 
-export function ModelViewerCanvas({ assetId, resolveAssetUrl, onError }: ModelViewerProps) {
+function validateStl(buffer: ArrayBuffer): void {
+  if (buffer.byteLength < 84 || buffer.byteLength > MAX_MODEL_BYTES) {
+    throw new Error('The supplied STL has an unsupported file size.');
+  }
+  const bytes = new Uint8Array(buffer);
+  const binaryView = new DataView(buffer);
+  const triangleCount = binaryView.getUint32(80, true);
+  const binarySize = 84 + triangleCount * 50;
+  if (Number.isSafeInteger(binarySize) && binarySize === buffer.byteLength) return;
+  const firstNonWhitespace = bytes.findIndex((byte) => ![9, 10, 13, 32].includes(byte));
+  const asciiPrefix = new TextDecoder().decode(bytes.slice(firstNonWhitespace, firstNonWhitespace + 5)).toLowerCase();
+  if (asciiPrefix !== 'solid') throw new Error('The supplied model is not a valid STL file.');
+}
+
+export function ModelViewerCanvas({ assetId, format, resolveAssetUrl, onError }: ModelViewerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const resolveAssetUrlRef = useRef(resolveAssetUrl);
@@ -100,7 +115,7 @@ export function ModelViewerCanvas({ assetId, resolveAssetUrl, onError }: ModelVi
     }
 
     let disposed = false;
-    let root: THREE.Group | null = null;
+    let root: THREE.Object3D | null = null;
     let observer: ResizeObserver | null = null;
     const controller = new AbortController();
     const scene = new THREE.Scene();
@@ -118,7 +133,7 @@ export function ModelViewerCanvas({ assetId, resolveAssetUrl, onError }: ModelVi
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.domElement.className = styles.canvas;
     renderer.domElement.tabIndex = 0;
-    renderer.domElement.setAttribute('aria-label', 'Interactive supplied final model. Drag to orbit; use the camera buttons to change view.');
+    renderer.domElement.setAttribute('aria-label', `Interactive supplied ${format === 'stl' ? 'STL visual reference' : 'visual model'}. Drag to orbit; use the camera buttons to change view.`);
     host.replaceChildren(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -169,17 +184,35 @@ export function ModelViewerCanvas({ assetId, resolveAssetUrl, onError }: ModelVi
         const response = await fetch(url, { signal: controller.signal, credentials: 'omit' });
         if (!response.ok) throw new Error('The model asset could not be retrieved. Request a fresh authorised model link.');
         const buffer = await response.arrayBuffer();
-        validateSelfContainedGlb(buffer);
-        const loader = new GLTFLoader();
-        const gltf = await new Promise<{ scene: THREE.Group }>((resolve, reject) => {
-          loader.parse(buffer, '', (loaded) => resolve(loaded), reject);
-        });
+        let loadedRoot: THREE.Object3D;
+        if (format === 'glb') {
+          validateSelfContainedGlb(buffer);
+          const loader = new GLTFLoader();
+          const gltf = await new Promise<{ scene: THREE.Group }>((resolve, reject) => {
+            loader.parse(buffer, '', (loaded) => resolve(loaded), reject);
+          });
+          loadedRoot = gltf.scene;
+        } else {
+          validateStl(buffer);
+          const geometry = new STLLoader().parse(buffer);
+          const positions = geometry.getAttribute('position');
+          if (!positions || positions.count < 3) {
+            geometry.dispose();
+            throw new Error('The supplied STL has no visible geometry.');
+          }
+          geometry.computeVertexNormals();
+          const material = new THREE.MeshStandardMaterial({ color: 0x8ba2b8, metalness: 0.48, roughness: 0.42 });
+          const mesh = new THREE.Mesh(geometry, material);
+          const group = new THREE.Group();
+          group.add(mesh);
+          loadedRoot = group;
+        }
         if (disposed) {
-          disposeModel(gltf.scene);
+          disposeModel(loadedRoot);
           return;
         }
 
-        root = gltf.scene;
+        root = loadedRoot;
         const bounds = new THREE.Box3().setFromObject(root);
         const size = bounds.getSize(new THREE.Vector3());
         const center = bounds.getCenter(new THREE.Vector3());
@@ -218,7 +251,7 @@ export function ModelViewerCanvas({ assetId, resolveAssetUrl, onError }: ModelVi
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [assetId]);
+  }, [assetId, format]);
 
   const rotate = (horizontal: number, vertical: number) => {
     controlsRef.current?.rotateLeft(horizontal);
@@ -227,9 +260,9 @@ export function ModelViewerCanvas({ assetId, resolveAssetUrl, onError }: ModelVi
   };
 
   return (
-    <section className={styles.modelViewer} aria-label="Supplied final model">
+    <section className={styles.modelViewer} aria-label="Supplied visual model">
       <div className={styles.modelToolbar}>
-        <span className={styles.sceneEyebrow}>Supplied final model · original units preserved for display</span>
+        <span className={styles.sceneEyebrow}>Supplied {format === 'stl' ? 'STL visual reference' : 'visual model'} · original units preserved for display</span>
         <div className={styles.modelControls} aria-label="Model camera controls">
           <Button tone="quiet" small type="button" disabled={status !== 'ready'} onClick={() => rotate(Math.PI / 12, 0)} aria-label="Rotate model left">←</Button>
           <Button tone="quiet" small type="button" disabled={status !== 'ready'} onClick={() => rotate(-Math.PI / 12, 0)} aria-label="Rotate model right">→</Button>
@@ -240,7 +273,7 @@ export function ModelViewerCanvas({ assetId, resolveAssetUrl, onError }: ModelVi
         {status === 'loading' ? <div className={styles.modelOverlay} role="status">Retrieving the authorised model…</div> : null}
         {status === 'error' ? <div className={styles.modelOverlay + ' ' + styles.modelError} role="alert">{error}</div> : null}
       </div>
-      <p className={styles.modelNote}>This supplied final model is for visual reference only. Use the released drawing and guide as the controlled work instructions.</p>
+      <p className={styles.modelNote}>This supplied {format === 'stl' ? 'STL' : 'visual'} model is for visual reference only. Use the released drawing and guide as the controlled work instructions.</p>
     </section>
   );
 }

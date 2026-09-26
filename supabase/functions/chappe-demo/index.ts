@@ -5,8 +5,9 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const projectUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const demoOrigin = Deno.env.get("CHAPPE_DEMO_ORIGIN") ?? "";
 const allowedOrigin = (origin: string | null) =>
-  !origin || origin === "https://henryfowlerr.github.io" ||
+  !origin || (demoOrigin !== "" && origin === demoOrigin) ||
   /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -37,7 +38,7 @@ class HttpError extends Error {
 }
 function cors(origin: string | null): HeadersInit {
   return {
-    "Access-Control-Allow-Origin": origin ?? "https://henryfowlerr.github.io",
+    "Access-Control-Allow-Origin": origin && allowedOrigin(origin) ? origin : demoOrigin || "null",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "authorization, apikey, content-type",
     "Cache-Control": "no-store",

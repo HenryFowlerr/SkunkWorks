@@ -23,6 +23,7 @@ const ids = {
   job: "ab17ef88-c9c4-4f69-b253-bba5e2522d59",
   pdf: "c45d15be-2fb9-4a93-9a02-d7d52d273431",
   glb: "998bfb78-4534-49c8-8bb2-19b35232c67d",
+  stl: "2be5d7ac-5d67-4e97-b7fd-3b3620ee0a63",
 };
 
 const timestamp = "2026-09-26T00:00:00.000Z";
@@ -70,8 +71,8 @@ function makeAsset(kind: Asset["kind"], id: string): Asset {
     jobId: ids.job,
     releaseId: null,
     kind,
-    filename: kind === "drawing_pdf" ? "sensor.pdf" : kind === "model_glb" ? "sensor.glb" : "sensor.json",
-    mimeType: kind === "drawing_pdf" ? "application/pdf" : kind === "model_glb" ? "model/gltf-binary" : "application/json",
+    filename: kind === "drawing_pdf" ? "sensor.pdf" : kind === "model_glb" ? "sensor.glb" : kind === "model_stl" ? "Engineering test block (1).STL" : "sensor.json",
+    mimeType: kind === "drawing_pdf" ? "application/pdf" : kind === "model_glb" ? "model/gltf-binary" : kind === "model_stl" ? "model/stl" : "application/json",
     byteSize: 32,
     sha256: "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
     version: 1,
@@ -84,6 +85,7 @@ function sourceFiles() {
   return {
     pdf: new File(["%PDF-1.7"], "sensor.pdf", { type: "application/pdf" }),
     glb: new File(["glTF"], "sensor.glb", { type: "model/gltf-binary" }),
+    stl: new File(["solid sensor"], "Engineering test block (1).STL", { type: "model/stl" }),
   };
 }
 
@@ -95,7 +97,7 @@ function fillRequiredFields() {
   fireEvent.change(screen.getByLabelText("Manufacturer and confirmed profile"), { target: { value: ids.snapshot } });
   fireEvent.change(screen.getByLabelText("Machine"), { target: { value: ids.machine } });
   fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), { target: { files: [files.pdf] } });
-  fireEvent.change(screen.getByLabelText(/3D model/), { target: { files: [files.glb] } });
+  fireEvent.change(screen.getByLabelText(/^3D model \(GLB CAD export\)/), { target: { files: [files.glb] } });
   return files;
 }
 
@@ -119,10 +121,49 @@ describe("designer jobs and intake", () => {
       version: 2,
     }));
     apiMock.assets.uploadAsset.mockImplementation(async (input: { kind: Asset["kind"] }) =>
-      makeAsset(input.kind, input.kind === "drawing_pdf" ? ids.pdf : ids.glb));
+      makeAsset(input.kind, input.kind === "drawing_pdf" ? ids.pdf : input.kind === "model_stl" ? ids.stl : ids.glb));
   });
 
   afterEach(() => cleanup());
+
+  it("retains a native SolidWorks pair without pretending exports or AI analysis exist", async () => {
+    const { container } = render(<NewJobIntake workspaceId={ids.workspace} />);
+    await screen.findByRole("option", { name: /Christchurch Press Shop/ });
+    fillRequiredFields();
+    fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), { target: { files: [] } });
+    fireEvent.change(screen.getByLabelText(/^3D model \(GLB CAD export\)/), { target: { files: [] } });
+    fireEvent.change(screen.getByLabelText(/Native SolidWorks part/), {
+      target: { files: [new File(["opaque part"], "Engineering test block.SLDPRT")] },
+    });
+    fireEvent.change(screen.getByLabelText(/Native SolidWorks drawing/), {
+      target: { files: [new File(["opaque drawing"], "Engineering test block.SLDDRW")] },
+    });
+    apiMock.assets.uploadAsset.mockImplementation(async ({ kind }: { kind: Asset["kind"] }) =>
+      makeAsset(kind, kind === "native_part" ? ids.glb : ids.pdf));
+    submitForm(container);
+    await screen.findByText("Inputs saved");
+    expect(apiMock.assets.uploadAsset.mock.calls.map(([input]) => input.kind)).toEqual(["native_part", "native_drawing"]);
+    expect(screen.getAllByText("Source retained")).toHaveLength(2);
+    expect(screen.getByText(/Exports needed:/)).toHaveTextContent("Native sources remain private provenance files and are not AI drawing evidence");
+    expect(apiMock.jobs.updateInputs).toHaveBeenCalledWith(expect.objectContaining({ sourceAssetIds: [ids.glb, ids.pdf] }));
+  });
+
+  it("accepts the supplied drawing PDF and STL pair while keeping the mesh visual-only", async () => {
+    const { container } = render(<NewJobIntake workspaceId={ids.workspace} />);
+    await screen.findByRole("option", { name: /Christchurch Press Shop/ });
+    const files = fillRequiredFields();
+    const drawing = new File(["%PDF-1.7"], "Engineering test block (1).pdf", { type: "application/pdf" });
+    fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), { target: { files: [drawing] } });
+    fireEvent.change(screen.getByLabelText(/^3D model \(GLB CAD export\)/), { target: { files: [] } });
+    fireEvent.change(screen.getByLabelText(/^3D model \(STL visual reference\)/), { target: { files: [files.stl] } });
+
+    submitForm(container);
+
+    await screen.findByText("Inputs saved");
+    expect(apiMock.assets.uploadAsset.mock.calls.map(([input]) => input.kind)).toEqual(["drawing_pdf", "model_stl"]);
+    expect(apiMock.jobs.updateInputs).toHaveBeenCalledWith(expect.objectContaining({ sourceAssetIds: [ids.pdf, ids.stl] }));
+    expect(screen.getByText(/STL visual reference/)).toBeInTheDocument();
+  });
 
   it("loads the workspace list from the API and exposes the open action", async () => {
     const existing = makeJob({ sourceAssetIds: [ids.pdf, ids.glb] });
@@ -187,7 +228,8 @@ describe("designer jobs and intake", () => {
 
     expect(await screen.findByText("Enter a job title.")).toBeInTheDocument();
     expect(screen.getByText("Enter a part family.")).toBeInTheDocument();
-    expect(screen.getAllByText("This source file is required.")).toHaveLength(2);
+    expect(screen.getByText("This source file is required.")).toBeInTheDocument();
+    expect(screen.getByText("Attach a viewable GLB or STL model, or retain a native part source.")).toBeInTheDocument();
     expect(apiMock.jobs.create).not.toHaveBeenCalled();
   });
 
@@ -203,7 +245,7 @@ describe("designer jobs and intake", () => {
     fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), {
       target: { files: [new File(["not a drawing"], "sensor.txt", { type: "text/plain" })] },
     });
-    fireEvent.change(screen.getByLabelText(/3D model/), { target: { files: [files.glb] } });
+    fireEvent.change(screen.getByLabelText(/^3D model \(GLB CAD export\)/), { target: { files: [files.glb] } });
     submitForm(container);
 
     expect(await screen.findByText("Choose a .pdf file.")).toBeInTheDocument();
@@ -221,7 +263,7 @@ describe("designer jobs and intake", () => {
     fireEvent.change(screen.getByLabelText("Manufacturer and confirmed profile"), { target: { value: ids.snapshot } });
     fireEvent.change(screen.getByLabelText("Machine"), { target: { value: ids.machine } });
     fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), { target: { files: [files.pdf] } });
-    fireEvent.change(screen.getByLabelText(/3D model/), { target: { files: [files.glb] } });
+    fireEvent.change(screen.getByLabelText(/^3D model \(GLB CAD export\)/), { target: { files: [files.glb] } });
     submitForm(container);
 
     expect(await screen.findByText("Choose a file no larger than 25 MiB.")).toBeInTheDocument();
@@ -238,7 +280,7 @@ describe("designer jobs and intake", () => {
     fireEvent.change(screen.getByLabelText("Manufacturer and confirmed profile"), { target: { value: ids.snapshot } });
     fireEvent.change(screen.getByLabelText("Machine"), { target: { value: ids.machine } });
     fireEvent.change(screen.getByLabelText(/Technical drawing PDFs/), { target: { files: [files.pdf] } });
-    fireEvent.change(screen.getByLabelText(/3D model/), { target: { files: [files.glb] } });
+    fireEvent.change(screen.getByLabelText(/^3D model \(GLB CAD export\)/), { target: { files: [files.glb] } });
     fireEvent.change(screen.getByLabelText(/Authored bend manifest/), {
       target: { files: [new File(["{ incomplete"], "bend-map.json", { type: "application/json" })] },
     });
@@ -412,7 +454,7 @@ describe("designer jobs and intake", () => {
   it("rejects a dropped native CAD file rather than implying it can be processed", async () => {
     const { container } = render(<NewJobIntake workspaceId={ids.workspace} />);
     await screen.findByRole("option", { name: /Christchurch Press Shop/ });
-    const modelDrop = screen.getByLabelText(/3D model/).parentElement;
+    const modelDrop = screen.getByLabelText(/^3D model \(GLB CAD export\)/).parentElement;
     if (!modelDrop) throw new Error("Model drop target not found.");
     fireEvent.drop(modelDrop, { dataTransfer: { files: [new File(["native"], "part.sldprt", { type: "application/octet-stream" })] } });
     expect(screen.getByText("Choose a .glb file.")).toBeInTheDocument();

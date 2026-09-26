@@ -5,12 +5,13 @@ import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { AnswerSchema, ContextRefSchema } from "../../contracts/domain";
 import { GenerationJsonSchema, GenerationOutputSchema, QuestionJsonSchema, QuestionOutputSchema } from "./schemas";
-import { GENERATION_INSTRUCTIONS, QUESTION_INSTRUCTIONS, generationUserPrompt, questionUserPrompt } from "./prompts";
+import { GENERATION_INSTRUCTIONS, QUESTION_INSTRUCTIONS, generationUserPrompt, questionUserPrompt, ENGINEER_REPLY_INSTRUCTIONS, engineerReplyUserPrompt } from "./prompts";
 import {
   prepareGenerationEvidence,
   prepareQuestionEvidence,
 } from "./grounding";
 import { retrieveQuestionKnowledge } from "./knowledge-base";
+import { floorAssistantModel } from "./model-routing";
 import { parseGenerationOutput, parseQuestionOutput } from "./validate-output";
 import { AiProviderError, type AskResult, type DraftProposal, type GenerationInput, type QuestionInput } from "./types";
 
@@ -20,6 +21,7 @@ const MAX_TIMEOUT_MS = 50_000;
 export type AiAdapter = {
   generateDraft(input: GenerationInput): Promise<DraftProposal>;
   answerQuestion(input: QuestionInput): Promise<AskResult>;
+  suggestEngineerReply(input: QuestionInput): Promise<AskResult>;
 };
 
 type Environment = Record<string, string | undefined>;
@@ -42,7 +44,7 @@ export class OpenAiResponsesAdapter implements AiAdapter {
   }
 
   async generateDraft(input: GenerationInput): Promise<DraftProposal> {
-    const model = this.configuredModel();
+    const model = floorAssistantModel(this.environment);
     const evidence = prepareGenerationEvidence(input);
     const response = await this.request({
       model,
@@ -58,6 +60,14 @@ export class OpenAiResponsesAdapter implements AiAdapter {
   }
 
   async answerQuestion(input: QuestionInput): Promise<AskResult> {
+    return this.answerWithEvidence(input, "question");
+  }
+
+  async suggestEngineerReply(input: QuestionInput): Promise<AskResult> {
+    return this.answerWithEvidence(input, "engineer_reply");
+  }
+
+  private async answerWithEvidence(input: QuestionInput, purpose: "question" | "engineer_reply"): Promise<AskResult> {
     const context = ContextRefSchema.parse(input.context);
     const checkedInput = { ...input, context };
     const verified = prepareQuestionEvidence(checkedInput);
@@ -75,11 +85,11 @@ export class OpenAiResponsesAdapter implements AiAdapter {
         model: "retrieval-only",
       };
     }
-    const model = this.configuredModel();
+    const model = floorAssistantModel(this.environment);
     const response = await this.request({
       model,
-      instructions: QUESTION_INSTRUCTIONS,
-      userText: questionUserPrompt(checkedInput, knowledge),
+      instructions: purpose === "engineer_reply" ? ENGINEER_REPLY_INSTRUCTIONS : QUESTION_INSTRUCTIONS,
+      userText: purpose === "engineer_reply" ? engineerReplyUserPrompt(checkedInput, knowledge) : questionUserPrompt(checkedInput, knowledge),
       // The server-selected text snippets are the complete model-visible knowledge
       // for Q&A. Do not attach whole private PDFs and invite uncited answers.
       pdfs: [],
@@ -89,12 +99,6 @@ export class OpenAiResponsesAdapter implements AiAdapter {
     });
     const parsed = parseStructuredOutput(response, QuestionOutputSchema);
     return parseQuestionOutput(parsed, checkedInput, knowledge.evidence, model);
-  }
-
-  private configuredModel(): string {
-    const model = this.environment.OPENAI_MODEL?.trim();
-    if (!model) throw new AiProviderError("MISSING_MODEL_CONFIGURATION");
-    return model;
   }
 
   private configuredClient(): OpenAI {
@@ -164,8 +168,14 @@ function parseStructuredOutput<T>(
     item.content.some((part) => part.type === "refusal"));
   if (refusal) throw new AiProviderError("PROVIDER_REFUSAL");
   if (response.status !== "completed") {
-    if (response.status === "failed") throw new AiProviderError("PROVIDER_UNAVAILABLE", { retryable: true });
-    throw new AiProviderError("MALFORMED_OUTPUT");
+    if (response.status === "failed" || response.status === "cancelled") {
+      throw new AiProviderError("PROVIDER_UNAVAILABLE", { retryable: true });
+    }
+    // An incomplete provider response is not invalid user input. It may have
+    // consumed its bounded request, so surface a non-retryable provider state
+    // instead of encouraging an automatic repeat.
+    if (response.status === "incomplete") throw new AiProviderError("PROVIDER_UNAVAILABLE");
+    throw new AiProviderError("PROVIDER_UNAVAILABLE", { retryable: true });
   }
   const outputText = response.output_text;
   if (typeof outputText !== "string" || outputText.length === 0) throw new AiProviderError("MALFORMED_OUTPUT");
