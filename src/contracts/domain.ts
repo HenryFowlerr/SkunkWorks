@@ -91,6 +91,7 @@ export const WorkspaceInviteSchema = z.object({
   id: IdSchema,
   workspaceId: IdSchema,
   role: RoleSchema,
+  invitedEmail: z.email(),
   createdAt: utcTimestamp,
   expiresAt: utcTimestamp,
   inviteUrl: z.string().url(),

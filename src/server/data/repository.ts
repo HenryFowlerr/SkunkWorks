@@ -9,6 +9,7 @@ import {
   DraftContentSchema,
   DraftSchema,
   FlagSchema,
+  GenerationSchema,
   GetJobResultSchema,
   JobSchema,
   MachineInputSchema,
@@ -22,6 +23,7 @@ import {
   type Draft,
   type DraftContentInput,
   type Flag,
+  type Generation,
   type Id,
   type Job,
   type MachineInput,
@@ -75,6 +77,17 @@ type DraftRow = {
   content: unknown;
   generation_id: Id | null;
   input_fingerprint: string;
+};
+type GenerationRow = {
+  id: Id;
+  workspace_id: Id;
+  job_id: Id;
+  input_fingerprint: string;
+  state: Generation["state"];
+  started_at: string;
+  expires_at: string;
+  draft_version: number | null;
+  error_code: string | null;
 };
 type ReleaseRow = {
   id: Id;
@@ -243,6 +256,117 @@ export class WorkspaceDataRepository {
 
     const job = this.mapJob(row, sourceIds);
     return GetJobResultSchema.parse({ job, assets, draft, releases });
+  }
+
+  async getGenerationContext(jobId: Id): Promise<{
+    bundle: GetJobResult;
+    workshop: WorkshopSnapshot;
+    inputFingerprint: string;
+  }> {
+    this.requireRole("designer");
+    const bundle = await this.getJobBundle(jobId);
+    if (!bundle.job.workshopSnapshotId || !bundle.job.machineId) {
+      throw new DataAdapterError("REVIEW_REQUIRED", "Select a workshop snapshot and machine before generation.");
+    }
+    const workshop = await this.getWorkshopSnapshot(bundle.job.workshopSnapshotId);
+    const inputFingerprint = computeInputFingerprint({
+      job: bundle.job,
+      assets: bundle.assets,
+      workshopSnapshot: workshop,
+    });
+    return { bundle, workshop, inputFingerprint };
+  }
+
+  async startGeneration(input: {
+    jobId: Id;
+    generationId: Id;
+    expectedJobVersion: number;
+    inputFingerprint: string;
+    idempotencyRecordId: Id;
+    idempotencyClaimToken: Id;
+  }): Promise<Generation> {
+    this.requireRole("designer");
+    const { data, error } = await this.client.rpc("start_generation_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_job_id: input.jobId,
+      p_actor_id: this.scope.actorId,
+      p_generation_id: input.generationId,
+      p_expected_job_version: input.expectedJobVersion,
+      p_input_fingerprint: input.inputFingerprint,
+      p_idempotency_record_id: input.idempotencyRecordId,
+      p_idempotency_claim_token: input.idempotencyClaimToken,
+    });
+    throwDatabaseError(error, "start generation");
+    return GenerationSchema.parse(data);
+  }
+
+  async completeGeneration(input: {
+    generationId: Id;
+    draftId: Id;
+    content: Draft["content"];
+  }): Promise<Generation> {
+    this.requireRole("designer");
+    const { error } = await this.client.rpc("complete_generation_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_generation_id: input.generationId,
+      p_actor_id: this.scope.actorId,
+      p_draft_id: input.draftId,
+      p_content: DraftContentSchema.parse(input.content),
+    });
+    throwDatabaseError(error, "complete generation");
+    return (await this.getGeneration(input.generationId)).generation;
+  }
+
+  async failGeneration(generationId: Id, errorCode: string): Promise<Generation> {
+    this.requireRole("designer");
+    const { error } = await this.client.rpc("fail_generation_internal", {
+      p_workspace_id: this.scope.workspaceId,
+      p_generation_id: generationId,
+      p_actor_id: this.scope.actorId,
+      p_error_code: errorCode,
+    });
+    throwDatabaseError(error, "record generation failure");
+    return (await this.getGeneration(generationId)).generation;
+  }
+
+  async getGeneration(generationId: Id): Promise<{ generation: Generation; draft: Draft | null }> {
+    const { data: initial, error: readError } = await this.client
+      .from("generations")
+      .select("*")
+      .eq("id", generationId)
+      .eq("workspace_id", this.scope.workspaceId)
+      .maybeSingle();
+    throwDatabaseError(readError, "read generation");
+    const initialRow = initial as GenerationRow | null;
+    if (!initialRow) throw new DataAdapterError("NOT_FOUND", "Generation not found.");
+    if (initialRow.state === "running" && Date.parse(initialRow.expires_at) <= Date.now()) {
+      const { error: expiryError } = await this.client.from("generations")
+        .update({ state: "expired" })
+        .eq("id", generationId)
+        .eq("workspace_id", this.scope.workspaceId)
+        .eq("state", "running")
+        .lte("expires_at", new Date().toISOString());
+      throwDatabaseError(expiryError, "expire generation");
+    }
+    const { data: current, error: currentError } = await this.client
+      .from("generations")
+      .select("*")
+      .eq("id", generationId)
+      .eq("workspace_id", this.scope.workspaceId)
+      .maybeSingle();
+    throwDatabaseError(currentError, "reload generation");
+    const row = current as GenerationRow | null;
+    if (!row) throw new DataAdapterError("NOT_FOUND", "Generation not found.");
+    const generation = GenerationSchema.parse({
+      id: row.id, jobId: row.job_id, inputFingerprint: row.input_fingerprint,
+      state: row.state, startedAt: row.started_at, expiresAt: row.expires_at,
+      draftVersion: row.draft_version, errorCode: row.error_code,
+    });
+    if (generation.state !== "succeeded") return { generation, draft: null };
+    const bundle = await this.getJobBundle(row.job_id);
+    const draft = bundle.draft?.generationId === generation.id &&
+      bundle.draft.version === generation.draftVersion ? bundle.draft : null;
+    return { generation, draft };
   }
 
   async listJobs(): Promise<Job[]> {

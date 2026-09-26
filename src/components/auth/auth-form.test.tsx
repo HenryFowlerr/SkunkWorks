@@ -28,6 +28,7 @@ describe("AuthForm", () => {
   afterEach(() => cleanup());
 
   beforeEach(() => {
+    window.history.replaceState({}, "", "/");
     authApi.signIn.mockReset();
     authApi.signUp.mockReset();
     navigation.replace.mockReset();
@@ -90,5 +91,18 @@ describe("AuthForm", () => {
       displayName: "Rae Designer",
     });
     expect(navigation.replace).not.toHaveBeenCalled();
+  });
+
+  it("keeps an invite return path through sign-up and the account switch", async () => {
+    const token = "a".repeat(43);
+    window.history.replaceState({}, "", `/signup?returnTo=${encodeURIComponent(`/invite/${token}`)}`);
+    authApi.signUp.mockResolvedValue({ verificationRequired: true });
+    render(<AuthForm mode="signUp" returnTo={`/invite/${token}`} />);
+
+    expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toContain(encodeURIComponent(`/invite/${token}`));
+    setInput("Email address", "floor@example.com");
+    setInput("Password", "long-enough-password");
+    fireEvent.submit(screen.getByRole("button", { name: /create account/i }).closest("form")!);
+    await waitFor(() => expect(authApi.signUp).toHaveBeenCalledWith(expect.objectContaining({ returnPath: `/invite/${token}` })));
   });
 });

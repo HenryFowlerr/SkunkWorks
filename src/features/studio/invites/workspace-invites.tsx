@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Button, Panel, PanelBody } from "@/components/ui";
+import { Button, Panel, PanelBody, TextInput } from "@/components/ui";
 import type { Role, WorkspaceInvite } from "@/contracts";
 import { api } from "@/lib/api/client";
 import styles from "./workspace-invites.module.css";
@@ -12,6 +12,7 @@ function newIdempotencyKey() {
 
 export function WorkspaceInvites({ workspaceId, role }: { workspaceId: string; role: Role }) {
   const [inviteRole, setInviteRole] = useState<"designer" | "fabricator">("fabricator");
+  const [invitedEmail, setInvitedEmail] = useState("");
   const [invite, setInvite] = useState<WorkspaceInvite | null>(null);
   const [pending, setPending] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -27,6 +28,7 @@ export function WorkspaceInvites({ workspaceId, role }: { workspaceId: string; r
       const result = await api.workspaces.invite({
         workspaceId,
         role: inviteRole,
+        invitedEmail: invitedEmail.trim().toLowerCase(),
         idempotencyKey: newIdempotencyKey(),
       });
       setInvite(result);
@@ -56,15 +58,16 @@ export function WorkspaceInvites({ workspaceId, role }: { workspaceId: string; r
       </header>
       <Panel title="Create an invitation link" eyebrow="Role-bound and expiring">
         <PanelBody>
-          <p className={styles.copy}>Create a link for a designer or fabricator. The service sets its expiry and records the selected role. Copy it yourself; Chappe does not send email.</p>
+          <p className={styles.copy}>Create a link for one verified email address. The link grants the selected role for seven days and works only once. Copy it yourself; Chappe does not send email.</p>
           {!canInvite ? <p className={styles.notice}>Your workspace role cannot issue invitations. Ask a workspace admin to create one.</p> : (
             <form className={styles.form} onSubmit={createInvite}>
+              <TextInput id="invite-email" label="Recipient email" type="email" autoComplete="email" required value={invitedEmail} onChange={(event) => setInvitedEmail(event.currentTarget.value)} />
               <label className={styles.label} htmlFor="invite-role">Workspace role</label>
               <select id="invite-role" className={styles.select} value={inviteRole} onChange={(event) => setInviteRole(event.currentTarget.value as "designer" | "fabricator")}>
                 <option value="fabricator">Fabricator</option>
                 <option value="designer">Designer</option>
               </select>
-              <Button type="submit" disabled={pending}>{pending ? "Creating link…" : "Create invitation link"}</Button>
+              <Button type="submit" disabled={pending || !invitedEmail.trim()}>{pending ? "Creating link…" : "Create invitation link"}</Button>
             </form>
           )}
           {error ? <p className={styles.error} role="alert">{error}</p> : null}
@@ -75,6 +78,7 @@ export function WorkspaceInvites({ workspaceId, role }: { workspaceId: string; r
                 <Button type="button" tone="secondary" onClick={() => void copyInvite()}>{copied ? "Copied" : "Copy link"}</Button>
               </div>
               <a className={styles.url} href={invite.inviteUrl}>{invite.inviteUrl}</a>
+              <p className={styles.expiry}>For {invite.invitedEmail}</p>
               <p className={styles.expiry}>Expires {new Date(invite.expiresAt).toLocaleString()}</p>
             </section>
           ) : null}

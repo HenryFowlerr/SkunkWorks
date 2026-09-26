@@ -7,6 +7,7 @@ export type DataErrorCode =
   | "VERSION_CONFLICT"
   | "VALIDATION_FAILED"
   | "REVIEW_REQUIRED"
+  | "GENERATION_RUNNING"
   | "RELEASE_REVOKED"
   | "IDEMPOTENCY_KEY_REUSED"
   | "INTERNAL_ERROR";
@@ -29,7 +30,9 @@ export function throwDatabaseError(
   if (!error) return;
 
   const code: DataErrorCode =
-    error.code === "40001" || error.message?.includes("VERSION_CONFLICT")
+    error.message?.includes("GENERATION_RUNNING")
+      ? "GENERATION_RUNNING"
+      : error.code === "40001" || error.message?.includes("VERSION_CONFLICT")
       ? "VERSION_CONFLICT"
       : error.code === "P0002" || error.message?.includes("NOT_FOUND")
         ? "NOT_FOUND"
