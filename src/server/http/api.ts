@@ -38,9 +38,10 @@ export class ApiFault extends Error {
     readonly code: ApiWireErrorCode,
     message: string,
     readonly options: {
-      fieldErrors?: Record<string, string[]>;
-      retryable?: boolean;
-      status?: number;
+    fieldErrors?: Record<string, string[]>;
+    retryable?: boolean;
+    status?: number;
+    retryAfterSeconds?: number;
     } = {},
   ) {
     super(message);
@@ -188,6 +189,9 @@ export function errorResponse(
     headers: {
       "cache-control": "no-store",
       "x-request-id": requestId,
+      ...(fault.options.retryAfterSeconds
+        ? { "retry-after": String(Math.max(1, Math.ceil(fault.options.retryAfterSeconds))) }
+        : {}),
     },
   });
 }

@@ -75,13 +75,19 @@ describe("prewritten engineer reply prompt", () => {
       referencedBendIds: ["B2"], referencedStepIds: [], suggestedFlag: "",
     }) });
     return { create, ai: new OpenAiResponsesAdapter({ client: { responses: { create } } as unknown as OpenAI,
-      environment: { OPENAI_MODEL: "configured-test-model", OPENAI_API_KEY: "test-key" } }) };
+      environment: { OPENAI_FLOOR_MODEL: "configured-luna-model", OPENAI_API_KEY: "test-key" } }) };
   }
+  it("routes an operator question through the configured floor model", async () => {
+    const { create, ai } = adapter();
+    await ai.answerQuestion(groundedInput());
+    expect(create.mock.calls[0][0].model).toBe("configured-luna-model");
+  });
   it("fires its own instructions with authorized text only and strict output", async () => {
     const { create, ai } = adapter();
     const answer = await ai.suggestEngineerReply(groundedInput());
     expect(answer.evidenceState).toBe("supported");
     const request = create.mock.calls[0][0];
+    expect(request.model).toBe("configured-luna-model");
     expect(request.instructions).toBe(ENGINEER_REPLY_INSTRUCTIONS);
     expect(request.store).toBe(false);
     expect(request.text.format.strict).toBe(true);
@@ -99,5 +105,15 @@ describe("prewritten engineer reply prompt", () => {
     const { create, ai } = adapter();
     expect((await ai.suggestEngineerReply(input())).evidenceState).toBe("not_found");
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it.each(["failed", "cancelled", "incomplete"] as const)("maps a %s Responses result to a provider error", async (status) => {
+    const create = vi.fn().mockResolvedValue({ status, output: [], output_text: "" });
+    const ai = new OpenAiResponsesAdapter({
+      client: { responses: { create } } as unknown as OpenAI,
+      environment: { OPENAI_FLOOR_MODEL: "configured-luna-model", OPENAI_API_KEY: "test-key" },
+    });
+
+    await expect(ai.answerQuestion(groundedInput())).rejects.toMatchObject({ code: "PROVIDER_UNAVAILABLE" });
   });
 });

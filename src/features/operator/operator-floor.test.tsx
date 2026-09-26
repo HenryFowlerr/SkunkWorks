@@ -9,6 +9,12 @@ import { ids, openFlag, releaseContext, releaseView } from '../../../tests/contr
 import { OperatorFloor } from './operator-floor';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('@/features/visualization', () => ({
+  BendScene: () => null,
+  ModelViewer: ({ assetId, format }: { assetId: string; format: 'glb' | 'stl' }) => (
+    <output data-testid="released-model-viewer" data-asset-id={assetId} data-format={format}>Loaded {format.toUpperCase()} visual reference</output>
+  ),
+}));
 
 afterEach(() => cleanup());
 
@@ -30,6 +36,22 @@ function viewFixture(): ReleaseView {
       snapshot: { ...structuredClone(releaseView.release.snapshot), panelModel: null },
     },
   };
+}
+
+function viewWithReadyModel(kind: 'model_glb' | 'model_stl'): ReleaseView {
+  const view = viewFixture();
+  view.job.sourceAssetIds = [...view.job.sourceAssetIds, ids.proposal];
+  view.release.snapshot.sourceAssetIds = [...view.release.snapshot.sourceAssetIds, ids.proposal];
+  view.sourceAssets = [...view.sourceAssets, {
+    ...view.sourceAssets[0],
+    id: ids.proposal,
+    kind,
+    filename: kind === 'model_glb' ? 'engineering-test-block.glb' : 'Engineering test block (1).STL',
+    mimeType: kind === 'model_glb' ? 'model/gltf-binary' : 'model/stl',
+    status: 'ready',
+    sha256: 'b'.repeat(64),
+  }];
+  return view;
 }
 
 function apiHarness(floorView: ReleaseView = viewFixture()) {
@@ -73,6 +95,22 @@ describe('release-bound factory floor', () => {
     expect(screen.getByRole('button', { name: 'Flag an issue' })).toBeVisible();
   });
 
+  it.each([
+    ['model_glb', 'glb', 'engineering-test-block.glb'],
+    ['model_stl', 'stl', 'Engineering test block (1).STL'],
+  ] as const)('shows a ready %s private visual model on the default guide', async (kind, format, filename) => {
+    const { client } = apiHarness(viewWithReadyModel(kind));
+    render(<OperatorFloor releaseId={ids.release} client={client} />);
+
+    expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'Guide' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { name: filename })).toBeVisible();
+    expect(screen.getByText('Released visual reference')).toBeVisible();
+    expect(screen.getByTestId('released-model-viewer')).toHaveAttribute('data-asset-id', ids.proposal);
+    expect(screen.getByTestId('released-model-viewer')).toHaveAttribute('data-format', format);
+    expect(screen.getByText(`Loaded ${format.toUpperCase()} visual reference`)).toBeVisible();
+  });
+
   it('asks against the current published bend and shows the returned grounded answer', async () => {
     const { client, requests } = apiHarness();
     render(<OperatorFloor releaseId={ids.release} client={client} />);
@@ -92,6 +130,29 @@ describe('release-bound factory floor', () => {
     });
   });
 
+  it('keeps quick assist scoped to the current release and operation, then offers a contextual flag', async () => {
+    const { client, requests } = apiHarness();
+    render(<OperatorFloor releaseId={ids.release} client={client} />);
+
+    expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Quick assist' })).toBeVisible();
+    fireEvent.change(screen.getByLabelText('Ask Chappe about this operation'), {
+      target: { value: 'Which face is the reference side?' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Chappe' }));
+
+    expect(await screen.findByText(sampleAnswer.text)).toBeVisible();
+    const questionRequest = requests.find((item) => item.method === 'POST' && item.path === '/api/questions');
+    expect(questionRequest?.body).toEqual({
+      context: releaseContext,
+      question: 'Which face is the reference side?',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Flag this answer' }));
+    expect(screen.getByRole('tab', { name: 'Flags' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByLabelText("What needs the designer's attention?")).toBeVisible();
+  });
+
   it('creates a release and bend scoped flag through the real typed client boundary', async () => {
     const { client, requests } = apiHarness();
     render(<OperatorFloor releaseId={ids.release} client={client} />);
@@ -103,7 +164,7 @@ describe('release-bound factory floor', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save flag to release' }));
 
-    expect(await screen.findByText('Flag saved to the published release. Hold this operation while engineering reviews it.')).toBeVisible();
+    expect(await screen.findByText(/Flag saved to the published release\. Engineering will receive a concise Luna draft report/)).toBeVisible();
     const request = requests.find((item) => item.method === 'POST' && item.path === '/api/flags');
     const body = request?.body as { context: Flag['context']; question: string; photoAssetIds: string[] };
     expect(body.context).toEqual(releaseContext);

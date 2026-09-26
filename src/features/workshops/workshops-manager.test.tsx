@@ -170,7 +170,7 @@ describe("workshop profile manager", () => {
     vi.mocked(api.workshops.list).mockResolvedValue([snapshot({ machines: [machine()] })]);
 
     const view = render(<WorkshopsManager workspaceId={workspaceId} role="designer" />);
-    await screen.findByRole("heading", { name: "Manufacturers" });
+    await screen.findByRole("heading", { name: "Manufacturer profiles" });
     expect(screen.queryByRole("button", { name: "Save new version" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "New manufacturer" })).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Machine 1 name" })).toBeDisabled();

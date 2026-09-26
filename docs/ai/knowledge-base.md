@@ -1,6 +1,6 @@
 # Chappe job knowledge and question context
 
-Updated 26 September 2026. This describes the implemented server path for the Next.js application. The public GitHub Pages pitch site uses prepared guide text and a human-written reply; it does not call this path or OpenAI.
+Updated 27 September 2026. This describes the implemented server path for the Vercel-hosted Next.js application. The archived static pitch prototype uses prepared guide text and a human-written reply; it does not call this path or OpenAI.
 
 ## Source of truth and scope
 
@@ -13,7 +13,7 @@ The source packet contains trusted server-extracted PDF text by one-based page, 
 1. The same-origin `/api/questions` route validates the request, requires a signed-in job member, resolves the published release, and loads only that release's ready, hash-checked private source assets. QR visitors cannot call this route yet; their scoped exchange and write path remain separate work.
 2. `prepareQuestionEvidence` rejects source pages that do not match trusted PDF extraction and rejects a mismatched release, step, bend, or selected machine. Only confirmed facility notes are eligible as evidence.
 3. `retrieveQuestionKnowledge` splits long pages into overlapping citable chunks. It includes every chunk when the packet fits within 10 chunks and 12,000 characters. For a larger packet it ranks terms from the question and selected operation, sending at most 10 chunks and 12,000 characters. The original asset/page remains attached to every chunk. A large packet with no relevant match returns `not_found` without a model call.
-4. The server sends the selected text chunks and exact approved-release context to the OpenAI Responses API with `store: false`. The whole private PDF is **not** attached to a question request. `OPENAI_API_KEY` and `OPENAI_MODEL` stay server-side.
+4. The server sends the selected text chunks and exact approved-release context to the OpenAI Responses API with `store: false`. The whole private PDF is **not** attached to a question request. `OPENAI_API_KEY` and `OPENAI_FLOOR_MODEL=gpt-6-luna` stay server-side.
 5. Structured output is parsed and every cited excerpt is checked against a selected chunk and its authorized source. Unknown IDs, unsupported numeric claims, or forged citations are rejected. Supported and conflicting answers need citations; absent or unreadable answers do not guess. The answer cannot publish, clear a hold, or alter the release.
 
 The server includes an engineer response only when it comes from the release-scoped flag repository and its text exactly matches the approved clarification allowlist. This does not make the surrounding operator question an authoritative source. Member flag/engineer-response writes are now implemented with a migration and isolated SQL/route tests, but have not been applied or exercised against the live database; the public demo has its own separate response storage.
@@ -22,7 +22,7 @@ The assistant instructions live in `src/server/ai/prompts.ts`; retrieval is in `
 
 ## Key and evaluation gate
 
-The code can be checked without an OpenAI key. To exercise model answers, configure `OPENAI_API_KEY` and an `OPENAI_MODEL` that supports the Responses API and strict structured output on a server host. Use the existing Chappe Supabase project URL, publishable key, and server-only service key there as well. Do not put either secret into `NEXT_PUBLIC_` variables, the static `site/` files, a QR URL, or client logs.
+The code can be checked without an OpenAI key. To exercise model answers, configure `OPENAI_API_KEY` and `OPENAI_FLOOR_MODEL=gpt-6-luna`, which supports the Responses API and strict structured output on a server host. The floor setting is intentionally separate from `OPENAI_INITIAL_MODEL=gpt-6-astra`, which is reserved for the initial pitch capability scan and knowledge-base draft. Use the existing Chappe Supabase project URL, publishable key, and server-only service key there as well. Do not put either secret into `NEXT_PUBLIC_` variables, the static `site/` files, a QR URL, or client logs.
 
 Before presenting AI as live, run these questions against a signed-in release and inspect the citations in the phone view:
 

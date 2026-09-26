@@ -143,6 +143,48 @@
   gap: 14px;
 }
 .guideMain, .guideSide, .narrowColumn { display: grid; min-width: 0; gap: 14px; }
+.quickModelRegion {
+  display: grid;
+  gap: var(--ch-space-2);
+  min-width: 0;
+  border: 1px solid var(--ch-border);
+  border-radius: var(--ch-radius-md);
+  padding: var(--ch-space-3);
+  background: var(--ch-canvas-subtle);
+}
+.quickModelHeading, .quickAssistHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+}
+.quickModelHeading h2, .quickAssistHeading h2 { margin: 0; font-size: 1rem; letter-spacing: -.015em; }
+.quickModelHint, .quickAssistHeading > span {
+  color: var(--ch-text-secondary);
+  font-size: .72rem;
+  line-height: 1.4;
+  text-align: right;
+}
+.quickAssistDock {
+  display: grid;
+  gap: var(--ch-space-3);
+  border: 1px solid var(--ch-border);
+  border-radius: var(--ch-radius-md);
+  padding: var(--ch-space-3);
+  background: var(--ch-surface);
+}
+.quickAskForm { display: grid; gap: var(--ch-space-2); }
+.quickAskLabel { font-size: .84rem; font-weight: 650; }
+.quickAskControls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--ch-space-2); }
+.quickAskControls :global(.field__control) { min-width: 0; min-height: 44px; }
+.quickAnswer {
+  display: grid;
+  gap: var(--ch-space-2);
+  border-top: 1px solid var(--ch-border);
+  padding-top: var(--ch-space-3);
+}
+.quickAnswer p { margin: 0; line-height: 1.5; }
+.quickAnswerLabel { color: var(--ch-text-secondary); font-size: .78rem; font-weight: 650; }
 .sceneFrame { display: grid; gap: var(--ch-space-2); min-width: 0; }
 .sceneLabel { margin: 0; color: var(--ch-text-secondary); font-size: var(--ch-type-small); }
 .guideSide { position: sticky; top: 12px; }
@@ -244,6 +286,11 @@
   .releaseHeading > span { margin-top: 4px; }
   .headerPart { max-width: 48%; text-align: right; }
   .guideSide { grid-template-columns: 1fr; }
+  .quickModelRegion { padding: 10px; }
+  .quickModelHeading, .quickAssistHeading { align-items: baseline; }
+  .quickModelHint { display: none; }
+  .quickAskControls { grid-template-columns: 1fr; }
+  .quickAskControls button { width: 100%; }
   .stepFooter { display: grid; grid-template-columns: 1fr 1fr; }
   .stepFooter .muted { grid-column: 1 / -1; grid-row: 1; }
   .stepFooter button { width: 100%; }

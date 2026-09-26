@@ -697,7 +697,7 @@ export function WorkshopsManager({ workspaceId, role }: WorkshopsManagerProps) {
     setEditors((current) => [...current, blankMachine(createId())]);
     if (creationBase) setCreationVersionKey(null);
   };
-  const canManage = role === "fabricator";
+  const canManage = role === "fabricator" || role === "admin";
   const showingCreateForm = canManage && (creating || !selectedSnapshot);
 
   return (
@@ -705,7 +705,7 @@ export function WorkshopsManager({ workspaceId, role }: WorkshopsManagerProps) {
       <header className={styles.heading}>
         <div>
           <p className={styles.eyebrow}>Manufacturer workspace</p>
-          <h1>Manufacturers</h1>
+          <h1>{canManage ? "Equipment and capabilities" : "Manufacturer profiles"}</h1>
           <p className={styles.lede}>Record the equipment and process facts a manufacturer confirms. Each change creates a version that engineering can use as evidence.</p>
           {role === "admin" ? <p className={styles.accessLine}>Need someone at the facility to join? <Link href={`/studio/invites?workspace=${encodeURIComponent(workspaceId)}`}>Create an access link</Link> for their verified email. You send the link yourself.</p> : null}
         </div>
@@ -803,7 +803,7 @@ export function WorkshopsManager({ workspaceId, role }: WorkshopsManagerProps) {
 
           {!loading && !showingCreateForm && selectedSnapshot ? (
             <>
-              <Panel title={selectedSnapshot.name} eyebrow="Current immutable version" action={
+              <Panel title={selectedSnapshot.name} eyebrow="Saved facility evidence" action={
                 <div className={styles.snapshotStatus}>
                   <StatusBadge label={`Version ${selectedSnapshot.version}`} tone="info" />
                   <StatusBadge

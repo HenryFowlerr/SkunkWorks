@@ -23,10 +23,10 @@ QR generation and flagging are side flows around this main engineer → part kno
 
 Henry supplied two distinct products on 26 September 2026:
 
-- **Engineering test block**: `Engineering test block.SLDPRT` and `Engineering test block.SLDDRW`.
-- **manufacturing test sheet**: `manufacturing test sheet.SLDPRT` and `manufacturing test sheet.SLDDRW`.
+- **Engineering test block**: native `Engineering test block.SLDPRT` / `.SLDDRW`, plus readable `Engineering test block (1).pdf` and visual `Engineering test block (1).STL`. This is the current pitch packet. The PDF supplies the cited drawing evidence; the STL is visual-only; material and finish remain unresolved.
+- **manufacturing test sheet**: `manufacturing test sheet.SLDPRT` and `manufacturing test sheet.SLDDRW`, still native-only.
 
-These pairs supersede “final demo product undecided.” Henry currently has only these originals. Do not substitute the older synthetic Sensor Mount model and imply it represents either supplied part. The existing Sensor Mount remains a labelled synthetic fallback until actual viewable evidence is available. See [supplied parts](supplied-parts.md) for inspected file metadata and conversion status. File names alone establish neither material nor dimensions nor operations.
+These pairs supersede “final demo product undecided.” Do not substitute the older synthetic Sensor Mount model and imply it represents either supplied part. Sensor Mount remains a labelled synthetic fallback; Engineering Test Block is the usable pitch input. See [supplied parts](supplied-parts.md) for inspected file metadata and conversion status. File names alone establish neither material nor dimensions nor operations.
 
 ## AI triggers and review
 
@@ -36,4 +36,4 @@ Source-grounded draft guidance, floor Q&A and proposed engineer replies are dist
 
 ## Demo and real operation
 
-Demonstrate the manufacturer's phone journey first, supported by a short engineer approval-and-answer loop. Setup can be prepared. Show which content comes from actual supplied files, which has engineering approval, and which is still awaiting conversion or evidence. Do not claim a deployed or live AI flow from unit tests, fixtures, a successful build, or the static GitHub Pages site. A server-capable Next.js host, configured providers, required database migrations and a signed-in end-to-end run are separate verification steps.
+Demonstrate the manufacturer's phone journey first, supported by a short engineer approval-and-answer loop. Setup can be prepared. Show which content comes from actual supplied files, which has engineering approval, and which is still awaiting conversion or evidence. Do not claim a deployed or live AI flow from unit tests, fixtures, a successful build, or a Vercel deployment without its configured providers, migrations and signed-in end-to-end verification.

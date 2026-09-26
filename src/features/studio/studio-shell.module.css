@@ -37,3 +37,13 @@
   .signOut { grid-column: 2; grid-row: 3 / span 2; justify-self: end; }
   .main { padding: 19px 16px 32px; }
 }
+
+.surfaceHeader { grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:var(--ch-space-4); padding:var(--ch-space-3) var(--ch-space-6); background:var(--ch-surface); border-bottom:1px solid var(--ch-border); }
+.surfaceHeader nav { display:flex; gap:var(--ch-space-6); }
+.surfaceHeader nav a { min-height:44px; display:inline-flex; align-items:center; text-decoration:none; color:var(--ch-text-secondary); }
+.surfaceHeader nav a[aria-current="page"] { color:var(--ch-blue); box-shadow:inset 0 -2px var(--ch-blue); }
+.frame { grid-template-rows:auto 1fr; align-items:start; }
+.sidebar { position:static; height:auto; min-height:0; }
+.sidebarFooter { margin-top:var(--ch-space-4); }
+.nav a { min-height:44px; }
+@media(max-width:760px) { .frame { grid-template-rows:auto auto 1fr; } .surfaceHeader { padding:var(--ch-space-3) var(--ch-space-4); } .nav { display:flex; flex-wrap:wrap; } .nav a { flex:1 1 130px; } }
