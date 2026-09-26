@@ -2,6 +2,19 @@
 
 Updated 26 September 2026. This file is the concise handoff for any new SkunkWorks/Chappe coding or design chat. Read [the product brief](../product/overview.md) first. Older `AGENT_HANDOFF.md` and `docs/coordination/team-*.md` record stopped workstreams and should not be mistaken for current instructions.
 
+## Where all current work lives
+
+The repo's `main` contains the foundation, phone reader, engineer guide approval, facility evidence preview, persisted generation and invitations, authored-manifest verification, and the [UI/UX handoff](../product/design-start-here.md). These landed in [PR #3](https://github.com/HenryFowlerr/SkunkWorks/pull/3), [#4](https://github.com/HenryFowlerr/SkunkWorks/pull/4), [#5](https://github.com/HenryFowlerr/SkunkWorks/pull/5), [#6](https://github.com/HenryFowlerr/SkunkWorks/pull/6), and [#8](https://github.com/HenryFowlerr/SkunkWorks/pull/8). The separate operator task's completed phone work is in #4; its later feedback work is preserved in #7 below.
+
+| Location | What it preserves | State and resume gate |
+|---|---|---|
+| [Draft PR #7](https://github.com/HenryFowlerr/SkunkWorks/pull/7) | Member-scoped question and flag write draft from the separate operator task. | Local `npm run check` and GitHub CI passed (190 tests). Its privileged SQL draft is **unapplied**; automatic approval review rejected that live database change. No live feedback write was tested. Do not merge as a working feature yet. |
+| [Draft PR #9](https://github.com/HenryFowlerr/SkunkWorks/pull/9) | QR issue/revoke, visitor cookie exchange, release and asset reads, print controls. | Integrated local `npm run check` passed (195 tests). `20260926041000_release_access.sql` is **unapplied**; no live scan was tested. Review migration and exercise an actual release before merging. |
+| [wip/finding-decisions](https://github.com/HenryFowlerr/SkunkWorks/tree/wip/finding-decisions) | Unfinished clarification, finding resolution, machine proposal decision routes and `20260926040000_draft_decisions.sql`. | Source snapshot only. Typecheck, lint, and diff checks passed in its local worktree; focused/full tests and SQL review were not done. Migration **unapplied**. |
+| [wip/visitor-feedback](https://github.com/HenryFowlerr/SkunkWorks/tree/wip/visitor-feedback) | Unfinished visitor flag/response and release-question draft plus `20260926043000_feedback_loop.sql`. | Source snapshot only. The agent's baseline check passed, but the new paths lack focused tests and current-main integration. Migration **unapplied**. It overlaps #7 and depends on #9; combine deliberately rather than merging wholesale. |
+
+All paused agent code is represented in these GitHub locations. The WIP branches are preservation snapshots, not reviewed implementation or instructions to apply their SQL. The final guide artwork/report plan and example product are still pending from Henry's team.
+
 ## What exists
 
 - Repository: `HenryFowlerr/SkunkWorks`, Next.js 16 / React 19 / TypeScript, Supabase auth, typed same-origin API client, OpenAI adapter, Three.js bend example.
@@ -17,6 +30,7 @@ Updated 26 September 2026. This file is the concise handoff for any new SkunkWor
 - The operator view has direct operation selection, browser voice transcription with typed fallback, and a supplied-model-first phone entry when a verified GLB exists. Signed-in workspace members can read a published release and its flags through scoped routes. These routes do not grant QR visitor access or enable feedback writes.
 
 ## Verification on this slice
+
 - Authored-manifest evidence slice: `npm run check` passed locally on 26 September 2026 (typecheck, lint, 178 Vitest cases, Next production build). Tests exercise the exact manifest pointer, changed hinge/rotation rejection, and the explicit engineer confirmation in the review desk. No SQL migration was needed. No signed-in release or live model call has been verified.
 - `npm run check` passed on 26 September 2026: TypeScript, ESLint, Vitest, and Next production build.
 - `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/skunkworks-playwright-browsers npm run test:e2e` passed 6/6 desktop and phone browser smoke checks for the landing and auth screens. These checks did not create a Supabase user or exercise the whole job lifecycle.
@@ -34,9 +48,9 @@ Updated 26 September 2026. This file is the concise handoff for any new SkunkWor
 ## What remains real work
 
 - Verify a full authenticated generation round trip with a configured OpenAI key/model. Persist facility requirements, verify source extraction, and add a review gate for facility findings. The guide and review/publish endpoints need a real signed-in run before they can be called demo-ready. Finding clarification/resolution and machine proposal decision routes are still missing: another generated blocking finding or undecided proposal can stop publication until those routes exist.
-- Exercise invitation issuance/redemption with real users. Build floor QR exchange, release sharing, operator question/flag/response writes, and visitor asset access. Release publication exists but has not been exercised with real user/source data; release and flag reads are currently member-only.
+- Exercise invitation issuance/redemption with real users. On `main`, build floor QR exchange, release sharing, operator question/flag/response writes, and visitor asset access. Draft implementations are linked above but their SQL and live paths are not verified. Release publication exists but has not been exercised with real user/source data; release and flag reads on `main` are member-only.
 - OpenAI key/model are not configured. No live AI generation has been verified. The final demo product and output illustration design are undecided.
-- Hosted deployment and public URL are not configured. Local tests do not prove the judge-accessible demo. The database password reset is with Henry in Supabase's open dialog; automatic review rejected the agent entering a new credential. The app uses API keys and does not need the direct Postgres password.
+- Hosted deployment and public URL are not configured. Local tests do not prove the judge-accessible demo. The app uses API keys and does not need a direct Postgres password for its current routes.
 
 ## Working rules
 
