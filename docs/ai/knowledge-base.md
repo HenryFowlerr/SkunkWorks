@@ -10,7 +10,7 @@ The source packet contains trusted server-extracted PDF text by one-based page, 
 
 ## Retrieval and answer flow
 
-1. The same-origin `/api/questions` route validates the request, resolves the actor and release, checks `canAsk`, and loads only that release's ready, hash-checked private source assets.
+1. The same-origin `/api/questions` route validates the request, requires a signed-in job member, resolves the published release, and loads only that release's ready, hash-checked private source assets. QR visitors cannot call this route yet; their scoped exchange and write path remain separate work.
 2. `prepareQuestionEvidence` rejects source pages that do not match trusted PDF extraction and rejects a mismatched release, step, bend, or selected machine. Only confirmed facility notes are eligible as evidence.
 3. `retrieveQuestionKnowledge` splits long pages into overlapping citable chunks. It includes every chunk when the packet fits within 10 chunks and 12,000 characters. For a larger packet it ranks terms from the question and selected operation, sending at most 10 chunks and 12,000 characters. The original asset/page remains attached to every chunk. A large packet with no relevant match returns `not_found` without a model call.
 4. The server sends the selected text chunks and exact approved-release context to the OpenAI Responses API with `store: false`. The whole private PDF is **not** attached to a question request. `OPENAI_API_KEY` and `OPENAI_MODEL` stay server-side.
