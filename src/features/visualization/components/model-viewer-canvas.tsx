@@ -86,7 +86,7 @@ function validateStl(buffer: ArrayBuffer): void {
   if (asciiPrefix !== 'solid') throw new Error('The supplied model is not a valid STL file.');
 }
 
-export function ModelViewerCanvas({ assetId, format, resolveAssetUrl, onError }: ModelViewerProps) {
+export function ModelViewerCanvas({ assetId, format, resolveAssetUrl, onError, variant = 'default' }: ModelViewerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const resolveAssetUrlRef = useRef(resolveAssetUrl);
@@ -260,7 +260,7 @@ export function ModelViewerCanvas({ assetId, format, resolveAssetUrl, onError }:
   };
 
   return (
-    <section className={styles.modelViewer} aria-label="Supplied visual model">
+    <section className={variant === 'immersive' ? `${styles.modelViewer} ${styles.modelViewerImmersive}` : styles.modelViewer} aria-label="Supplied visual model">
       <div className={styles.modelToolbar}>
         <span className={styles.sceneEyebrow}>Supplied {format === 'stl' ? 'STL visual reference' : 'visual model'} · original units preserved for display</span>
         <div className={styles.modelControls} aria-label="Model camera controls">

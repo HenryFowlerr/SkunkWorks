@@ -11,8 +11,8 @@ import { OperatorFloor } from './operator-floor';
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/features/visualization', () => ({
   BendScene: () => null,
-  ModelViewer: ({ assetId, format }: { assetId: string; format: 'glb' | 'stl' }) => (
-    <output data-testid="released-model-viewer" data-asset-id={assetId} data-format={format}>Loaded {format.toUpperCase()} visual reference</output>
+  ModelViewer: ({ assetId, format, variant }: { assetId: string; format: 'glb' | 'stl'; variant?: 'default' | 'immersive' }) => (
+    <output data-testid="released-model-viewer" data-asset-id={assetId} data-format={format} data-variant={variant ?? 'default'}>Loaded {format.toUpperCase()} visual reference</output>
   ),
 }));
 
@@ -109,6 +109,28 @@ describe('release-bound factory floor', () => {
     expect(screen.getByTestId('released-model-viewer')).toHaveAttribute('data-asset-id', ids.proposal);
     expect(screen.getByTestId('released-model-viewer')).toHaveAttribute('data-format', format);
     expect(screen.getByText(`Loaded ${format.toUpperCase()} visual reference`)).toBeVisible();
+  });
+
+  it('uses a one-screen model presentation with a release-bound chat composer for the stable QR entry', async () => {
+    const { client, requests } = apiHarness(viewWithReadyModel('model_glb'));
+    render(<OperatorFloor releaseId={ids.release} client={client} presentation="model" />);
+
+    expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
+    expect(screen.getByText('Current part')).toBeVisible();
+    expect(screen.getByTestId('released-model-viewer')).toHaveAttribute('data-format', 'glb');
+    expect(screen.getByTestId('released-model-viewer')).toHaveAttribute('data-variant', 'immersive');
+    expect(screen.getByRole('button', { name: 'Start voice input' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Send question' })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('Ask about this part'), { target: { value: 'Which face is the reference side?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send question' }));
+
+    expect(await screen.findByText(sampleAnswer.text)).toBeVisible();
+    const request = requests.find((item) => item.method === 'POST' && item.path === '/api/questions');
+    expect(request?.body).toEqual({
+      context: { ...releaseContext, stepId: null, bendId: null },
+      question: 'Which face is the reference side?',
+    });
   });
 
   it('asks against the current published bend and shows the returned grounded answer', async () => {

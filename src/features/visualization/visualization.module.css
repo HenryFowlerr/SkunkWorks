@@ -111,6 +111,11 @@
   gap: 10px;
   min-width: 0;
 }
+.modelViewerImmersive {
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
 .modelViewport {
   position: relative;
   min-height: 320px;
@@ -133,6 +138,14 @@
 .modelError { z-index: 2; }
 .modelViewport .canvas {
   min-height: 320px;
+}
+.modelViewerImmersive .modelViewport {
+  min-height: 0;
+  height: 100%;
+}
+.modelViewerImmersive .modelViewport .canvas {
+  min-height: 0;
+  height: 100%;
 }
 .modelToolbar {
   display: flex;

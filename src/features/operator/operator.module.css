@@ -260,6 +260,153 @@
 .success { margin: 8px 0 0; color: var(--ch-status-complete); font-size: .78rem; }
 .floorFooter { border-top: 1px solid var(--ch-border); padding-top: 13px; color: var(--ch-text-secondary); font-size: .71rem; line-height: 1.4; }
 
+/* Stable QR entry: a focused phone model and release-bound composer, not a dashboard. */
+.modelScreen {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0;
+  width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+  padding: clamp(14px, 3vw, 30px) clamp(14px, 4vw, 52px) max(12px, env(safe-area-inset-bottom));
+  color: var(--ch-text);
+  background: var(--ch-canvas);
+}
+.modelScreenHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--ch-space-4);
+  border-bottom: 1px solid var(--ch-border);
+  padding-bottom: var(--ch-space-3);
+}
+.modelScreenKicker {
+  margin: 0 0 4px;
+  color: var(--ch-text-secondary);
+  font-family: var(--ch-font-mono);
+  font-size: .64rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.modelScreenHeader h1 {
+  max-width: min(72vw, 760px);
+  margin: 0;
+  font-size: clamp(1.15rem, 2.9vw, 2rem);
+  font-weight: 650;
+  line-height: 1.05;
+  letter-spacing: -.05em;
+  overflow-wrap: anywhere;
+}
+.modelScreenReference {
+  flex: 0 0 auto;
+  color: var(--ch-text-secondary);
+  font-family: var(--ch-font-mono);
+  font-size: .69rem;
+  white-space: nowrap;
+}
+.modelScreenStage {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  padding: var(--ch-space-3) 0;
+}
+.modelScreenGuide {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  padding: 0 0 7px;
+  color: var(--ch-text-secondary);
+  font-family: var(--ch-font-mono);
+  font-size: .63rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.modelScreenUnavailable {
+  align-self: center;
+  max-width: 620px;
+  padding: var(--ch-space-6) 0;
+  overflow: auto;
+}
+.modelScreenUnavailable h2 { margin: 0; font-size: 1.12rem; letter-spacing: -.025em; }
+.modelScreenUnavailable > p:not(.eyebrow) { max-width: 530px; margin: 8px 0 0; color: var(--ch-text-secondary); line-height: 1.5; }
+.modelScreenAssist {
+  display: grid;
+  gap: var(--ch-space-2);
+  border-top: 1px solid var(--ch-border);
+  padding-top: var(--ch-space-3);
+}
+.modelAnswerTray {
+  display: grid;
+  gap: 7px;
+  max-height: min(26dvh, 220px);
+  overflow: auto;
+  border-left: 2px solid var(--ch-action);
+  padding: 2px 0 2px var(--ch-space-3);
+  scrollbar-width: thin;
+}
+.modelAnswerTray .error { margin: 0; }
+.modelAnswerTray .holdNotice { margin: 2px 0 0; }
+.modelAnswerLabel {
+  margin: 0;
+  color: var(--ch-text-secondary);
+  font-family: var(--ch-font-mono);
+  font-size: .66rem;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.modelAnswerText { margin: 0; color: var(--ch-text); font-size: .86rem; line-height: 1.48; white-space: pre-wrap; }
+.modelComposer {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  align-items: center;
+  min-height: 54px;
+  border: 1px solid var(--ch-border-strong);
+  border-radius: var(--ch-radius-lg);
+  padding: 5px;
+  background: var(--ch-surface);
+}
+.modelComposer input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  border: 0;
+  outline: 0;
+  padding: 0 7px;
+  color: var(--ch-text);
+  background: transparent;
+  font: inherit;
+}
+.modelComposer input::placeholder { color: var(--ch-text-secondary); }
+.modelComposerIcon, .modelComposerSend {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  cursor: pointer;
+}
+.modelComposerIcon { color: var(--ch-text-secondary); background: transparent; }
+.modelComposerIcon:hover:not(:disabled), .modelComposerIcon:focus-visible { color: var(--ch-action); background: var(--ch-action-tint); }
+.modelComposerRecording { color: var(--ch-action); background: var(--ch-action-tint); }
+.modelComposerSend { color: var(--ch-text-on-dark); background: var(--ch-action); }
+.modelComposerSend:hover:not(:disabled), .modelComposerSend:focus-visible { background: var(--ch-action-hover); }
+.modelComposerIcon:disabled, .modelComposerSend:disabled { cursor: not-allowed; opacity: .45; }
+.modelComposerIcon svg, .modelComposerSend svg { width: 20px; height: 20px; }
+.modelAssistStatus, .modelScreenPermission { margin: 0; color: var(--ch-text-secondary); font-size: .72rem; line-height: 1.4; }
+.modelScreenLoading, .modelScreenMessage {
+  display: grid;
+  grid-row: 1 / -1;
+  align-content: center;
+  justify-items: start;
+  gap: var(--ch-space-3);
+  max-width: 580px;
+  color: var(--ch-text-secondary);
+}
+.modelScreenMessage h1 { margin: 0; color: var(--ch-text); font-size: clamp(1.8rem, 5vw, 3.2rem); letter-spacing: -.055em; }
+.modelScreenMessage p { margin: 0; line-height: 1.5; }
+
 @media (max-width: 820px) {
   .floorShell { padding-inline: 13px; padding-bottom: 100px; }
   .floorHeader { min-height: 42px; }
@@ -300,4 +447,11 @@
   .replacementNotice { align-items: flex-start; flex-direction: column; }
   .flagHeader { flex-direction: column; }
   .floorFooter { padding-bottom: 12px; }
+  .modelScreen { padding: 14px 14px max(10px, env(safe-area-inset-bottom)); }
+  .modelScreenHeader { align-items: start; }
+  .modelScreenHeader h1 { max-width: 62vw; font-size: 1.12rem; }
+  .modelScreenReference { padding-top: 4px; font-size: .61rem; }
+  .modelScreenGuide { gap: 8px; font-size: .57rem; }
+  .modelScreenGuide span:last-child { max-width: 52%; text-align: right; }
+  .modelAnswerTray { max-height: min(31dvh, 230px); }
 }

@@ -19,7 +19,7 @@ export default async function PartPage({ params }: { params: Promise<{ jobId: st
   const { jobId } = await params;
   const entry = await resolvePartEntry(jobId);
   if (entry.state === 'sign-in') redirect(`/login?returnTo=${encodeURIComponent(partPath(jobId))}`);
-  if (entry.state === 'ready') return <OperatorFloor key={entry.releaseId} releaseId={entry.releaseId} />;
+  if (entry.state === 'ready') return <OperatorFloor key={entry.releaseId} releaseId={entry.releaseId} presentation="model" />;
 
   const title = entry.state === 'unpublished'
     ? 'Engineering has not approved a guide yet'

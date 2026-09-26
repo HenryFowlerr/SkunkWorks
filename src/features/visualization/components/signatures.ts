@@ -17,6 +17,8 @@ export type ModelViewerProps = {
   format: 'glb' | 'stl';
   resolveAssetUrl: (assetId: Id) => Promise<string>;
   onError?: (message: string) => void;
+  /** Lets a dedicated model screen give the real canvas the remaining viewport height. */
+  variant?: 'default' | 'immersive';
 };
 export type BendMapEditorProps = {
   value: PanelModel | null;

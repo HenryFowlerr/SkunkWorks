@@ -15,6 +15,7 @@ import styles from './operator.module.css';
 
 type FloorApi = Pick<ApiClient, 'assets' | 'flags' | 'questions' | 'releases'>;
 type FloorTab = 'guide' | 'model' | 'ask' | 'flags';
+type FloorPresentation = 'standard' | 'model';
 
 const tabs: Array<{ id: FloorTab; label: string }> = [
   { id: 'guide', label: 'Guide' },
@@ -22,6 +23,18 @@ const tabs: Array<{ id: FloorTab; label: string }> = [
   { id: 'ask', label: 'Ask' },
   { id: 'flags', label: 'Flags' },
 ];
+
+function MicrophoneIcon({ listening }: { listening: boolean }) {
+  return listening ? (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="7" y="7" width="10" height="10" rx="1" fill="currentColor" /><path d="M5 5 19 19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg>
+  ) : (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" strokeWidth="1.8" /><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3.5M8.5 21h7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg>
+  );
+}
+
+function SendIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m4 4 16 8-16 8 3.1-8L4 4Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="miter" /><path d="M7 12h13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg>;
+}
 
 function explainError(error: unknown): string {
   if (error instanceof ApiClientError && error.code === 'ENDPOINT_UNAVAILABLE') {
@@ -112,17 +125,17 @@ function FlagCard({
   );
 }
 
-export function OperatorFloor({ releaseId, client = api }: { releaseId: string; client?: FloorApi }) {
-  return <OperatorFloorSession key={releaseId} releaseId={releaseId} client={client} />;
+export function OperatorFloor({ releaseId, client = api, presentation = 'standard' }: { releaseId: string; client?: FloorApi; presentation?: FloorPresentation }) {
+  return <OperatorFloorSession key={`${releaseId}-${presentation}`} releaseId={releaseId} client={client} presentation={presentation} />;
 }
 
-function OperatorFloorSession({ releaseId, client }: { releaseId: string; client: FloorApi }) {
+function OperatorFloorSession({ releaseId, client, presentation }: { releaseId: string; client: FloorApi; presentation: FloorPresentation }) {
   const router = useRouter();
   const [view, setView] = useState<ReleaseView | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
-  const [tab, setTab] = useState<FloorTab>('guide');
+  const [tab, setTab] = useState<FloorTab>(presentation === 'model' ? 'model' : 'guide');
   const [stepIndex, setStepIndex] = useState(0);
   const [previewProgress, setPreviewProgress] = useState(0);
   const [question, setQuestion] = useState('');
@@ -159,7 +172,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
         const next = await client.releases.get({ releaseId });
         if (active) {
           setView(next);
-          setTab('guide');
+          setTab(presentation === 'model' ? 'model' : 'guide');
         }
       } catch (error) {
         if (active) setLoadError(explainError(error));
@@ -169,7 +182,7 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
     };
     void load();
     return () => { active = false; };
-  }, [client, releaseId, reloadToken]);
+  }, [client, presentation, releaseId, reloadToken]);
 
   useEffect(() => () => speechRecognition.current?.stop(), []);
 
@@ -282,7 +295,9 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
 
   const askQuestion = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const context = buildContext(currentStep);
+    // The focused QR model view has no operation picker, so its questions must
+    // remain scoped to the released part rather than silently inheriting B1.
+    const context = buildContext(presentation === 'model' ? null : currentStep);
     if (!context || !question.trim() || !view?.permissions.canAsk) return;
     const askedQuestion = question.trim();
     setAsking(true);
@@ -636,6 +651,100 @@ function OperatorFloorSession({ releaseId, client }: { releaseId: string; client
       </div>
     );
   };
+
+  const renderModelScreen = () => {
+    if (loading) return <div className={styles.modelScreenLoading} role="status">Loading this authorised part…</div>;
+    if (loadError) {
+      return <section className={styles.modelScreenMessage} aria-labelledby="model-load-error-title">
+        <p className={styles.eyebrow}>Part access</p>
+        <h1 id="model-load-error-title">This part is unavailable</h1>
+        <p role="alert">{loadError}</p>
+        <Button type="button" tone="secondary" onClick={() => setReloadToken((token) => token + 1)}>Try again</Button>
+      </section>;
+    }
+    if (!view) return null;
+
+    const hasNativeFallback = view.sourceAssets.some((asset) => asset.kind === 'native_part' || asset.kind === 'native_drawing');
+    return (
+      <>
+        <header className={styles.modelScreenHeader}>
+          <div>
+            <p className={styles.modelScreenKicker}>Current part</p>
+            <h1>{view.job.title}</h1>
+          </div>
+          <span className={styles.modelScreenReference}>{view.job.partNumber} · R{view.release.revisionNumber}</span>
+        </header>
+
+        <section className={styles.modelScreenStage} aria-label="Interactive part model">
+          {modelAsset ? (
+            <>
+              <div className={styles.modelScreenGuide} aria-hidden="true"><span>Visual reference</span><span>Drag to rotate · pinch or scroll to zoom</span></div>
+              <ModelViewer
+                assetId={modelAsset.id}
+                format={modelAsset.kind === 'model_stl' ? 'stl' : 'glb'}
+                resolveAssetUrl={async (assetId) => (await client.assets.getLink({ assetId })).url}
+                variant="immersive"
+              />
+            </>
+          ) : (
+            <div className={styles.modelScreenUnavailable}>
+              <p className={styles.eyebrow}>Released visual reference</p>
+              <h2>Model unavailable</h2>
+              <p>No ready verified GLB or STL model is attached to this release. No substitute model is shown.</p>
+              {hasNativeFallback ? <NativePartSources assets={view.sourceAssets} client={client} /> : null}
+            </div>
+          )}
+        </section>
+
+        <section className={styles.modelScreenAssist} aria-label="Part assistant">
+          {answer || askError ? (
+            <div className={styles.modelAnswerTray} aria-live="polite">
+              {askError ? <p className={styles.error} role="alert">{askError}</p> : null}
+              {answer ? <>
+                <p className={styles.modelAnswerLabel}>{answer.evidenceState === 'supported' ? 'Answer from released sources' : 'Engineering decision needed'}</p>
+                <p className={styles.modelAnswerText}>{answer.text}</p>
+                {answer.evidence.length > 0 ? <EvidenceList evidence={answer.evidence} assets={view.sourceAssets} /> : null}
+                {answer.evidenceState !== 'supported' ? <p className={styles.holdNotice}>Hold this operation until engineering clarifies it.</p> : null}
+              </> : null}
+            </div>
+          ) : null}
+          {view.permissions.canAsk ? (
+            <form className={styles.modelComposer} onSubmit={(event) => void askQuestion(event)}>
+              <button
+                className={listening ? `${styles.modelComposerIcon} ${styles.modelComposerRecording}` : styles.modelComposerIcon}
+                type="button"
+                onClick={startVoiceInput}
+                disabled={asking}
+                aria-label={listening ? 'Stop voice input' : 'Start voice input'}
+                aria-pressed={listening}
+                title={listening ? 'Stop voice input' : 'Start voice input'}
+              ><MicrophoneIcon listening={listening} /></button>
+              <input
+                id="model-question"
+                type="text"
+                value={question}
+                onChange={(event) => setQuestion(event.currentTarget.value)}
+                disabled={asking}
+                maxLength={2000}
+                aria-label="Ask about this part"
+                placeholder="Ask about this part"
+              />
+              <button
+                className={styles.modelComposerSend}
+                type="submit"
+                disabled={asking || question.trim().length < 3}
+                aria-label={asking ? 'Sending question' : 'Send question'}
+                title={asking ? 'Sending question' : 'Send question'}
+              ><SendIcon /></button>
+            </form>
+          ) : <p className={styles.modelScreenPermission}>This release session does not have permission to ask questions.</p>}
+          {speechError ? <p className={styles.modelAssistStatus} role="status">{speechError}</p> : null}
+        </section>
+      </>
+    );
+  };
+
+  if (presentation === 'model') return <main className={styles.modelScreen}>{renderModelScreen()}</main>;
 
   return (
     <main className={styles.floorShell}>

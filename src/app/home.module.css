@@ -359,17 +359,302 @@ a:hover .arrow { transform: translate(2px, -2px); }
 .footerLinks a:hover { color: var(--ch-action); }
 .prototypeNote { grid-column: 1 / -1; max-width: 740px !important; padding-top: 23px; border-top: 1px solid var(--ch-border); font-size: 0.69rem !important; }
 
+/* The motion layer is progressive enhancement. Every animated element has a
+   complete, still layout above; browsers without scroll timelines simply show it. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    .heroPart { animation: partSettle 1s linear both; animation-timeline: view(); animation-range: entry 0% cover 58%; }
-    .partMotionLines { animation: lineArrival 1s linear both; animation-timeline: view(); animation-range: entry 0% cover 50%; }
-    .partAssembly { animation: assemblyArrival 1s linear both; animation-timeline: view(); animation-range: entry 0% cover 58%; }
+    .heroRail {
+      animation: railReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 26%;
+    }
+
+    .heroCopy > .eyebrow,
+    .workflowHeading > .eyebrow,
+    .evidenceLead > .eyebrow,
+    .sideLabel,
+    .platformTopline {
+      animation: labelReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 28%;
+    }
+
+    .heroCopy h1,
+    .workflowHeading h2,
+    .evidenceLead h2,
+    .platform h2,
+    .workspaceBody h2 {
+      animation: headlineReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 34%;
+    }
+
+    .heroCopy .lede,
+    .heroCopy .heroActions,
+    .heroCopy .scopeNote,
+    .evidenceLead > p:last-child,
+    .platformIntro {
+      animation: copyReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 4% cover 38%;
+    }
+
+    .heroVisual {
+      animation: visualReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 46%;
+    }
+
+    .heroPart {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: partSettle 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 58%;
+    }
+
+    .partConstruction {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: constructionSweep 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 52%;
+    }
+
+    .partMotionLines {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: lineArrival 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+
+    .partAssembly {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: assemblyArrival 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 58%;
+    }
+
+    .partDimensions,
+    .partAnnotations {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: detailSettle 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 12% cover 62%;
+    }
+
+    .heroBottom {
+      animation: railReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 2% cover 36%;
+    }
+
+    .heroBottom span {
+      animation: copyReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 4% cover 38%;
+    }
+
+    .stageList {
+      transform-origin: left center;
+      animation: ruleReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 22%;
+    }
+
+    .stageList li {
+      animation: rowReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+
+    .stageList li .arrow {
+      animation: arrowArrival 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 48%;
+    }
+
+    .evidenceBoard {
+      animation: boardReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 34%;
+    }
+
+    .evidencePanel {
+      animation: panelReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 4% cover 44%;
+    }
+
+    .packetList div,
+    .statusList li {
+      animation: rowReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 8% cover 50%;
+    }
+
+    .packetLine {
+      transform-origin: left center;
+      animation: ruleReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 16% cover 56%;
+    }
+
+    .evidenceNote {
+      animation: copyReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30%;
+    }
+
+    .capability {
+      animation: capabilityReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+
+    .capabilityVisual {
+      transform-origin: 50% 100%;
+      animation: diagramRise 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 42%;
+    }
+
+    .capability h3,
+    .capability > p:last-child {
+      animation: copyReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 48%;
+    }
+
+    .workspaceChoices {
+      transform-origin: left center;
+      animation: ruleReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 25%;
+    }
+
+    .workspaceChoice {
+      animation: rowReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+
+    .footerBrand,
+    .footer > p,
+    .footerLinks {
+      animation: copyReveal 1s linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 32%;
+    }
   }
 }
 
-@keyframes partSettle { from { opacity: 0.08; transform: translateX(8%); } to { opacity: 1; transform: translateX(0); } }
-@keyframes lineArrival { from { opacity: 0; transform: translateX(-16%); } to { opacity: 0.8; transform: translateX(0); } }
-@keyframes assemblyArrival { from { opacity: 0; transform: translateX(7%); } to { opacity: 1; transform: translateX(0); } }
+/* A little parallax at the opening rewards a deliberate first scroll without
+   fighting the section-level reveal timelines or making the interface depend
+   on JavaScript. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .heroGrid {
+      transform-origin: center top;
+      animation: heroDeparture 1s linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0% 24%;
+    }
+  }
+}
+
+@keyframes railReveal {
+  from { opacity: 0; transform: scaleX(0.72); transform-origin: left center; }
+  to { opacity: 1; transform: scaleX(1); transform-origin: left center; }
+}
+
+@keyframes labelReveal {
+  from { opacity: 0; transform: translate3d(-18px, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes headlineReveal {
+  from { opacity: 0; clip-path: inset(0 0 100% 0); transform: translate3d(0, 32px, 0); }
+  to { opacity: 1; clip-path: inset(0 0 0 0); transform: translate3d(0, 0, 0); }
+}
+
+@keyframes copyReveal {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes visualReveal {
+  from { opacity: 0; transform: perspective(1200px) rotateY(-5deg) translate3d(36px, 28px, 0); }
+  to { opacity: 1; transform: perspective(1200px) rotateY(0) translate3d(0, 0, 0); }
+}
+
+@keyframes partSettle {
+  from { opacity: 0.08; transform: translate3d(8%, 0, 0) rotate(-2deg) scale(0.975); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) rotate(0) scale(1); }
+}
+
+@keyframes constructionSweep {
+  from { opacity: 0; transform: translate3d(-8%, 2%, 0) scale(1.06); }
+  to { opacity: 0.72; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes lineArrival {
+  from { opacity: 0; transform: translate3d(-16%, 0, 0); }
+  to { opacity: 0.8; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes assemblyArrival {
+  from { opacity: 0; transform: translate3d(7%, 2%, 0) rotate(1.5deg) scale(0.96); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) rotate(0) scale(1); }
+}
+
+@keyframes detailSettle {
+  from { opacity: 0; transform: translate3d(10px, -6px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes ruleReveal {
+  from { opacity: 0; transform: scaleX(0.18); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes rowReveal {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes arrowArrival {
+  from { opacity: 0; transform: translate3d(-12px, 12px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes boardReveal {
+  from { opacity: 0; transform: scaleX(0.91); transform-origin: center; }
+  to { opacity: 1; transform: scaleX(1); transform-origin: center; }
+}
+
+@keyframes panelReveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes capabilityReveal {
+  from { opacity: 0; transform: translate3d(0, 56px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes diagramRise {
+  from { opacity: 0; transform: perspective(900px) rotateX(10deg) translate3d(0, 26px, 0) scale(0.96); }
+  to { opacity: 1; transform: perspective(900px) rotateX(0) translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes heroDeparture {
+  from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  to { opacity: 0.58; transform: translate3d(0, -9vh, 0) scale(0.982); }
+}
 
 @media (max-width: 1180px) {
   .topbar, .hero, .workflow, .evidence, .workspaceCallout, .footer { width: min(100% - 48px, 1440px); }
