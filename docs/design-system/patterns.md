@@ -16,7 +16,7 @@ For the current Pages demo, place the permanent phone QR immediately after the p
 
 **Placement:** desktop copy width around 650px; the part visual can span most of the viewport width. On phone, keep copy before the visual and keep B2 legible. Reserve 16–24px side gutters. Headline should wrap naturally without orphaned one-word lines. Prefer clean image edges; no boxed copy floating over the part. A dark chapter may be used later, once, to signal the released handoff.
 
-**Motion:** the opening may use the user-supplied Chappe signal-form sequence in `site/assets/chappe-morph/frames/` as a small mark above the hero. The six forms resolve into the Chappe wordmark over the first short scroll. Keep it on the site canvas with no extra labels, card treatment, or pinned full-screen stage. The landing remains usable without it; reduced-motion users see the resolved wordmark.
+**Motion:** the opening uses the user-supplied Chappe signal-form sequence in `site/assets/chappe-morph/frames/` as a full-viewport, scroll-scrubbed opening stage. The six forms resolve into the Chappe wordmark, which makes room for the message to rise from below. Keep it on the site canvas with no extra labels or card treatment. The landing remains usable without it; reduced-motion users see the resolved wordmark and message.
 
 ## 2. Engineer job list and job header
 

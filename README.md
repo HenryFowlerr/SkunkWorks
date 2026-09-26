@@ -6,7 +6,7 @@ Chappe is a website for clearer engineering-to-workshop prototype handoffs. Engi
 
 **[Open the Chappe demo](https://henryfowlerr.github.io/SkunkWorks/)**. Follow the prepared Sensor Mount `SKW-SM-104` journey: choose the receiving facility, inspect documented support/conflict/unknown, approve the focused B2 guide, open its QR-linked phone view, flag a concern, and answer it from the engineer view. The live demo session, guide approval, issue, hold decision, and response are stored in the existing **Chappe** Supabase project. The drawing, authored bend manifest, illustrative model, facility profiles, and proposed guide are **prepared synthetic demo data**. The site labels that scope throughout.
 
-The opening uses a small Chappe symbol sequence above the hero. It resolves into the wordmark over the first short scroll, with a reduced-motion fallback to the finished wordmark.
+The opening is a full-viewport Chappe signal sequence. Scroll through the forms resolving into the wordmark; the landing message rises from below in the final part of the sequence. Reduced-motion users see the completed wordmark and message immediately.
 
 For a phone scan without setting up an engineer session, use the permanent QR on the landing page or open the [read-only phone preview](https://henryfowlerr.github.io/SkunkWorks/#/phone-preview). This preview shows prepared, approved example content and makes no Supabase writes. For the interactive flag-and-response pitch, create a session in the engineer journey and scan its session-specific QR instead.
 

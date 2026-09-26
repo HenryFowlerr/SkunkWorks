@@ -205,6 +205,20 @@ body{letter-spacing:-.01em}
 @media(max-width:600px){.top-links{display:none}.mobile-nav{display:block}.trust-chapter{padding-block:95px}.trust-chapter h2{margin-bottom:24px}}
 @media(prefers-reduced-motion:reduce){.topbar{transition:none}}
 
+/* Landing opening: the signal gets a full stage before the handoff story rises into view. */
+.landing-intro{overflow:visible}
+.landing-intro .brand-morph{--topbar-h:64px;position:relative;height:calc(200svh - var(--topbar-h));min-height:calc(100svh - var(--topbar-h) + 320px);display:block;margin:0;background:var(--ch-canvas)}
+.landing-intro .brand-morph-sticky{position:sticky;top:var(--topbar-h);height:calc(100svh - var(--topbar-h));display:grid;place-items:center;overflow:hidden}
+.landing-intro .brand-morph-canvas{display:block;width:min(100vw,1540px);max-width:none;max-height:none;height:auto;pointer-events:none;user-select:none;will-change:transform;transform:translate3d(0,var(--morph-y,0),0) scale(var(--morph-scale,1));transition:transform .1s cubic-bezier(.16,.82,.2,1)}
+.morph-hero.hero{position:absolute;z-index:1;bottom:clamp(30px,7vh,86px);left:50%;width:min(980px,calc(100% - 40px));padding:0;text-align:center;transform:translate3d(-50%,0,0)}
+.morph-hero.hero h1{font-size:clamp(54px,6.4vw,108px);line-height:.94;letter-spacing:-.076em;margin:0 auto 23px;max-width:950px}
+.morph-hero.hero .intro{font-size:clamp(17px,1.7vw,22px);max-width:640px}
+.morph-hero.hero .hero-actions{margin-top:26px}
+.motion-ready .morph-hero.hero{opacity:var(--morph-copy,0);transform:translate3d(-50%,var(--morph-copy-shift,86px),0);will-change:opacity,transform;transition:opacity .12s linear,transform .12s cubic-bezier(.16,.82,.2,1)}
+@media(max-width:800px){.landing-intro .brand-morph{--topbar-h:62px;height:calc(210svh - var(--topbar-h));min-height:calc(100svh - var(--topbar-h) + 260px)}.morph-hero.hero{bottom:42px}.morph-hero.hero h1{font-size:clamp(50px,9vw,82px)}}
+@media(max-width:600px){.landing-intro .brand-morph{height:calc(210svh - var(--topbar-h));min-height:calc(100svh - var(--topbar-h) + 220px)}.morph-hero.hero{bottom:24px;width:calc(100% - 36px)}.morph-hero.hero h1{font-size:clamp(45px,12vw,62px);letter-spacing:-.067em;margin-bottom:17px}.morph-hero.hero .intro{font-size:16px;line-height:1.38}.morph-hero.hero .hero-actions{margin-top:18px}}
+@media(prefers-reduced-motion:reduce){.motion-ready .morph-hero.hero{opacity:1!important;transform:translate3d(-50%,0,0)!important;transition:none!important}.landing-intro .brand-morph-canvas{transform:none!important;transition:none!important}}
+
 /* Distinct engineering and manufacturer work areas. */
 .workspace{align-items:start}
 .sidebar{align-self:start;background:#fff;border-right:0;padding-top:30px}
