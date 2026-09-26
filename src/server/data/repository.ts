@@ -30,6 +30,7 @@ import {
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { computeInputFingerprint } from "./fingerprint";
+import { assertAuthoredManifestEvidence } from "@/server/domain/manifest-evidence";
 import { DataAdapterError, throwDatabaseError } from "./errors";
 
 type MemberRow = { role: Role; status: "active" | "revoked" };
@@ -723,6 +724,7 @@ export class WorkspaceDataRepository {
     }
 
     const assets = assetRows.map((row) => this.mapAsset(row));
+    await this.checkManifestEvidence(job.id, contentInput.bends, contentInput.sourceAssetIds, assets, contentInput.panelModel?.origin);
     const inputFingerprint = computeInputFingerprint({ job: this.mapJob(job, sourceIds), assets, workshopSnapshot: snapshot });
 
     const { data, error } = await this.client.rpc("save_draft_content_internal", {
@@ -835,6 +837,10 @@ export class WorkspaceDataRepository {
     if (currentFingerprint !== bundle.draft.inputFingerprint) {
       throw new DataAdapterError("REVIEW_REQUIRED", "Draft inputs changed; reconcile and review the draft again.");
     }
+    if (!bundle.draft.content.panelModel?.reviewed) {
+      throw new DataAdapterError("REVIEW_REQUIRED", "An engineer must review the mapping for this draft version before release.");
+    }
+    await this.checkManifestEvidence(input.jobId, bundle.draft.content.bends, bundle.draft.content.sourceAssetIds, bundle.assets, bundle.draft.content.panelModel.origin, true);
 
     const { data, error } = await this.client.rpc("publish_release_internal", {
       p_workspace_id: this.scope.workspaceId,
@@ -874,6 +880,23 @@ export class WorkspaceDataRepository {
     }
     const snapshot = await this.getWorkshopSnapshot(job.workshopSnapshotId);
     return computeInputFingerprint({ job, assets, workshopSnapshot: snapshot });
+  }
+
+  private async checkManifestEvidence(jobId: Id, bends: DraftContentInput["bends"], sourceAssetIds: Id[], assets: Asset[], panelModelOrigin?: "authored_manifest" | "reviewer_mapped" | "ai_proposed", publication = false): Promise<void> {
+    await assertAuthoredManifestEvidence({
+      bends,
+      sourceAssetIds,
+      assets,
+      panelModelOrigin,
+      publication,
+      readSource: async (asset) => {
+        const authorized = await this.authorizeMemberAsset(jobId, asset.id);
+        const { data, error } = await this.client.storage.from(authorized.bucketId)
+          .download(authorized.objectKey, {}, { cache: "no-store" });
+        if (error || !data) throw new DataAdapterError("REVIEW_REQUIRED", "The cited manifest is unavailable for validation.");
+        return new Uint8Array(await data.arrayBuffer());
+      },
+    });
   }
 
   private async getJobRow(jobId: Id): Promise<JobRow> {

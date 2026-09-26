@@ -35,6 +35,11 @@ const EvidenceRegionSchema = z
 
 export const EvidenceRefSchema = z.discriminatedUnion("kind", [
   z.object({
+    kind: z.literal("authored_manifest"),
+    assetId: IdSchema,
+    bendId: nonEmptyString,
+  }).strict(),
+  z.object({
     kind: z.literal("document"),
     assetId: IdSchema,
     page: z.number().int().min(1),

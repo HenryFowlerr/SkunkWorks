@@ -43,6 +43,13 @@ const modelAsset: Asset = {
   filename: 'sample-bracket.glb',
   mimeType: 'model/gltf-binary',
 };
+const manifestAsset: Asset = {
+  ...sourceAsset,
+  id: ids.generation,
+  kind: 'bend_manifest',
+  filename: 'sample-bracket.bend.json',
+  mimeType: 'application/json',
+};
 
 function twoStepDraft(): Draft {
   const first = { ...draft.content.steps[0], instruction: 'First pass for Bend B1.' };
@@ -53,7 +60,7 @@ function twoStepDraft(): Draft {
 function apiHarness(options: { forbiddenReview?: boolean; flags?: Flag[]; releases?: Release[]; twoSteps?: boolean; noDraft?: boolean; generation?: boolean } = {}) {
   let serverDraft = options.twoSteps ? twoStepDraft() : proposalDraft();
   let serverJob: Job = options.noDraft
-    ? { ...job, draftId: null, latestReleaseId: null, sourceAssetIds: [ids.asset, modelAsset.id] }
+    ? { ...job, draftId: null, latestReleaseId: null, sourceAssetIds: [ids.asset, modelAsset.id, manifestAsset.id] }
     : job;
   let generation: Generation | null = null;
   const requests: ApiTransportRequest[] = [];
@@ -64,7 +71,7 @@ function apiHarness(options: { forbiddenReview?: boolean; flags?: Flag[]; releas
         return {
           data: {
             job: serverJob,
-            assets: options.noDraft ? [sourceAsset, modelAsset] : [sourceAsset],
+            assets: options.noDraft ? [sourceAsset, modelAsset, manifestAsset] : [sourceAsset],
             draft: serverJob.draftId ? serverDraft : null,
             releases: options.releases ?? (options.noDraft ? [] : [release]),
           },
@@ -187,6 +194,8 @@ describe('designer review desk', () => {
     await waitFor(() => expect(requests.some((request) => request.path.endsWith('/draft/proposals/' + ids.proposal + '/decision'))).toBe(true));
     await waitFor(() => expect(screen.getByText('Machine proposal accepted by the service.')).toBeVisible());
 
+    expect(screen.getByRole('button', { name: 'Submit design review' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('checkbox', { name: /I checked this version’s bend IDs/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Submit design review' }));
     await waitFor(() => expect(requests.some((request) => request.path.endsWith('/draft/reviews') && (request.body as { kind?: string }).kind === 'design')).toBe(true));
     fireEvent.click(screen.getByRole('button', { name: 'Submit process review' }));
@@ -256,11 +265,11 @@ describe('designer review desk', () => {
     expect(screen.getByText(/Process sequence and phone guidance/i)).toBeVisible();
   });
 
-  it('sends a review request for the current role and shows the API authorization error unchanged', async () => {
+  it('sends a process review request for the current role and shows the API authorization error unchanged', async () => {
     const { client, requests } = apiHarness({ forbiddenReview: true });
     render(<JobReviewDesk jobId={ids.job} role="fabricator" client={client} />);
     expect(await screen.findByRole('heading', { name: 'Sample bracket' })).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Submit design review' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit process review' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('This account cannot record this review.');
     expect(requests.some((request) => request.method === 'POST' && request.path.endsWith('/draft/reviews'))).toBe(true);
   });

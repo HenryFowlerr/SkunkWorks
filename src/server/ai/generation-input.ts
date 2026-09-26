@@ -107,9 +107,9 @@ export async function prepareGenerationInput(input: {
       hingeId: bend.hingeId,
       foldRotationDeg: {
         value: bend.foldRotationDeg,
-        evidence: [],
+        evidence: [{ kind: "authored_manifest" as const, assetId: manifestAsset.id, bendId }],
         evidenceState: "supported" as const,
-        originalText: `Authored manifest rotation ${bend.foldRotationDeg} degrees; engineer evidence review required`,
+        originalText: `Authored manifest: bend ${bendId}, hinge ${bend.hingeId}, signed rotation ${bend.foldRotationDeg}° from flat; engineer review required`,
       },
     };
   });
@@ -145,20 +145,9 @@ export async function prepareGenerationInput(input: {
 export function proposalToDraftContent(input: {
   aiInput: GenerationInput;
   panelModel: PanelModel;
-  manifestAssetId: string;
   proposal: DraftProposal;
 }): DraftContent {
   const { aiInput, proposal } = input;
-  const manifestFinding = {
-    id: randomUUID(),
-    kind: "mapping" as const,
-    severity: "blocking" as const,
-    bendId: null,
-    message: "The authored manifest supplies signed fold rotations, but the engineer must verify the mapping and attach supporting evidence before release.",
-    evidence: [],
-    disposition: "open" as const,
-    resolutionRecordId: null,
-  };
   const machineProposals = proposal.machineProposal ? [{
     ...proposal.machineProposal,
     id: randomUUID(),
@@ -174,7 +163,7 @@ export function proposalToDraftContent(input: {
     panelModel: input.panelModel,
     bends: proposal.bends,
     steps: proposal.steps,
-    findings: [...proposal.findings, manifestFinding],
+    findings: proposal.findings,
     machineProposals,
   };
 }

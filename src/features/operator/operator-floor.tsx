@@ -36,6 +36,10 @@ function explainError(error: unknown): string {
 }
 
 function sourceLabel(evidence: EvidenceRef, assets: Asset[]): { label: string; detail: string } {
+  if (evidence.kind === 'authored_manifest') {
+    const asset = assets.find((item) => item.id === evidence.assetId);
+    return { label: asset?.filename ?? 'Authored bend manifest', detail: `Bend ${evidence.bendId} mapping · reviewed for this release` };
+  }
   if (evidence.kind === 'document') {
     const asset = assets.find((item) => item.id === evidence.assetId);
     return {
