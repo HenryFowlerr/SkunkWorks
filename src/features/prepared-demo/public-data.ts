@@ -52,7 +52,7 @@ export const preparedParts: PreparedPart[] = [
     drawingPreview: "/chappe-demo/steel-bracket-qr-drawing-preview.png",
     drawingAlt: "Steel Bracket demo drawing with a Chappe QR code in the right-side drawing margin",
     qrCodeImage: "/chappe-demo/steel-bracket-qr.png",
-    qrTarget: "https://partial-mins-temperatures-gap.trycloudflare.com/parts/manufacturing-test-sheet",
+    qrTarget: "https://chappe-chi.vercel.app/parts/manufacturing-test-sheet",
     modelStl: "/chappe-demo/manufacturing-test-sheet.stl",
     modelFileName: "Steel Bracket source STL",
     state: "Revision needs review",
